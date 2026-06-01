@@ -1,0 +1,9 @@
+.next
+node_modules
+.planning
+package-lock.json
+public
+*.tsbuildinfo
+next-env.d.ts
+playwright-report
+test-results
