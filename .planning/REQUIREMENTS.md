@@ -53,6 +53,13 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **LIST-06**: Seller can mark their own listing as "Sold"
 - [ ] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
 
+### My Garage
+
+- [ ] **GRGE-01**: User can add one or more trucks to their garage (Make → Model → Configuration from the fitment library), optionally — not required at registration
+- [ ] **GRGE-02**: User can view, edit, and remove trucks in their garage
+- [ ] **GRGE-03**: Buyer can filter the feed/search to parts that fit a selected garage truck ("Fits my truck"), with one click
+- [ ] **GRGE-04**: A seller's garage trucks pre-fill / accelerate Fitment Intelligence suggestions when they create a listing
+
 ### Fitment Intelligence
 
 - [ ] **FINT-01**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories based on the part details
@@ -156,48 +163,52 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FITL-08 | Phase 3 | Pending |
 | FITL-09 | Phase 3 | Pending |
 | FITL-10 | Phase 3 | Pending |
-| LIST-01 | Phase 4 | Pending |
-| LIST-02 | Phase 4 | Pending |
-| LIST-03 | Phase 4 | Pending |
-| LIST-04 | Phase 4 | Pending |
-| LIST-05 | Phase 4 | Pending |
-| LIST-07 | Phase 4 | Pending |
-| FINT-01 | Phase 5 | Pending |
-| FINT-02 | Phase 5 | Pending |
-| FINT-03 | Phase 5 | Pending |
-| SRCH-01 | Phase 6 | Pending |
-| SRCH-02 | Phase 6 | Pending |
-| SRCH-03 | Phase 6 | Pending |
-| SRCH-04 | Phase 6 | Pending |
-| SRCH-05 | Phase 6 | Pending |
-| SOCL-01 | Phase 7 | Pending |
-| SOCL-02 | Phase 7 | Pending |
-| LIST-06 | Phase 7 | Pending |
-| MSG-01 | Phase 8 | Pending |
-| MSG-02 | Phase 8 | Pending |
-| MSG-03 | Phase 8 | Pending |
-| MSG-04 | Phase 8 | Pending |
-| MSG-05 | Phase 8 | Pending |
-| MSG-06 | Phase 8 | Pending |
-| MSG-07 | Phase 8 | Pending |
-| ADMO-01 | Phase 9 | Pending |
-| ADMO-02 | Phase 9 | Pending |
-| ADMO-03 | Phase 9 | Pending |
-| ADMO-04 | Phase 9 | Pending |
-| ADMO-05 | Phase 9 | Pending |
-| ADMO-06 | Phase 9 | Pending |
-| ADMA-01 | Phase 9 | Pending |
-| ADMA-02 | Phase 9 | Pending |
-| ADMA-03 | Phase 9 | Pending |
-| ADMA-04 | Phase 9 | Pending |
+| GRGE-01 | Phase 4 | Pending |
+| GRGE-02 | Phase 4 | Pending |
+| GRGE-03 | Phase 4 | Pending |
+| GRGE-04 | Phase 4 | Pending |
+| LIST-01 | Phase 5 | Pending |
+| LIST-02 | Phase 5 | Pending |
+| LIST-03 | Phase 5 | Pending |
+| LIST-04 | Phase 5 | Pending |
+| LIST-05 | Phase 5 | Pending |
+| LIST-07 | Phase 5 | Pending |
+| FINT-01 | Phase 6 | Pending |
+| FINT-02 | Phase 6 | Pending |
+| FINT-03 | Phase 6 | Pending |
+| SRCH-01 | Phase 7 | Pending |
+| SRCH-02 | Phase 7 | Pending |
+| SRCH-03 | Phase 7 | Pending |
+| SRCH-04 | Phase 7 | Pending |
+| SRCH-05 | Phase 7 | Pending |
+| SOCL-01 | Phase 8 | Pending |
+| SOCL-02 | Phase 8 | Pending |
+| LIST-06 | Phase 8 | Pending |
+| MSG-01 | Phase 9 | Pending |
+| MSG-02 | Phase 9 | Pending |
+| MSG-03 | Phase 9 | Pending |
+| MSG-04 | Phase 9 | Pending |
+| MSG-05 | Phase 9 | Pending |
+| MSG-06 | Phase 9 | Pending |
+| MSG-07 | Phase 9 | Pending |
+| ADMO-01 | Phase 10 | Pending |
+| ADMO-02 | Phase 10 | Pending |
+| ADMO-03 | Phase 10 | Pending |
+| ADMO-04 | Phase 10 | Pending |
+| ADMO-05 | Phase 10 | Pending |
+| ADMO-06 | Phase 10 | Pending |
+| ADMA-01 | Phase 10 | Pending |
+| ADMA-02 | Phase 10 | Pending |
+| ADMA-03 | Phase 10 | Pending |
+| ADMA-04 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 58 total (the enumerated list is authoritative; the earlier "49" figure was a stale count)
-- Mapped to phases: 58 ✓
+- v1 requirements: 62 total (58 original + 4 GARAGE added 2026-06-01)
+- Mapped to phases: 62 ✓
 - Unmapped: 0 ✓
 
-Per-phase distribution: P1=10, P2=4, P3=10, P4=6, P5=3, P6=5, P7=3, P8=7, P9=10.
+Per-phase distribution: P1=10, P2=4, P3=10, P4=4 (Garage), P5=6, P6=3, P7=5, P8=3, P9=7, P10=10.
 
 ---
 *Requirements defined: 2026-06-01*
-*Last updated: 2026-06-01 after roadmap traceability mapping*
+*Last updated: 2026-06-01 after adding My Garage (Phase 4) and renumbering*

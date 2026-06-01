@@ -29,6 +29,11 @@ A buyer can find the right part (through fitment, model, or trucker slang), inte
 - [ ] Seller can mark a listing as "Sold"
 - [ ] Buyer can save (bookmark) a listing
 
+**My Garage**
+- [ ] User can optionally save one or more of their trucks (Make → Model → Configuration) to their profile — never forced at registration
+- [ ] Buyer can filter the feed/search to "fits my truck" from a saved garage truck
+- [ ] Seller's garage trucks pre-fill / accelerate fitment suggestions when listing
+
 **Fitment Library & Search**
 - [ ] 8-level fitment library: Make → Model → Configuration → Common Search Terms → Part Categories → Materials → Condition → Special Search Filters, plus "The Barnyard" (anything-goes) category
 - [ ] Buyer can browse and search parts by make, model, configuration, trucker slang ("359 Guys", "Flat Glass Kenworth", "Aerodyne"), category, material, condition, and special filters
@@ -77,6 +82,7 @@ A buyer can find the right part (through fitment, model, or trucker slang), inte
 | Public comments in v1 | Drives the 30% social experience (Facebook-Marketplace-style Q&A on listings) | — Pending |
 | Verified Seller in v1 | Trust signal at launch (email + phone verified + terms) | — Pending |
 | Comprehensive planning depth | Complex fitment library + search + chat + admin warrants thorough phase coverage | — Pending |
+| My Garage in v1 (own phase) | Users save their trucks (optional, post-registration) to power "fits my truck" filtering + faster seller fitment; reuses the fitment library, so it slots in after taxonomy as Phase 4 | — Pending |
 
 ---
-*Last updated: 2026-06-01 after initialization*
+*Last updated: 2026-06-01 after adding My Garage (Phase 4)*

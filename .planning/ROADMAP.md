@@ -2,16 +2,16 @@
 
 ## Overview
 
-Take-Off Parts is a privacy-first, fitment-driven marketplace for North-American heavy-truck parts (~70% marketplace, ~30% specialized social network). The roadmap follows a strict, research-validated dependency chain: privacy/RLS scaffolding and the public/private profile split come first (nothing is safe to build until PII separation exists), then the verification trust signal, then the 8-level fitment taxonomy (the keystone every downstream feature needs), then listings with EXIF-safe photo storage, then Fitment Intelligence, search/feed/public profile, the social layer, the contact→private-chat trust spine, and finally the admin operations + analytics console. The journey ends with a complete experience where a buyer can find the right part by fitment/model/slang, interact publicly, and contact a seller privately — and the seller's real identity is never exposed.
+Take-Off Parts is a privacy-first, fitment-driven marketplace for North-American heavy-truck parts (~70% marketplace, ~30% specialized social network). The roadmap follows a strict, research-validated dependency chain: privacy/RLS scaffolding and the public/private profile split come first (nothing is safe to build until PII separation exists), then the verification trust signal, then the 8-level fitment taxonomy (the keystone every downstream feature needs), then My Garage (users save their trucks, reusing the taxonomy), then listings with EXIF-safe photo storage, then Fitment Intelligence, search/feed/public profile, the social layer, the contact→private-chat trust spine, and finally the admin operations + analytics console. The journey ends with a complete experience where a buyer can find the right part by fitment/model/slang (and filter to "fits my truck"), interact publicly, and contact a seller privately — and the seller's real identity is never exposed.
 
 ### Cross-Cutting Gates (not phases)
 
 Two guarantees are **constraints re-verified in every relevant phase**, never standalone phases:
 
-1. **Privacy / RLS guarantee** — seller PII (name, phone, email, street address, postal code) must never be queryable or renderable on any public surface. RLS default-deny is enabled on every table at creation, the public/private profile split is enforced, and the service-role key stays server-only. Re-verified in **every phase that adds a table or a public surface** (P1, P3, P4, P5, P6, P7, P8, P9).
-2. **Server-side EXIF/GPS stripping** — every uploaded photo is re-encoded server-side with all metadata stripped before storage or display. Established in **P4** and re-verified anywhere new image upload paths appear.
+1. **Privacy / RLS guarantee** — seller PII (name, phone, email, street address, postal code) must never be queryable or renderable on any public surface. RLS default-deny is enabled on every table at creation, the public/private profile split is enforced, and the service-role key stays server-only. Re-verified in **every phase that adds a table or a public surface** (P1, P3, P4, P5, P6, P7, P8, P9, P10).
+2. **Server-side EXIF/GPS stripping** — every uploaded photo is re-encoded server-side with all metadata stripped before storage or display. Established in **P5** and re-verified anywhere new image upload paths appear.
 
-Event logging for analytics (search + listing-view events) is instrumented when listings/search ship (P4/P6), even though the Analytics dashboard lands in P9 — the data cannot be reconstructed later.
+Event logging for analytics (search + listing-view events) is instrumented when listings/search ship (P5/P7), even though the Analytics dashboard lands in P10 — the data cannot be reconstructed later.
 
 ## Phases
 
@@ -22,12 +22,13 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [ ] **Phase 1: Foundation & Privacy Model** - Supabase + SSR auth, RLS default-deny baseline, public/private profile split, registration with public username
 - [ ] **Phase 2: Verified Seller & Phone OTP** - Email + phone OTP + terms acceptance → server-computed Verified badge
 - [ ] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data
-- [ ] **Phase 4: Listings, Photos & EXIF-Safe Storage** - Create/edit/sell listings, multi-photo upload with server-side EXIF strip, fitment tagging, shipping + contact preference
-- [ ] **Phase 5: Fitment Intelligence** - Rules-based suggestion of applicable trucks/configs/categories; seller-confirmed, never auto-applied
-- [ ] **Phase 6: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, public profile, event logging
-- [ ] **Phase 7: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold
-- [ ] **Phase 8: Contact → Private Chat** - Form-first contact (persist + admin copy before thread opens), private in-site chat, report/abuse logging
-- [ ] **Phase 9: Admin Operations & Analytics** - Service-role-isolated ops console (users/listings/reports/messages/categories/fitment) + analytics dashboard
+- [ ] **Phase 4: My Garage** - Users save one or more trucks (make/model/config) to their profile; powers "fits my truck" filtering and accelerates seller fitment
+- [ ] **Phase 5: Listings, Photos & EXIF-Safe Storage** - Create/edit/sell listings, multi-photo upload with server-side EXIF strip, fitment tagging, shipping + contact preference
+- [ ] **Phase 6: Fitment Intelligence** - Rules-based suggestion of applicable trucks/configs/categories; seller-confirmed, never auto-applied; garage pre-fill
+- [ ] **Phase 7: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, "fits my truck" personalization, public profile, event logging
+- [ ] **Phase 8: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold
+- [ ] **Phase 9: Contact → Private Chat** - Form-first contact (persist + admin copy before thread opens), private in-site chat, report/abuse logging
+- [ ] **Phase 10: Admin Operations & Analytics** - Service-role-isolated ops console (users/listings/reports/messages/categories/fitment) + analytics dashboard
 
 ## Phase Details
 
@@ -66,7 +67,19 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   4. The launch make/region taxonomy and slang dictionary are seeded and browsable
 **Plans**: TBD
 
-### Phase 4: Listings, Photos & EXIF-Safe Storage
+### Phase 4: My Garage
+**Goal**: A user can save one or more of their trucks (Make → Model → Configuration from the fitment library) to their profile — optionally, never forced at registration — so buyers can later filter to "fits my truck" and sellers get faster, pre-filled fitment when listing.
+**Depends on**: Phase 1 (user account), Phase 3 (fitment library for make/model/config references)
+**Requirements**: GRGE-01, GRGE-02, GRGE-03, GRGE-04
+**Cross-cutting gate**: Privacy/RLS re-verified — the `garage_trucks` table is owner-scoped (a user can only read/write their own garage); garage data is never exposed on public surfaces.
+**Success Criteria** (what must be TRUE):
+  1. A user can add one or more trucks to their garage by selecting Make → Model → Configuration from the fitment library, as an optional step after registration
+  2. A user can view, edit, and remove the trucks in their garage
+  3. A buyer can filter the feed/search to parts that fit a selected garage truck with one click ("fits my truck") — the filtering hook is consumed by Phase 7 search
+  4. A seller's garage trucks pre-fill / accelerate the fitment suggestions when they create a listing — consumed by Phase 6 Fitment Intelligence
+**Plans**: TBD
+
+### Phase 5: Listings, Photos & EXIF-Safe Storage
 **Goal**: A seller can create, edit, and sell a listing with the full public field set, tag it against the fitment library, and upload multiple photos that are stripped of all metadata server-side — so no photo can ever leak the seller's exact location.
 **Depends on**: Phase 1 (seller_id), Phase 3 (fitment tags)
 **Requirements**: LIST-01, LIST-02, LIST-03, LIST-04, LIST-05, LIST-07
@@ -78,9 +91,9 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   4. A seller can set an account-level contact preference: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
 **Plans**: TBD
 
-### Phase 5: Fitment Intelligence
-**Goal**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories from the populated library; the seller confirms (never auto-applied), and a confirmed listing then surfaces in every applicable fitment search result. Tuned for precision over recall.
-**Depends on**: Phase 3 (taxonomy), Phase 4 (listings)
+### Phase 6: Fitment Intelligence
+**Goal**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories from the populated library (pre-filled by the seller's garage where relevant); the seller confirms (never auto-applied), and a confirmed listing then surfaces in every applicable fitment search result. Tuned for precision over recall.
+**Depends on**: Phase 3 (taxonomy), Phase 5 (listings), Phase 4 (garage pre-fill)
 **Requirements**: FINT-01, FINT-02, FINT-03
 **Cross-cutting gate**: Privacy/RLS re-verified on the `fitment_rules` table and suggestion service.
 **Success Criteria** (what must be TRUE):
@@ -89,11 +102,11 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   3. Once a seller confirms fitments, the listing appears in every applicable fitment search result and truck category
 **Plans**: TBD
 
-### Phase 6: Search, Feed & Public Profile
-**Goal**: A buyer can discover parts as the differentiator's payoff — browsing a feed and searching by keyword, facets, and trucker slang with typo/synonym tolerance — and view a seller's public profile, with search and view events logged for analytics.
-**Depends on**: Phase 4 (taggable listings), Phase 5 (confirmed fitments)
+### Phase 7: Search, Feed & Public Profile
+**Goal**: A buyer can discover parts as the differentiator's payoff — browsing a feed and searching by keyword, facets, and trucker slang with typo/synonym tolerance, and filtering to "fits my truck" from their garage — and view a seller's public profile, with search and view events logged for analytics.
+**Depends on**: Phase 5 (taggable listings), Phase 6 (confirmed fitments), Phase 4 (garage filter)
 **Requirements**: SRCH-01, SRCH-02, SRCH-03, SRCH-04, SRCH-05
-**Cross-cutting gate**: Privacy/RLS re-verified — public search/feed/profile surfaces render no PII. Search FTS + `pg_trgm` use GIN indexes verified via `EXPLAIN ANALYZE`. Search-event logging instrumented from day one.
+**Cross-cutting gate**: Privacy/RLS re-verified — public search/feed/profile surfaces render no PII. Search FTS + `pg_trgm` use GIN indexes verified via `EXPLAIN ANALYZE`. Search-event logging instrumented from day one. Consumes the Phase 4 "fits my truck" garage filter.
 **Success Criteria** (what must be TRUE):
   1. A buyer can browse a feed of active listings without logging in
   2. A buyer can search by keyword (part title, part number) and filter by Make, Model, Configuration, Part Category, Material, Condition, and Special Filters
@@ -101,9 +114,9 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   4. Search and listing-view events are logged so analytics can later report most-searched and most-viewed items
 **Plans**: TBD
 
-### Phase 7: Social Layer
+### Phase 8: Social Layer
 **Goal**: The 30% social experience comes alive — buyers can publicly comment on listings (attributed to username only), save listings to view later, and sellers can mark their listings as sold.
-**Depends on**: Phase 4 (listings), Phase 6 (public surfaces)
+**Depends on**: Phase 5 (listings), Phase 7 (public surfaces)
 **Requirements**: SOCL-01, SOCL-02, LIST-06
 **Cross-cutting gate**: Privacy/RLS re-verified — comments display commenter by username only, never PII; saves are owner-scoped.
 **Success Criteria** (what must be TRUE):
@@ -112,9 +125,9 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   3. A seller can mark their own listing as "Sold," which updates its public status
 **Plans**: TBD
 
-### Phase 8: Contact → Private Chat
+### Phase 9: Contact → Private Chat
 **Goal**: The trust spine — a buyer contacts a seller through a form that persists the submission and copies admin BEFORE any chat thread opens, then exchanges messages in a private in-site chat that never exposes seller PII, with reporting and abuse logging throughout.
-**Depends on**: Phase 4 (listings), Phase 1 (auth)
+**Depends on**: Phase 5 (listings), Phase 1 (auth)
 **Requirements**: MSG-01, MSG-02, MSG-03, MSG-04, MSG-05, MSG-06, MSG-07
 **Cross-cutting gate**: Privacy/RLS re-verified — chat surfaces never expose seller PII; every contact persisted and admin-copied before the thread opens (anti-pattern: opening chat first). Rate limiting + report button on contact/chat paths.
 **Success Criteria** (what must be TRUE):
@@ -124,7 +137,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   4. A user can report a listing, comment, or message for abuse
 **Plans**: TBD
 
-### Phase 9: Admin Operations & Analytics
+### Phase 10: Admin Operations & Analytics
 **Goal**: Operators can run and measure the marketplace — managing users, listings, reports (with enforcement), messages, categories, and the fitment library through a service-role-isolated console, and seeing analytics including most-searched makes/models. This also provides the bulk-onboarding tooling that mitigates two-sided cold start.
 **Depends on**: All prior phases (needs data existing to manage and measure)
 **Requirements**: ADMO-01, ADMO-02, ADMO-03, ADMO-04, ADMO-05, ADMO-06, ADMA-01, ADMA-02, ADMA-03, ADMA-04
@@ -138,21 +151,22 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Privacy Model | 0/TBD | Not started | - |
 | 2. Verified Seller & Phone OTP | 0/TBD | Not started | - |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |
-| 4. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
-| 5. Fitment Intelligence | 0/TBD | Not started | - |
-| 6. Search, Feed & Public Profile | 0/TBD | Not started | - |
-| 7. Social Layer | 0/TBD | Not started | - |
-| 8. Contact → Private Chat | 0/TBD | Not started | - |
-| 9. Admin Operations & Analytics | 0/TBD | Not started | - |
+| 4. My Garage | 0/TBD | Not started | - |
+| 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
+| 6. Fitment Intelligence | 0/TBD | Not started | - |
+| 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
+| 8. Social Layer | 0/TBD | Not started | - |
+| 9. Contact → Private Chat | 0/TBD | Not started | - |
+| 10. Admin Operations & Analytics | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-06-01*
-*Depth: comprehensive (9 phases) — derived from the research dependency chain*
-*Coverage: 58/58 v1 requirements mapped (the "49" in early notes was a stale count; the enumerated REQUIREMENTS.md list totals 58)*
+*Depth: comprehensive (10 phases) — derived from the research dependency chain; My Garage added as Phase 4 on 2026-06-01*
+*Coverage: 62/62 v1 requirements mapped (58 original + 4 GARAGE)*
