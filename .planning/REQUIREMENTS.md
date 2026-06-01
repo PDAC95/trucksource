@@ -132,13 +132,72 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| ACCT-01 | Phase 1 | Pending |
+| ACCT-02 | Phase 1 | Pending |
+| ACCT-03 | Phase 1 | Pending |
+| ACCT-04 | Phase 1 | Pending |
+| ACCT-05 | Phase 1 | Pending |
+| ACCT-06 | Phase 1 | Pending |
+| PRIV-01 | Phase 1 | Pending |
+| PRIV-02 | Phase 1 | Pending |
+| PRIV-03 | Phase 1 | Pending |
+| PRIV-04 | Phase 1 | Pending |
+| VERF-01 | Phase 2 | Pending |
+| VERF-02 | Phase 2 | Pending |
+| VERF-03 | Phase 2 | Pending |
+| VERF-04 | Phase 2 | Pending |
+| FITL-01 | Phase 3 | Pending |
+| FITL-02 | Phase 3 | Pending |
+| FITL-03 | Phase 3 | Pending |
+| FITL-04 | Phase 3 | Pending |
+| FITL-05 | Phase 3 | Pending |
+| FITL-06 | Phase 3 | Pending |
+| FITL-07 | Phase 3 | Pending |
+| FITL-08 | Phase 3 | Pending |
+| FITL-09 | Phase 3 | Pending |
+| FITL-10 | Phase 3 | Pending |
+| LIST-01 | Phase 4 | Pending |
+| LIST-02 | Phase 4 | Pending |
+| LIST-03 | Phase 4 | Pending |
+| LIST-04 | Phase 4 | Pending |
+| LIST-05 | Phase 4 | Pending |
+| LIST-07 | Phase 4 | Pending |
+| FINT-01 | Phase 5 | Pending |
+| FINT-02 | Phase 5 | Pending |
+| FINT-03 | Phase 5 | Pending |
+| SRCH-01 | Phase 6 | Pending |
+| SRCH-02 | Phase 6 | Pending |
+| SRCH-03 | Phase 6 | Pending |
+| SRCH-04 | Phase 6 | Pending |
+| SRCH-05 | Phase 6 | Pending |
+| SOCL-01 | Phase 7 | Pending |
+| SOCL-02 | Phase 7 | Pending |
+| LIST-06 | Phase 7 | Pending |
+| MSG-01 | Phase 8 | Pending |
+| MSG-02 | Phase 8 | Pending |
+| MSG-03 | Phase 8 | Pending |
+| MSG-04 | Phase 8 | Pending |
+| MSG-05 | Phase 8 | Pending |
+| MSG-06 | Phase 8 | Pending |
+| MSG-07 | Phase 8 | Pending |
+| ADMO-01 | Phase 9 | Pending |
+| ADMO-02 | Phase 9 | Pending |
+| ADMO-03 | Phase 9 | Pending |
+| ADMO-04 | Phase 9 | Pending |
+| ADMO-05 | Phase 9 | Pending |
+| ADMO-06 | Phase 9 | Pending |
+| ADMA-01 | Phase 9 | Pending |
+| ADMA-02 | Phase 9 | Pending |
+| ADMA-03 | Phase 9 | Pending |
+| ADMA-04 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 49 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 49 ⚠️
+- v1 requirements: 58 total (the enumerated list is authoritative; the earlier "49" figure was a stale count)
+- Mapped to phases: 58 ✓
+- Unmapped: 0 ✓
+
+Per-phase distribution: P1=10, P2=4, P3=10, P4=6, P5=3, P6=5, P7=3, P8=7, P9=10.
 
 ---
 *Requirements defined: 2026-06-01*
-*Last updated: 2026-06-01 after initial definition*
+*Last updated: 2026-06-01 after roadmap traceability mapping*
