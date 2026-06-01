@@ -19,6 +19,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
+- [ ] **Phase 0: Setup & Scaffolding** - Next.js 16 + React 19 + TS + Tailwind v4 + shadcn scaffold, route groups, dormant Supabase client skeletons, .env.example — no tables/RLS/auth yet
 - [ ] **Phase 1: Foundation & Privacy Model** - Supabase + SSR auth, RLS default-deny baseline, public/private profile split, registration with public username
 - [ ] **Phase 2: Verified Seller & Phone OTP** - Email + phone OTP + terms acceptance → server-computed Verified badge
 - [ ] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data
@@ -31,6 +32,18 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [ ] **Phase 10: Admin Operations & Analytics** - Service-role-isolated ops console (users/listings/reports/messages/categories/fitment) + analytics dashboard
 
 ## Phase Details
+
+### Phase 0: Setup & Scaffolding
+**Goal**: A booting Next.js 16 project with the full route-group structure, pinned dependencies, and dormant Supabase client skeletons — no tables, RLS, or auth (those are Phase 1).
+**Depends on**: Nothing (first phase)
+**Requirements**: None (pure scaffolding; enables all later phases)
+**Success Criteria** (what must be TRUE):
+  1. The Next.js 16 + React 19 + TypeScript project boots locally (`npm run dev`) and builds (`npm run build`) with no errors
+  2. The route-group structure (`(public)`/`(auth)`/`(app)`/`admin`) and `lib/supabase/{server,client,middleware,admin}.ts` exist per ARCHITECTURE.md, compiling but not connected to a database
+  3. All decided dependencies are installed and pinned; the deprecated `@supabase/auth-helpers-nextjs` is absent
+  4. `.env.example` documents every required variable (service-role key marked server-only) and the README explains how to create and connect Supabase later
+  5. No table, RLS policy, or auth logic exists yet — those remain Phase 1
+**Plans**: docs/superpowers/plans/2026-06-01-phase-0-setup-scaffolding.md
 
 ### Phase 1: Foundation & Privacy Model
 **Goal**: A user can register and log in, receives a public username, and gets a public profile that structurally cannot expose their private PII — privacy is guaranteed by the data model and RLS, not by app discipline.
@@ -151,10 +164,11 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
+| 0. Setup & Scaffolding | 0/1 | Not started | - |
 | 1. Foundation & Privacy Model | 0/TBD | Not started | - |
 | 2. Verified Seller & Phone OTP | 0/TBD | Not started | - |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |

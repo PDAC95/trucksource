@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 1 — Foundation & Privacy Model
+**Current focus:** Phase 0 — Setup & Scaffolding
 
 ## Current Position
 
-Phase: 1 of 10 (Foundation & Privacy Model)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-06-01 — Roadmap created (10 phases, 62/62 requirements mapped); My Garage added as Phase 4
+Phase: 0 of 11 (Setup & Scaffolding)
+Plan: 1 of 1 in current phase (executed on branch phase-0-setup)
+Status: Ready to execute / under review
+Last activity: 2026-06-01 — Phase 0 inserted (Setup & Scaffolding); Next.js 16 confirmed; scaffold executed on branch phase-0-setup
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -46,7 +46,7 @@ Recent decisions affecting current work:
 - [Roadmap]: My Garage added as its own Phase 4 (optional, post-registration; reuses the fitment library); subsequent phases renumbered 5–10.
 - [Roadmap]: Privacy/RLS guarantee and server-side EXIF strip are cross-cutting gates re-verified each phase, not standalone phases.
 - [Roadmap]: Event logging is instrumented when listings/search ship (P5/P7), not deferred to the Analytics phase (P10).
-- [Stack]: Next.js version is the one open call — research recommends 16 (latest stable) over the "15" in PROJECT.md; confirm before Phase 1 scaffolding.
+- [Stack]: Next.js version confirmed as **16** (latest stable) on 2026-06-01, closing the open PROJECT.md "15" call. Scaffolded on 16.2.6 + React 19.2.4.
 
 ### Pending Todos
 
