@@ -45,3 +45,8 @@ next-env.d.ts
 # Supabase CLI local state (never commit)
 supabase/.temp/
 supabase/.branches/
+
+# Playwright
+/test-results
+/playwright-report
+/playwright/.cache
