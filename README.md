@@ -8,6 +8,7 @@ Privacy-first marketplace for North-American heavy-truck parts. See `.planning/`
 npm install
 npm run dev
 ```
+
 Open http://localhost:3000. The scaffold runs without Supabase credentials (the home page makes no database calls).
 
 ## Connecting Supabase (do this before Phase 1 features)
