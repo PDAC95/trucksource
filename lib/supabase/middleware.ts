@@ -7,10 +7,16 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // No credentials configured yet (e.g. before .env.local is wired): skip
-  // session refresh instead of crashing the whole app. A misconfiguration
-  // must not take down every request.
+  // No credentials configured. Before .env.local is wired this is expected,
+  // so skip session refresh instead of crashing every request. In production,
+  // though, missing env vars are a real misconfiguration that would silently
+  // run the whole app unauthenticated — fail loudly there instead.
   if (!url || !anonKey) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "Supabase env vars missing in production: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
+      );
+    }
     return supabaseResponse;
   }
 
