@@ -20,6 +20,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [ ] **Phase 0: Setup & Scaffolding** - Next.js 16 + React 19 + TS + Tailwind v4 + shadcn scaffold, route groups, dormant Supabase client skeletons, .env.example — no tables/RLS/auth yet
+- [ ] **Phase 0.1: Wiring & Tooling** (INSERTED) - Connect Supabase Staging + Vercel; Prettier/ESLint, husky+lint-staged, Vitest+Playwright, GitHub Actions CI
 - [ ] **Phase 1: Foundation & Privacy Model** - Supabase + SSR auth, RLS default-deny baseline, public/private profile split, registration with public username
 - [ ] **Phase 2: Verified Seller & Phone OTP** - Email + phone OTP + terms acceptance → server-computed Verified badge
 - [ ] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data
@@ -44,6 +45,19 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   4. `.env.example` documents every required variable (service-role key marked server-only) and the README explains how to create and connect Supabase later
   5. No table, RLS policy, or auth logic exists yet — those remain Phase 1
 **Plans**: docs/superpowers/plans/2026-06-01-phase-0-setup-scaffolding.md
+
+### Phase 0.1: Wiring & Tooling (INSERTED)
+**Goal**: The merged scaffold is connected to Supabase Staging and Vercel, with a production-ready quality base (formatting, linting, pre-commit hooks, unit + E2E testing, CI) — so Phase 1 writes only features and migrations.
+**Depends on**: Phase 0
+**Requirements**: None (infrastructure/tooling)
+**Success Criteria** (what must be TRUE):
+  1. `format:check`, `lint`, `typecheck`, `test` pass and `build` exits 0 on the clean tree
+  2. A pre-commit hook formats/lints staged files; CI gates PRs on lint + typecheck + test + build
+  3. `npm run check:supabase` connects to Staging without creating any table
+  4. `.env.local` holds Staging credentials, is untracked, and the service-role key is never `NEXT_PUBLIC_`-prefixed
+  5. The scaffold deploys to a Vercel preview and serves the placeholder home; env vars set per environment (all → Staging for now)
+  6. No table, RLS, or auth logic added
+**Plans**: docs/superpowers/plans/2026-06-01-phase-0.1-wiring-tooling.md
 
 ### Phase 1: Foundation & Privacy Model
 **Goal**: A user can register and log in, receives a public username, and gets a public profile that structurally cannot expose their private PII — privacy is guaranteed by the data model and RLS, not by app discipline.
@@ -164,11 +178,12 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Setup & Scaffolding | 0/1 | Not started | - |
+| 0. Setup & Scaffolding | 1/1 | Complete | 2026-06-01 |
+| 0.1 Wiring & Tooling | 1/1 | In review | - |
 | 1. Foundation & Privacy Model | 0/TBD | Not started | - |
 | 2. Verified Seller & Phone OTP | 0/TBD | Not started | - |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |

@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 0 — Setup & Scaffolding
+**Current focus:** Phase 0.1 — Wiring & Tooling (Supabase Staging + Vercel wired; tooling/testing/CI added)
 
 ## Current Position
 
-Phase: 0 of 11 (Setup & Scaffolding)
-Plan: 1 of 1 in current phase (executed on branch phase-0-setup)
-Status: Ready to execute / under review
-Last activity: 2026-06-01 — Phase 0 inserted (Setup & Scaffolding); Next.js 16 confirmed; scaffold executed on branch phase-0-setup
+Phase: 0.1 of 11 (Wiring & Tooling)
+Plan: 1 of 1 in current phase (executed on branch phase-0.1-wiring)
+Status: Executed — in review (Phase 0 merged to master)
+Last activity: 2026-06-01 — Phase 0.1 executed: Supabase Staging connected (CLI linked, check:supabase green) + Vercel deploy live; Prettier/ESLint, husky+lint-staged, Vitest+Playwright, GitHub Actions CI added
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -47,6 +47,9 @@ Recent decisions affecting current work:
 - [Roadmap]: Privacy/RLS guarantee and server-side EXIF strip are cross-cutting gates re-verified each phase, not standalone phases.
 - [Roadmap]: Event logging is instrumented when listings/search ship (P5/P7), not deferred to the Analytics phase (P10).
 - [Stack]: Next.js version confirmed as **16** (latest stable) on 2026-06-01, closing the open PROJECT.md "15" call. Scaffolded on 16.2.6 + React 19.2.4.
+- [Infra]: Supabase **Staging-first** — Production project deferred to ~launch; all Vercel envs (Dev/Preview/Prod) point at Staging until then. Vercel project is `patricio-durans-projects/trucksource`.
+- [Infra]: Pre-commit runs Prettier+ESLint on staged files only (husky+lint-staged); full typecheck + tests + build run in GitHub Actions CI.
+- [Infra]: Middleware guards missing Supabase env vars — skips in dev/test, hard-fails in production (a silent unauthenticated app is worse than a loud error).
 
 ### Pending Todos
 
