@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-03T20:20:29.312Z"
+last_updated: "2026-06-03T20:29:00.000Z"
 progress:
   total_phases: 11
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-06-01)
 ## Current Position
 
 Phase: 2 of 11 (Verified Seller / Phone OTP) — IN PROGRESS
-Plan: 02-02 of 5 complete (02-01 + 02-02 done; 02-03, 02-04, 02-05 pending)
-Status: 02-02 complete & committed — TDD'd toE164Plus1 (8 unit tests green) and authored lib/verify/schema.ts (sendOtp/checkOtp/acceptTerms + TERMS_VERSION). Full vitest suite green (40 passed, 1 self-skipped), tsc --noEmit clean. twilio/botid/libphonenumber-js installed.
-Last activity: 2026-06-03 — Plan 02-02: +1-only E.164 normalizer (geo allowlist, free first line of defense; rejects UK/MX before any paid Twilio send) + the single client+server Zod schema set for the verification wizard. Note: supabase/migrations/0002_verification.sql landed in commit 070c774 (pre-existing stashed work restored by the pre-commit hook) — Plan 02-03 should treat it as already committed, not re-author.
+Plan: 02-01 + 02-02 + 02-05 done; 02-03, 02-04 in flight/pending
+Status: 02-05 complete & committed — Verified Seller badge (VERF-04) now renders on /u/[username] from the anon is_verified_seller boolean RPC (shadcn Badge + lucide BadgeCheck), with the privacy contract extended (Layer 3: badge is a derived boolean, no new PII path). privacy.contract.test.ts green (8 passed, 1 self-skipped) against Staging; my four files tsc-clean.
+Last activity: 2026-06-03 — Plan 02-05: badge surfaces only for sellers who completed email + phone + marketplace terms, recomputed each read so it auto-revokes; public page reads zero PII to render it (boolean mirrors active_listing_count). Note: pre-commit hook cross-attributed sibling 02-03's lib/verify/* files into commit 5011e2f (parallel-tree stash/restore) — sibling work not rewritten; documented in 02-05-SUMMARY.
 
-Progress: [██░░░░░░░░] ~20% (2/5 plans in Phase 2)
+Progress: [███░░░░░░░] ~60% (3/5 plans in Phase 2)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██░░░░░░░░] ~20% (2/5 plans in Phase 2)
 | 01-05 | ~18 min | 2 | 2 |
 | Phase 02-verified-seller-phone-otp P02 | 3min | 2 tasks | 5 files |
 | Phase 02 P01 | ~20 min | 2 tasks | 3 files |
+| Phase 02-verified-seller-phone-otp P05 | ~4 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 02-verified-seller-phone-otp]: [Verify] sendOtpSchema/checkOtpSchema/acceptTermsSchema are the single client+server source of truth; TERMS_VERSION='2026-06-03' stamps the version the user saw onto terms acceptance.
 - [Phase 02]: [Privacy] is_verified_seller(uuid) is a recomputed SECURITY DEFINER boolean (no stored is_verified) keyed on email_confirmed_at + phone_verified_at + marketplace_terms_accepted_at; clearing any signal auto-revokes the badge; anon sees only the boolean via RPC (mirrors active_listing_count)
 - [Phase 02]: [DB] phone made nullable (registration phone = unverified pre-fill); otp_send_attempts + abuse_events are service-role-only tables (RLS enabled, zero policies = default-deny); badge keys on marketplace_terms_accepted_at, distinct from registration terms_accepted_at
+- [Phase 02]: [Privacy] Verified badge (VERF-04) renders from is_verified_seller boolean RPC on /u/[username]; public page reads no PII to render it and stays anon-safe (no force-dynamic), same posture as active_listing_count
+- [Phase 02]: [Testing] Privacy contract Layer 3 proves is_verified_seller is anon-callable and yields ONLY a boolean; the badge added no column to profiles_public and the structural PII_KEYS layer still proves phone/PII absent
 
 ### Pending Todos
 
@@ -105,5 +108,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Completed 02-02-PLAN.md (phone normalizer + shared wizard Zod schemas). toE164Plus1 + lib/verify/schema.ts shipped with 8 green unit tests; deps (twilio/botid/libphonenumber-js) installed. Next: execute 02-03 (hardened OTP send/check Server Actions: BotID → +1 geo → rate limit → spend cap → Twilio Verify), reusing toE164Plus1 + sendOtp/checkOtp schemas. Note: 0002_verification.sql is already committed (070c774).
+Stopped at: Completed 02-05-PLAN.md — Verified Seller badge (VERF-04) on /u/[username] from the anon is_verified_seller boolean RPC (shadcn Badge + BadgeCheck) + privacy contract Layer 3. Commits 5011e2f, 9c918a1. Sibling 02-03 (OTP send/check + anti-abuse: BotID → +1 geo → rate limit → spend cap → Twilio Verify) and 02-04 still in flight/pending. Note: 0002_verification.sql already committed (070c774); 02-03 lib/verify/* files were cross-attributed into 5011e2f by the pre-commit stash/restore (not rewritten).
 Resume file: None

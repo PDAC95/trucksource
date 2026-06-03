@@ -195,7 +195,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 0. Setup & Scaffolding | 1/1 | Complete | 2026-06-01 |
 | 0.1 Wiring & Tooling | 1/1 | In review | - |
 | 1. Foundation & Privacy Model | 5/5 | Complete (verified-partial) | 2026-06-03 |
-| 2. Verified Seller & Phone OTP | 0/5 | Planned | - |
+| 2. Verified Seller & Phone OTP | 3/5 | In Progress|  |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |
 | 4. My Garage | 0/TBD | Not started | - |
 | 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
