@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
+import path from "node:path";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -10,6 +11,17 @@ const env = loadEnv("", process.cwd(), "");
 
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
+  resolve: {
+    alias: {
+      // 'server-only' throws when imported outside an RSC module; under Vitest
+      // (jsdom) we import server modules directly to unit-test their logic, so
+      // alias it to a no-op. The real RSC boundary is still enforced at build.
+      "server-only": path.resolve(
+        process.cwd(),
+        "tests/stubs/server-only.ts",
+      ),
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
