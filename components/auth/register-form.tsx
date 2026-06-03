@@ -145,7 +145,7 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel>Country</FormLabel>
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={(val) => {
                     field.onChange(val);
                     // Dependent select resets when country changes.
@@ -176,7 +176,7 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel>State / Province</FormLabel>
                 <Select
-                  value={field.value}
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   disabled={!country}
                 >
