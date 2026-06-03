@@ -69,7 +69,12 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. A new account receives a public username — either a custom one the seller chooses or a system-generated one (e.g. PeterbiltParts483) if they don't
   3. Any visitor viewing a public profile sees only username, State/Province, Country, Member Since, and a live count of active listings — and the private name/phone/email/street/postal data is not present anywhere in the public response
   4. Location anywhere public renders only as general "State/Province, Country" (e.g. "Texas, USA"), never a street address or postal code
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 01-01-PLAN.md — Wave 0: env URL fix, Zod schemas, username generator, USA/Canada geo data, unit tests, shadcn primitives, Supabase dashboard config
+- [ ] 01-02-PLAN.md — Foundation migration (profiles split + RLS + signup trigger + active_listing_count) + PII-keys contract & RLS tests
+- [ ] 01-03-PLAN.md — Auth flows: register/login/logout/forgot/reset, /auth/confirm route, guarded (app) layout + header user menu
+- [ ] 01-04-PLAN.md — Public profile /u/[username] (derived listings count, no PII) + route-level contract test
+- [ ] 01-05-PLAN.md — E2E specs (auth + public profile) + human verification of the live happy path
 
 ### Phase 2: Verified Seller & Phone OTP
 **Goal**: A seller can earn a Verified badge by confirming their email, confirming their phone via one-time code, and accepting marketplace terms — and the OTP send path is hardened against SMS-pumping abuse before it is ever exposed.
@@ -184,7 +189,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 |-------|----------------|--------|-----------|
 | 0. Setup & Scaffolding | 1/1 | Complete | 2026-06-01 |
 | 0.1 Wiring & Tooling | 1/1 | In review | - |
-| 1. Foundation & Privacy Model | 0/TBD | Not started | - |
+| 1. Foundation & Privacy Model | 0/5 | Planned | - |
 | 2. Verified Seller & Phone OTP | 0/TBD | Not started | - |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |
 | 4. My Garage | 0/TBD | Not started | - |
