@@ -2,26 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-06-03T16:57:38.745Z"
+status: in_progress
+last_updated: "2026-06-03T20:20:29.312Z"
 progress:
-  total_phases: 1
+  total_phases: 11
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: verified
-last_updated: "2026-06-03T00:00:00.000Z"
-progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 10
+  completed_plans: 7
 ---
 
 # Project State
@@ -31,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 1 — Foundation & Privacy Model COMPLETE & fully verified (5/5). Auth flows (01-03), public profile (01-04), and e2e verification (01-05) all done. Live confirmation-email round-trip verified end-to-end on 2026-06-03 after wiring Resend as custom SMTP (register → email → confirm → app; public /u/<username> renders with zero PII in HTML + RSC payload). Next: Phase 2 — Verified Seller / OTP.
+**Current focus:** Phase 2 — Verified Seller / Phone OTP. Plan 02-02 done: the two pure foundation modules (toE164Plus1 +1-only geo normalizer + the shared wizard Zod schemas) the rest of the phase builds on. Next: Plan 02-03 (OTP send/check Server Actions + anti-abuse stack), then wizard UI and the verified badge.
 
 ## Current Position
 
-Phase: 1 of 11 (Foundation & Privacy Model) — COMPLETE & VERIFIED
-Plan: 5 of 5 complete in current phase
-Status: Phase 1 fully verified — all 5 plans executed and committed; the live email confirmation round-trip + value-level /u/<username> no-PII render were verified end-to-end on 2026-06-03 after wiring Resend as custom SMTP. No outstanding verification items.
-Last activity: 2026-06-03 — Closed the previously-deferred email verification: wired Resend custom SMTP on Supabase Staging (lifted the 2/h built-in cap), then verified live: register → Resend email → PKCE confirm link → (app); public /u/Kenworth8561 (logged out) shows only username/ON,Canada/Member since June 2026/0 listings with ZERO PII in HTML + RSC payload. Fixed two real bugs surfaced by the round-trip (commit 2c250a3): /auth/confirm now handles the PKCE ?code via exchangeCodeForSession; UserMenu made "use client" (Radix hydration mismatch) with logout extracted to logout-action.ts.
+Phase: 2 of 11 (Verified Seller / Phone OTP) — IN PROGRESS
+Plan: 02-02 of 5 complete (02-01 + 02-02 done; 02-03, 02-04, 02-05 pending)
+Status: 02-02 complete & committed — TDD'd toE164Plus1 (8 unit tests green) and authored lib/verify/schema.ts (sendOtp/checkOtp/acceptTerms + TERMS_VERSION). Full vitest suite green (40 passed, 1 self-skipped), tsc --noEmit clean. twilio/botid/libphonenumber-js installed.
+Last activity: 2026-06-03 — Plan 02-02: +1-only E.164 normalizer (geo allowlist, free first line of defense; rejects UK/MX before any paid Twilio send) + the single client+server Zod schema set for the verification wizard. Note: supabase/migrations/0002_verification.sql landed in commit 070c774 (pre-existing stashed work restored by the pre-commit hook) — Plan 02-03 should treat it as already committed, not re-author.
 
-Progress: [██████████] 100% (5/5 plans in Phase 1 — verified)
+Progress: [██░░░░░░░░] ~20% (2/5 plans in Phase 2)
 
 ## Performance Metrics
 
@@ -68,6 +55,8 @@ Progress: [██████████] 100% (5/5 plans in Phase 1 — verifi
 | 01-03 | ~21 min | 2 | 21 |
 | 01-04 | ~10 min | 2 | 5 |
 | 01-05 | ~18 min | 2 | 2 |
+| Phase 02-verified-seller-phone-otp P02 | 3min | 2 tasks | 5 files |
+| Phase 02 P01 | ~20 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -95,6 +84,10 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-privacy-model]: [Testing] Phase 1 **fully verified** — the privacy gate is proven structurally (contract/integration tests) AND at runtime (anon /u/<username> view-source has zero PII in HTML + RSC payload, confirmed 2026-06-03).
 - [Phase 01-foundation-privacy-model]: [Infra] Supabase **built-in email service is hard-capped at 2 emails/hour and is NOT dashboard-raisable** — Custom SMTP (Resend) was wired on Staging to lift it to 30/h, which unblocked live email verification. Resend SMTP: `smtp.resend.com:465`, user `resend`, sender `onboarding@resend.dev`. The shared `resend.dev` sender only delivers to the Resend account address — a verified own/sub-domain is a pre-launch follow-up.
 - [Phase 01-foundation-privacy-model]: [Auth] Supabase email confirmation links use the **PKCE `?code`** flow (not `?token_hash&type`); /auth/confirm must call `exchangeCodeForSession(code)`. Radix interactive components (DropdownMenu) must be `"use client"` to avoid hydration mismatches.
+- [Phase 02-verified-seller-phone-otp]: [Verify] Geo gate is a pure local function (toE164Plus1, +1/US-CA only) that runs BEFORE any Twilio call — non-+1 numbers (UK/MX) rejected free; region enforcement is NOT duplicated in the Zod phone field.
+- [Phase 02-verified-seller-phone-otp]: [Verify] sendOtpSchema/checkOtpSchema/acceptTermsSchema are the single client+server source of truth; TERMS_VERSION='2026-06-03' stamps the version the user saw onto terms acceptance.
+- [Phase 02]: [Privacy] is_verified_seller(uuid) is a recomputed SECURITY DEFINER boolean (no stored is_verified) keyed on email_confirmed_at + phone_verified_at + marketplace_terms_accepted_at; clearing any signal auto-revokes the badge; anon sees only the boolean via RPC (mirrors active_listing_count)
+- [Phase 02]: [DB] phone made nullable (registration phone = unverified pre-fill); otp_send_attempts + abuse_events are service-role-only tables (RLS enabled, zero policies = default-deny); badge keys on marketplace_terms_accepted_at, distinct from registration terms_accepted_at
 
 ### Pending Todos
 
@@ -112,5 +105,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Phase 1 fully verified — wired Resend custom SMTP, verified the live email round-trip + anon public-profile no-PII render end-to-end, and fixed the two bugs it surfaced (PKCE confirm + UserMenu hydration). Next: plan/execute Phase 2 (Verified Seller / OTP). Optional first: /gsd:discuss-phase 2 to pin Twilio OTP + anti SMS-pumping + Verified-badge decisions.
+Stopped at: Completed 02-02-PLAN.md (phone normalizer + shared wizard Zod schemas). toE164Plus1 + lib/verify/schema.ts shipped with 8 green unit tests; deps (twilio/botid/libphonenumber-js) installed. Next: execute 02-03 (hardened OTP send/check Server Actions: BotID → +1 geo → rate limit → spend cap → Twilio Verify), reusing toE164Plus1 + sendOtp/checkOtp schemas. Note: 0002_verification.sql is already committed (070c774).
 Resume file: None

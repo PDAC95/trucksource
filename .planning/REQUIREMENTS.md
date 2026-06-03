@@ -25,10 +25,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Verification
 
-- [ ] **VERF-01**: Seller can verify their email address
-- [ ] **VERF-02**: Seller can verify their phone number via one-time code
-- [ ] **VERF-03**: Seller must accept marketplace terms to become verified
-- [ ] **VERF-04**: A Verified Seller badge is shown on the profile of sellers who completed email + phone verification + accepted terms
+- [x] **VERF-01**: Seller can verify their email address
+- [x] **VERF-02**: Seller can verify their phone number via one-time code
+- [x] **VERF-03**: Seller must accept marketplace terms to become verified
+- [x] **VERF-04**: A Verified Seller badge is shown on the profile of sellers who completed email + phone verification + accepted terms
 
 ### Fitment Library
 
@@ -149,10 +149,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRIV-02 | Phase 1 | Complete |
 | PRIV-03 | Phase 1 | Complete |
 | PRIV-04 | Phase 1 | Complete |
-| VERF-01 | Phase 2 | Pending |
-| VERF-02 | Phase 2 | Pending |
-| VERF-03 | Phase 2 | Pending |
-| VERF-04 | Phase 2 | Pending |
+| VERF-01 | Phase 2 | Complete |
+| VERF-02 | Phase 2 | Complete |
+| VERF-03 | Phase 2 | Complete |
+| VERF-04 | Phase 2 | Complete |
 | FITL-01 | Phase 3 | Pending |
 | FITL-02 | Phase 3 | Pending |
 | FITL-03 | Phase 3 | Pending |
