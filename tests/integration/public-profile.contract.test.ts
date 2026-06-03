@@ -49,7 +49,7 @@ d("route contract: /u/[username] query exposes zero PII", () => {
       return;
     }
 
-    const row = data[0] as Record<string, unknown>;
+    const row = data[0] as unknown as Record<string, unknown>;
     const keys = Object.keys(row);
 
     // Returned keys are a SUBSET of the allowed page columns...
