@@ -39,4 +39,25 @@ d("RLS: profiles_private is anon-deny, profiles_public is anon-read", () => {
     expect(error).toBeNull();
     expect(data).toBe(0);
   });
+
+  // Phase 2 (0002_verification.sql): the anti-abuse tables are service-role-only.
+  // They have RLS enabled with NO anon/authenticated policy, so an anon SELECT is
+  // filtered to 0 rows (default-deny → empty array, NOT an error).
+  it("anon SELECT on otp_send_attempts returns 0 rows (RLS default-deny)", async () => {
+    const supabase = anonClient();
+    const { data, error } = await supabase
+      .from("otp_send_attempts")
+      .select("*");
+    expect(error).toBeNull();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data).toHaveLength(0);
+  });
+
+  it("anon SELECT on abuse_events returns 0 rows (RLS default-deny)", async () => {
+    const supabase = anonClient();
+    const { data, error } = await supabase.from("abuse_events").select("*");
+    expect(error).toBeNull();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data).toHaveLength(0);
+  });
 });
