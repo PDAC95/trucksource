@@ -10,7 +10,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Accounts & Identity
 
 - [x] **ACCT-01**: Seller can register an account with private data (First Name, Last Name, Email, Phone, State/Province, Country)
-- [ ] **ACCT-02**: Seller's private data (name, phone, email, street address, postal code) is never queryable or renderable on any public surface
+- [x] **ACCT-02**: Seller's private data (name, phone, email, street address, postal code) is never queryable or renderable on any public surface
 - [x] **ACCT-03**: Seller can choose a custom public username (e.g. ChromeKing79)
 - [x] **ACCT-04**: System can generate a public username automatically (e.g. PeterbiltParts483) if the seller does not choose one
 - [ ] **ACCT-05**: User can log in and stay logged in across sessions
@@ -18,9 +18,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Privacy & Public Profile
 
-- [ ] **PRIV-01**: Public seller profile displays only username, State/Province, Country, Member Since date, and number of active listings
-- [ ] **PRIV-02**: Location is displayed only as general "State/Province, Country" (e.g. "Texas, USA") — never street address or postal code
-- [ ] **PRIV-03**: Number of active listings on a profile is derived from current listings, not manually stored
+- [x] **PRIV-01**: Public seller profile displays only username, State/Province, Country, Member Since date, and number of active listings
+- [x] **PRIV-02**: Location is displayed only as general "State/Province, Country" (e.g. "Texas, USA") — never street address or postal code
+- [x] **PRIV-03**: Number of active listings on a profile is derived from current listings, not manually stored
 - [ ] **PRIV-04**: Buyer can view another user's public profile
 
 ### Verification
@@ -140,14 +140,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ACCT-01 | Phase 1 | Complete |
-| ACCT-02 | Phase 1 | Pending |
+| ACCT-02 | Phase 1 | Complete |
 | ACCT-03 | Phase 1 | Complete |
 | ACCT-04 | Phase 1 | Complete |
 | ACCT-05 | Phase 1 | Pending |
 | ACCT-06 | Phase 1 | Pending |
-| PRIV-01 | Phase 1 | Pending |
-| PRIV-02 | Phase 1 | Pending |
-| PRIV-03 | Phase 1 | Pending |
+| PRIV-01 | Phase 1 | Complete |
+| PRIV-02 | Phase 1 | Complete |
+| PRIV-03 | Phase 1 | Complete |
 | PRIV-04 | Phase 1 | Pending |
 | VERF-01 | Phase 2 | Pending |
 | VERF-02 | Phase 2 | Pending |

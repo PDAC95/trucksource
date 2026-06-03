@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-03T13:07:17.868Z"
+last_updated: "2026-06-03T13:37:26.742Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,35 +18,40 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 1 — Foundation & Privacy Model (Plan 01 of 5 complete: env fix, shared Zod validation, username generator, geo data, shadcn UI, confirmation gate)
+**Current focus:** Phase 1 — Foundation & Privacy Model (Plan 02 of 5 complete: privacy migration applied to Staging + PII-keys/RLS gate green)
 
 ## Current Position
 
 Phase: 1 of 11 (Foundation & Privacy Model)
-Plan: 1 of 5 complete in current phase (next: 01-02)
-Status: Plan 01-01 executed and committed
-Last activity: 2026-06-03 — Plan 01-01 complete: corrected Supabase URL env bug + NEXT_PUBLIC_SITE_URL, shared Zod auth schemas, PII-free truck-word username generator, USA/Canada geo data (all unit-tested), shadcn auth UI primitives, and Supabase confirmation gate configured (Confirm email ON + redirect allowlist)
+Plan: 2 of 5 complete in current phase (next: 01-03)
+Status: Plan 01-02 executed and committed
+Last activity: 2026-06-03 — Plan 01-02 complete: authored 0001_foundation_privacy migration (profiles_public/profiles_private split, RLS default-deny, handle_new_user signup trigger, guard_username_rename, active_listing_count) and applied it to Supabase Staging; PII-keys contract test + RLS test green (privacy gate proven structurally)
 
-Progress: [██░░░░░░░░] 20% (1/5 plans in Phase 1)
+Progress: [████░░░░░░] 40% (2/5 plans in Phase 1)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: ~25 min
-- Total execution time: ~0.4 hours
+- Total plans completed: 2
+- Average duration: ~16 min
+- Total execution time: ~0.55 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 (Foundation & Privacy) | 1/5 | ~25 min | ~25 min |
+| 1 (Foundation & Privacy) | 2/5 | ~33 min | ~16 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~25 min)
-- Trend: —
+- Last 5 plans: 01-01 (~25 min), 01-02 (~8 min)
+- Trend: faster (migration + tests vs broader scaffolding)
 
 *Updated after each plan completion*
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| 01-01 | ~25 min | 4 | 17 |
+| 01-02 | ~8 min | 2 | 5 |
 
 ## Accumulated Context
 
@@ -64,6 +69,9 @@ Recent decisions affecting current work:
 - [Infra]: Pre-commit runs Prettier+ESLint on staged files only (husky+lint-staged); full typecheck + tests + build run in GitHub Actions CI.
 - [Infra]: Middleware guards missing Supabase env vars — skips in dev/test, hard-fails in production (a silent unauthenticated app is worse than a loud error).
 - [Phase 01-foundation-privacy-model]: [Infra] Supabase Staging email-confirmation gate enabled: Confirm email ON; Site URL http://localhost:3000; redirect allowlist http://localhost:3000/** + https://*-patricio-durans-projects.vercel.app/** (prod origin added at launch)
+- [Phase 01-foundation-privacy-model]: [Privacy] 0001_foundation_privacy applied to Staging — privacy is structural (profiles_public/profiles_private split, RLS default-deny, no anon SELECT on private); proven by the PII-keys contract test (column-absence) + RLS test.
+- [Phase 01-foundation-privacy-model]: [Testing] Vitest now runs tests/integration/** against Staging with .env.local anon key; the PII denylist lives once in tests/integration/_supabase.ts as the reusable cross-cutting gate.
+- [Phase 01-foundation-privacy-model]: [Privacy] active_listing_count(uuid) ships returning 0 in P1; Phase 5 rewrites only its body to count active listings.
 
 ### Pending Todos
 
@@ -80,5 +88,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Completed 01-01-PLAN.md (Foundation: env, validation, geo, username, UI + confirmation gate). Next: plan/execute 01-02.
+Stopped at: Completed 01-02-PLAN.md (foundation privacy migration applied to Staging + PII-keys/RLS integration gate green). Next: plan/execute 01-03.
 Resume file: None
