@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-06-03T20:29:00.000Z"
+last_updated: "2026-06-03T20:33:16.359Z"
 progress:
   total_phases: 11
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-06-01)
 ## Current Position
 
 Phase: 2 of 11 (Verified Seller / Phone OTP) — IN PROGRESS
-Plan: 02-01 + 02-02 + 02-05 done; 02-03, 02-04 in flight/pending
-Status: 02-05 complete & committed — Verified Seller badge (VERF-04) now renders on /u/[username] from the anon is_verified_seller boolean RPC (shadcn Badge + lucide BadgeCheck), with the privacy contract extended (Layer 3: badge is a derived boolean, no new PII path). privacy.contract.test.ts green (8 passed, 1 self-skipped) against Staging; my four files tsc-clean.
-Last activity: 2026-06-03 — Plan 02-05: badge surfaces only for sellers who completed email + phone + marketplace terms, recomputed each read so it auto-revokes; public page reads zero PII to render it (boolean mirrors active_listing_count). Note: pre-commit hook cross-attributed sibling 02-03's lib/verify/* files into commit 5011e2f (parallel-tree stash/restore) — sibling work not rewritten; documented in 02-05-SUMMARY.
+Plan: 02-01 + 02-02 + 02-03 + 02-05 done; 02-04 (wizard UI) pending
+Status: 02-03 complete & committed — hardened OTP pipeline as Server Actions (sendOtp/checkOtp/acceptTerms) with the load-bearing guard order BotID → getClaims → Zod/+1 geo → rate-limit(phone+IP) → spend-cap → Twilio Verify. 15 new unit tests green (guard order, approved-only verify, rate-limit edges); full suite 60 passed/1 skipped; tsc + build clean. lib/verify/{twilio,ratelimit,alert}.ts + lib/actions/verify.ts + BotID wiring shipped.
+Last activity: 2026-06-03 — Plan 02-03: a bot/over-limit/out-of-region request now costs ZERO SMS (every guard runs before the paid Twilio call); phone_verified_at set only on Twilio 'approved'; marketplace_terms_accepted_at + terms_version persisted (owner RLS); spend-cap breach writes abuse_events + best-effort Resend admin email. Note: Task 1 lib/verify/* files were cross-attributed into sibling commit 5011e2f by the parallel-tree pre-commit stash/restore (not rewritten); Tasks 2-3 committed on 93f2027 + 1cd609e.
 
-Progress: [███░░░░░░░] ~60% (3/5 plans in Phase 2)
+Progress: [████░░░░░░] ~80% (4/5 plans in Phase 2)
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [███░░░░░░░] ~60% (3/5 plans in Phase 2)
 | Phase 02-verified-seller-phone-otp P02 | 3min | 2 tasks | 5 files |
 | Phase 02 P01 | ~20 min | 2 tasks | 3 files |
 | Phase 02-verified-seller-phone-otp P05 | ~4 min | 2 tasks | 4 files |
+| Phase 02-verified-seller-phone-otp P03 | 7min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Recent decisions affecting current work:
 - [Phase 02]: [DB] phone made nullable (registration phone = unverified pre-fill); otp_send_attempts + abuse_events are service-role-only tables (RLS enabled, zero policies = default-deny); badge keys on marketplace_terms_accepted_at, distinct from registration terms_accepted_at
 - [Phase 02]: [Privacy] Verified badge (VERF-04) renders from is_verified_seller boolean RPC on /u/[username]; public page reads no PII to render it and stays anon-safe (no force-dynamic), same posture as active_listing_count
 - [Phase 02]: [Testing] Privacy contract Layer 3 proves is_verified_seller is anon-callable and yields ONLY a boolean; the badge added no column to profiles_public and the structural PII_KEYS layer still proves phone/PII absent
+- [Phase 02]: [Verify] OTP send guard order is the security spine and load-bearing: BotID → getClaims → Zod/+1 geo → rate-limit(phone 3/hr+5/day, parallel per-IP cap) → global spend cap → Twilio. Every guard runs BEFORE the paid send; first failure returns. Spend-cap default 200/day via OTP_SEND_DAILY_CAP env (tunable without redeploy), checked first among counters.
+- [Phase 02]: [Verify] Only the abuse store (otp_send_attempts/abuse_events) uses the service-role admin client; all owner PII writes (phone, phone_verified_at, marketplace terms) go through the cookie-bound getClaims user client so owner RLS scopes them. Abuse alerting is best-effort/error-swallowed — the abuse_events row is the durable record, the Resend admin email is opportunistic.
+- [Phase 02]: [Infra] botid@1.5.11 moved initBotId to 'botid/client/core' (the 'botid/client' entry is now the <BotIdClient> component). [Testing] 'server-only' is aliased to a no-op stub (tests/stubs/server-only.ts) in vitest.config so server-only lib modules unit-test under jsdom; the real RSC boundary is still enforced at Next build.
 
 ### Pending Todos
 
@@ -108,5 +112,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Completed 02-05-PLAN.md — Verified Seller badge (VERF-04) on /u/[username] from the anon is_verified_seller boolean RPC (shadcn Badge + BadgeCheck) + privacy contract Layer 3. Commits 5011e2f, 9c918a1. Sibling 02-03 (OTP send/check + anti-abuse: BotID → +1 geo → rate limit → spend cap → Twilio Verify) and 02-04 still in flight/pending. Note: 0002_verification.sql already committed (070c774); 02-03 lib/verify/* files were cross-attributed into 5011e2f by the pre-commit stash/restore (not rewritten).
+Stopped at: Completed 02-03-PLAN.md — hardened OTP pipeline (sendOtp/checkOtp/acceptTerms Server Actions) with the load-bearing guard order BotID → getClaims → Zod/+1 geo → rate-limit(phone+IP) → spend-cap → Twilio Verify; BotID wiring (instrumentation-client + withBotId). 15 new unit tests green; full suite 60 passed/1 skipped; tsc + build clean. Commits: 5011e2f (Task 1 lib/verify/* — cross-attributed by parallel pre-commit), 93f2027 (Task 2 actions + BotID), 1cd609e (Task 3 tests). Remaining in Phase 2: 02-04 (verification wizard UI — phone/OTP/terms steps, resume-on-abandon) is the last plan. User setup pending: Twilio Verify Service + creds, Resend key + ABUSE_ALERT_EMAIL (see .env.example / 02-03-SUMMARY).
 Resume file: None
