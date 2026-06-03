@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+"use client";
+
 import { LogOutIcon, UserIcon } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,18 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { logout } from "@/components/layout/logout-action";
 
-// Inline 'use server' logout: clears the session then sends the user to /login.
-// Defined here so the menu item can submit it directly (ACCT-06).
-async function logout() {
-  "use server";
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
-}
-
-// Header dropdown shown on every (app) page. The username comes from the
-// world-readable profiles_public (never PII).
+// Header dropdown shown on every (app) page. Client component because Radix
+// DropdownMenu uses client-only state/IDs (rendering it on the server caused a
+// hydration mismatch). The username comes from world-readable profiles_public
+// (never PII); logout is the imported 'use server' action (ACCT-06).
 export function UserMenu({ username }: { username: string }) {
   return (
     <DropdownMenu>
