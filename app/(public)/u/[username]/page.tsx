@@ -35,6 +35,13 @@ export default async function PublicProfilePage({
   });
   const count = activeCount ?? 0;
 
+  // Verified Seller badge (VERF-04) is a SECURITY DEFINER boolean — recomputed
+  // each read, so clearing any signal (email/phone/marketplace terms) auto-revokes
+  // it. Like active_listing_count, it exposes only the derived boolean, never PII.
+  const { data: verified } = await supabase.rpc("is_verified_seller", {
+    profile_id: profile.id,
+  });
+
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
       <PublicProfileHeader
@@ -43,6 +50,7 @@ export default async function PublicProfilePage({
         country={profile.country}
         memberSince={profile.member_since}
         activeListingCount={count}
+        verified={Boolean(verified)}
       />
       {/* Phase 1 has no listings yet — the grid arrives in Phase 5. */}
       <EmptyListings />

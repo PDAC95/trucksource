@@ -1,4 +1,5 @@
-import { MapPin, CalendarDays, Package } from "lucide-react";
+import { MapPin, CalendarDays, Package, BadgeCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface PublicProfileHeaderProps {
   username: string;
@@ -7,6 +8,11 @@ interface PublicProfileHeaderProps {
   /** ISO timestamp from profiles_public.member_since. */
   memberSince: string;
   activeListingCount: number;
+  /**
+   * Server-computed Verified Seller flag (VERF-04). A derived boolean from the
+   * is_verified_seller RPC — NOT PII. The badge renders only when true.
+   */
+  verified: boolean;
 }
 
 // Compact marketplace-seller header (header + grid feel, not a bare info card).
@@ -25,6 +31,7 @@ export function PublicProfileHeader({
   country,
   memberSince,
   activeListingCount,
+  verified,
 }: PublicProfileHeaderProps) {
   const initial = username.charAt(0).toUpperCase();
   const listingLabel =
@@ -40,9 +47,16 @@ export function PublicProfileHeader({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          {username}
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {username}
+          </h1>
+          {verified && (
+            <Badge variant="secondary" className="gap-1">
+              <BadgeCheck className="size-3.5" aria-hidden /> Verified
+            </Badge>
+          )}
+        </div>
 
         <dl className="flex flex-col gap-1.5 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5">
           <div className="flex items-center gap-1.5">
