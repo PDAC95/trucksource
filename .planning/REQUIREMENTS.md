@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Accounts & Identity
 
-- [ ] **ACCT-01**: Seller can register an account with private data (First Name, Last Name, Email, Phone, State/Province, Country)
+- [x] **ACCT-01**: Seller can register an account with private data (First Name, Last Name, Email, Phone, State/Province, Country)
 - [ ] **ACCT-02**: Seller's private data (name, phone, email, street address, postal code) is never queryable or renderable on any public surface
-- [ ] **ACCT-03**: Seller can choose a custom public username (e.g. ChromeKing79)
-- [ ] **ACCT-04**: System can generate a public username automatically (e.g. PeterbiltParts483) if the seller does not choose one
+- [x] **ACCT-03**: Seller can choose a custom public username (e.g. ChromeKing79)
+- [x] **ACCT-04**: System can generate a public username automatically (e.g. PeterbiltParts483) if the seller does not choose one
 - [ ] **ACCT-05**: User can log in and stay logged in across sessions
 - [ ] **ACCT-06**: User can log out from any page
 
@@ -139,10 +139,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ACCT-01 | Phase 1 | Pending |
+| ACCT-01 | Phase 1 | Complete |
 | ACCT-02 | Phase 1 | Pending |
-| ACCT-03 | Phase 1 | Pending |
-| ACCT-04 | Phase 1 | Pending |
+| ACCT-03 | Phase 1 | Complete |
+| ACCT-04 | Phase 1 | Complete |
 | ACCT-05 | Phase 1 | Pending |
 | ACCT-06 | Phase 1 | Pending |
 | PRIV-01 | Phase 1 | Pending |
