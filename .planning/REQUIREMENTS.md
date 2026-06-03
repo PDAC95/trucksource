@@ -21,7 +21,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PRIV-01**: Public seller profile displays only username, State/Province, Country, Member Since date, and number of active listings
 - [x] **PRIV-02**: Location is displayed only as general "State/Province, Country" (e.g. "Texas, USA") — never street address or postal code
 - [x] **PRIV-03**: Number of active listings on a profile is derived from current listings, not manually stored
-- [ ] **PRIV-04**: Buyer can view another user's public profile
+- [x] **PRIV-04**: Buyer can view another user's public profile
 
 ### Verification
 
@@ -148,7 +148,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRIV-01 | Phase 1 | Complete |
 | PRIV-02 | Phase 1 | Complete |
 | PRIV-03 | Phase 1 | Complete |
-| PRIV-04 | Phase 1 | Pending |
+| PRIV-04 | Phase 1 | Complete |
 | VERF-01 | Phase 2 | Pending |
 | VERF-02 | Phase 2 | Pending |
 | VERF-03 | Phase 2 | Pending |

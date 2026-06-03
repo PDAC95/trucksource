@@ -8,7 +8,7 @@ progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 1 — Foundation & Privacy Model (Plan 02 of 5 complete: privacy migration applied to Staging + PII-keys/RLS gate green)
+**Current focus:** Phase 1 — Foundation & Privacy Model (Plan 04 of 5 complete: public seller profile at /u/[username] reads profiles_public only, count via active_listing_count RPC; route-level PII gate green)
 
 ## Current Position
 
 Phase: 1 of 11 (Foundation & Privacy Model)
-Plan: 2 of 5 complete in current phase (next: 01-03)
-Status: Plan 01-02 executed and committed
-Last activity: 2026-06-03 — Plan 01-02 complete: authored 0001_foundation_privacy migration (profiles_public/profiles_private split, RLS default-deny, handle_new_user signup trigger, guard_username_rename, active_listing_count) and applied it to Supabase Staging; PII-keys contract test + RLS test green (privacy gate proven structurally)
+Plan: 04 of 5 complete in current phase
+Status: Plan 01-04 executed and committed
+Last activity: 2026-06-03 — Plan 01-04 complete: built the public seller profile at /u/[username] (anon-readable Server Component reading profiles_public ONLY, active-listings count derived via active_listing_count RPC, empty-listings + not-found states) and a route-level PII contract test asserting the page's exact query leaks zero PII and the RPC is anon-callable
 
-Progress: [████░░░░░░] 40% (2/5 plans in Phase 1)
+Progress: [██████░░░░] 60% (3/5 plans in Phase 1)
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [████░░░░░░] 40% (2/5 plans in Phase 1)
 |------|----------|-------|-------|
 | 01-01 | ~25 min | 4 | 17 |
 | 01-02 | ~8 min | 2 | 5 |
+| 01-04 | ~10 min | 2 | 5 |
 
 ## Accumulated Context
 
@@ -72,6 +73,7 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-privacy-model]: [Privacy] 0001_foundation_privacy applied to Staging — privacy is structural (profiles_public/profiles_private split, RLS default-deny, no anon SELECT on private); proven by the PII-keys contract test (column-absence) + RLS test.
 - [Phase 01-foundation-privacy-model]: [Testing] Vitest now runs tests/integration/** against Staging with .env.local anon key; the PII denylist lives once in tests/integration/_supabase.ts as the reusable cross-cutting gate.
 - [Phase 01-foundation-privacy-model]: [Privacy] active_listing_count(uuid) ships returning 0 in P1; Phase 5 rewrites only its body to count active listings.
+- [Phase 01-foundation-privacy-model]: [Public-surface] /u/[username] public profile reads profiles_public ONLY via enumerated columns (zero PII), count derived via active_listing_count RPC (not stored), left cacheable (no force-dynamic) since anon-safe; route-level PII contract test mirrors the page's exact query.
 
 ### Pending Todos
 
@@ -88,5 +90,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Completed 01-02-PLAN.md (foundation privacy migration applied to Staging + PII-keys/RLS integration gate green). Next: plan/execute 01-03.
+Stopped at: Completed 01-04-PLAN.md (public seller profile at /u/[username] + route-level PII contract gate green).
 Resume file: None
