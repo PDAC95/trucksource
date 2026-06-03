@@ -8,7 +8,7 @@ progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 1 — Foundation & Privacy Model (Plan 04 of 5 complete: public seller profile at /u/[username] reads profiles_public only, count via active_listing_count RPC; route-level PII gate green)
+**Current focus:** Phase 1 — Foundation & Privacy Model (4 of 5 plans complete: auth flows 01-03 done — register/confirm gate/login/logout/forgot-reset + live/auto username; public profile 01-04 done; next: 01-05)
 
 ## Current Position
 
 Phase: 1 of 11 (Foundation & Privacy Model)
-Plan: 04 of 5 complete in current phase
-Status: Plan 01-04 executed and committed
-Last activity: 2026-06-03 — Plan 01-04 complete: built the public seller profile at /u/[username] (anon-readable Server Component reading profiles_public ONLY, active-listings count derived via active_listing_count RPC, empty-listings + not-found states) and a route-level PII contract test asserting the page's exact query leaks zero PII and the RPC is anon-callable
+Plan: 4 of 5 complete in current phase (next: 01-05)
+Status: Plans 01-03 (auth flows) and 01-04 (public profile) executed and committed
+Last activity: 2026-06-03 — Plan 01-03 complete: full email/password auth flow — registration (6 PII fields -> metadata -> handle_new_user trigger) with live + auto username, /auth/confirm verifyOtp token exchange, the confirmation gate enforced by getClaims() in the force-dynamic (app) layout, login (persistent session), header user-menu logout, and forgot/reset password; every form re-validates the shared Zod schema inside its Server Action
 
-Progress: [██████░░░░] 60% (3/5 plans in Phase 1)
+Progress: [████████░░] 80% (4/5 plans in Phase 1)
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [██████░░░░] 60% (3/5 plans in Phase 1)
 |------|----------|-------|-------|
 | 01-01 | ~25 min | 4 | 17 |
 | 01-02 | ~8 min | 2 | 5 |
+| 01-03 | ~21 min | 2 | 21 |
 | 01-04 | ~10 min | 2 | 5 |
 
 ## Accumulated Context
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-privacy-model]: [Testing] Vitest now runs tests/integration/** against Staging with .env.local anon key; the PII denylist lives once in tests/integration/_supabase.ts as the reusable cross-cutting gate.
 - [Phase 01-foundation-privacy-model]: [Privacy] active_listing_count(uuid) ships returning 0 in P1; Phase 5 rewrites only its body to count active listings.
 - [Phase 01-foundation-privacy-model]: [Public-surface] /u/[username] public profile reads profiles_public ONLY via enumerated columns (zero PII), count derived via active_listing_count RPC (not stored), left cacheable (no force-dynamic) since anon-safe; route-level PII contract test mirrors the page's exact query.
+- [Phase 01-foundation-privacy-model]: [Auth] Confirmation gate is structural: getClaims() in the force-dynamic (app) layout redirects to /login when no claims — unconfirmed = no session. Every (app) route inherits the gate; no per-page auth checks.
+- [Phase 01-foundation-privacy-model]: [Auth] Forms serialize RHF-validated values into FormData (Radix selects/checkbox don't emit native fields) and dispatch via useActionState; the Server Action re-validates the same Zod schema (trust boundary).
+- [Phase 01-foundation-privacy-model]: [Routing] Removed orphaned Phase-0 (public)/page.tsx so the guarded (app) owns / as the authenticated landing (resolved a parallel-route collision).
 
 ### Pending Todos
 
@@ -90,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Completed 01-04-PLAN.md (public seller profile at /u/[username] + route-level PII contract gate green).
+Stopped at: Completed 01-03-PLAN.md (auth flows) and 01-04-PLAN.md (public profile). Next: plan/execute 01-05.
 Resume file: None

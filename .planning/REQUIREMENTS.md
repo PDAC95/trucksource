@@ -13,8 +13,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ACCT-02**: Seller's private data (name, phone, email, street address, postal code) is never queryable or renderable on any public surface
 - [x] **ACCT-03**: Seller can choose a custom public username (e.g. ChromeKing79)
 - [x] **ACCT-04**: System can generate a public username automatically (e.g. PeterbiltParts483) if the seller does not choose one
-- [ ] **ACCT-05**: User can log in and stay logged in across sessions
-- [ ] **ACCT-06**: User can log out from any page
+- [x] **ACCT-05**: User can log in and stay logged in across sessions
+- [x] **ACCT-06**: User can log out from any page
 
 ### Privacy & Public Profile
 
@@ -143,8 +143,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACCT-02 | Phase 1 | Complete |
 | ACCT-03 | Phase 1 | Complete |
 | ACCT-04 | Phase 1 | Complete |
-| ACCT-05 | Phase 1 | Pending |
-| ACCT-06 | Phase 1 | Pending |
+| ACCT-05 | Phase 1 | Complete |
+| ACCT-06 | Phase 1 | Complete |
 | PRIV-01 | Phase 1 | Complete |
 | PRIV-02 | Phase 1 | Complete |
 | PRIV-03 | Phase 1 | Complete |
