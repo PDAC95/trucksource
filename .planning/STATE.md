@@ -15,7 +15,7 @@ progress:
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verified-partial
+status: verified
 last_updated: "2026-06-03T00:00:00.000Z"
 progress:
   total_phases: 1
@@ -31,16 +31,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 1 — Foundation & Privacy Model COMPLETE (5/5, verified-partial). Auth flows (01-03), public profile (01-04), and e2e verification (01-05) all done. One verification item deferred: the live confirmation-email round-trip (blocked by Supabase's 2-email/hour built-in cap → needs custom SMTP/Resend). Next: Phase 2 — Verified Seller / OTP.
+**Current focus:** Phase 1 — Foundation & Privacy Model COMPLETE & fully verified (5/5). Auth flows (01-03), public profile (01-04), and e2e verification (01-05) all done. Live confirmation-email round-trip verified end-to-end on 2026-06-03 after wiring Resend as custom SMTP (register → email → confirm → app; public /u/<username> renders with zero PII in HTML + RSC payload). Next: Phase 2 — Verified Seller / OTP.
 
 ## Current Position
 
-Phase: 1 of 11 (Foundation & Privacy Model) — COMPLETE (verified-partial)
+Phase: 1 of 11 (Foundation & Privacy Model) — COMPLETE & VERIFIED
 Plan: 5 of 5 complete in current phase
-Status: Phase 1 closed verified-partial — all 5 plans executed and committed; the live email confirmation round-trip + value-level /u/<username> no-PII render are DEFERRED behind custom SMTP (see Pending Todos)
-Last activity: 2026-06-03 — Plan 01-05 complete: Playwright e2e suite (register→check-email gate, (app) confirmation gate, login-persist/logout, anon public-profile render + value-level no-PII assertion, unknown-username 404). Automated: confirmation gate + 404 pass; authed/seeded legs skip without secrets; register soft-skips on Supabase's 429 email throttle. Human checkpoint partial-pass: gate redirect, /register render + live username-availability + form submit reaching Supabase signUp, and the 404 all confirmed manually. Live email click + value-level no-PII render deferred (Supabase email cap = 2/h, not dashboard-raisable → custom SMTP).
+Status: Phase 1 fully verified — all 5 plans executed and committed; the live email confirmation round-trip + value-level /u/<username> no-PII render were verified end-to-end on 2026-06-03 after wiring Resend as custom SMTP. No outstanding verification items.
+Last activity: 2026-06-03 — Closed the previously-deferred email verification: wired Resend custom SMTP on Supabase Staging (lifted the 2/h built-in cap), then verified live: register → Resend email → PKCE confirm link → (app); public /u/Kenworth8561 (logged out) shows only username/ON,Canada/Member since June 2026/0 listings with ZERO PII in HTML + RSC payload. Fixed two real bugs surfaced by the round-trip (commit 2c250a3): /auth/confirm now handles the PKCE ?code via exchangeCodeForSession; UserMenu made "use client" (Radix hydration mismatch) with logout extracted to logout-action.ts.
 
-Progress: [██████████] 100% (5/5 plans in Phase 1 — verified-partial)
+Progress: [██████████] 100% (5/5 plans in Phase 1 — verified)
 
 ## Performance Metrics
 
@@ -92,12 +92,14 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-privacy-model]: [Auth] Confirmation gate is structural: getClaims() in the force-dynamic (app) layout redirects to /login when no claims — unconfirmed = no session. Every (app) route inherits the gate; no per-page auth checks.
 - [Phase 01-foundation-privacy-model]: [Auth] Forms serialize RHF-validated values into FormData (Radix selects/checkbox don't emit native fields) and dispatch via useActionState; the Server Action re-validates the same Zod schema (trust boundary).
 - [Phase 01-foundation-privacy-model]: [Routing] Removed orphaned Phase-0 (public)/page.tsx so the guarded (app) owns / as the authenticated landing (resolved a parallel-route collision).
-- [Phase 01-foundation-privacy-model]: [Testing] Phase 1 closed **verified-partial** (user-approved): automated e2e (confirmation gate + unknown-username 404) pass and the manual gate/register/404 are confirmed; the live email round-trip + value-level /u/<username> no-PII render are deferred.
-- [Phase 01-foundation-privacy-model]: [Infra] Supabase **built-in email service is hard-capped at 2 emails/hour and is NOT dashboard-raisable** — lifting it requires Custom SMTP (Resend). The cap was exhausted (HTTP 429 over_email_send_rate_limit), which itself proves the register code reaches Supabase signUp. The e2e register spec soft-skips on this 429 so CI stays green.
+- [Phase 01-foundation-privacy-model]: [Testing] Phase 1 **fully verified** — the privacy gate is proven structurally (contract/integration tests) AND at runtime (anon /u/<username> view-source has zero PII in HTML + RSC payload, confirmed 2026-06-03).
+- [Phase 01-foundation-privacy-model]: [Infra] Supabase **built-in email service is hard-capped at 2 emails/hour and is NOT dashboard-raisable** — Custom SMTP (Resend) was wired on Staging to lift it to 30/h, which unblocked live email verification. Resend SMTP: `smtp.resend.com:465`, user `resend`, sender `onboarding@resend.dev`. The shared `resend.dev` sender only delivers to the Resend account address — a verified own/sub-domain is a pre-launch follow-up.
+- [Phase 01-foundation-privacy-model]: [Auth] Supabase email confirmation links use the **PKCE `?code`** flow (not `?token_hash&type`); /auth/confirm must call `exchangeCodeForSession(code)`. Radix interactive components (DropdownMenu) must be `"use client"` to avoid hydration mismatches.
 
 ### Pending Todos
 
-- **Configure custom SMTP (Resend) for Supabase auth emails, then verify the live Phase 1 email round-trip (register→confirm→login→logout) + value-level /u/<username> no-PII render.** Blocked by Supabase's 2-email/hour built-in cap (not dashboard-raisable). Once SMTP is configured, set the `E2E_TEST_*` secrets (+ PII fixtures) to run the env-gated e2e legs automatically. Tracked in `.planning/phases/01-foundation-privacy-model/deferred-items.md`.
+- **[Pre-launch] Verify an own/sub-domain in Resend** (e.g. `takeoffparts.com` or `mail.…`) so auth emails reach any recipient, not just the Resend account address. Centralized under the 12GA Customs Resend account (one account, one domain per brand).
+- **[Minor] Replace scaffold metadata** in `app/layout.tsx` (`<title>`/description still say "Create Next App") with Take-Off Parts branding. Tracked in `.planning/phases/01-foundation-privacy-model/deferred-items.md`.
 
 ### Blockers/Concerns
 
@@ -110,5 +112,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-03
-Stopped at: Completed 01-05-PLAN.md (e2e verification) — Phase 1 closed verified-partial. Live email confirmation round-trip + value-level /u/<username> no-PII render deferred behind custom SMTP (Resend). Next: configure SMTP to close the deferred item, then plan/execute Phase 2 (Verified Seller / OTP).
+Stopped at: Phase 1 fully verified — wired Resend custom SMTP, verified the live email round-trip + anon public-profile no-PII render end-to-end, and fixed the two bugs it surfaced (PKCE confirm + UserMenu hydration). Next: plan/execute Phase 2 (Verified Seller / OTP). Optional first: /gsd:discuss-phase 2 to pin Twilio OTP + anti SMS-pumping + Verified-badge decisions.
 Resume file: None

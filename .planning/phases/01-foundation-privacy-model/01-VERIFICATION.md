@@ -1,9 +1,10 @@
 ---
 phase: 01-foundation-privacy-model
 verified: 2026-06-03T12:55:00Z
-status: human_needed
-score: 9/10 must-haves verified
+status: passed
+score: 10/10 must-haves verified
 re_verification: false
+human_verification_resolved: "2026-06-03 — both deferred legs verified live after wiring Resend custom SMTP (see Resolution note at end)"
 human_verification:
   - test: "Live email confirmation round-trip: register -> confirm email -> land in (app) -> reload -> logout -> log back in"
     expected: "User receives real Supabase confirmation email, clicking the link establishes session, reload persists session (cookie-backed), logout returns to /login, login works again"
@@ -148,5 +149,19 @@ No gaps. All structural, code, and automated test items are fully verified. The 
 
 ---
 
+## Resolution — Deferred legs verified live (2026-06-03)
+
+Both `human_needed` items were closed the same day by wiring **Resend as custom SMTP** on Supabase Staging (lifting the 2/h built-in email cap), then verifying end-to-end:
+
+1. **Live email round-trip — VERIFIED.** Registered with a real inbox → Resend delivered the confirmation email → clicking the PKCE `?code` link established the session and landed in `(app)`; reload kept the session; logout returned to `/login`; re-login worked.
+2. **Value-level no-PII render — VERIFIED.** Logged-out `/u/Kenworth8561` view-source (HTML **and** the serialized RSC payload) contains only username / `ON, Canada` / `Member since June 2026` / `0 active listings` — zero real name, email, phone, or address.
+
+Two real bugs surfaced and were fixed while closing this (commit `2c250a3`): `/auth/confirm` now handles the PKCE `?code` via `exchangeCodeForSession`; `UserMenu` is `"use client"` (Radix hydration mismatch) with the logout action extracted to `components/layout/logout-action.ts`.
+
+**Status upgraded `human_needed` → `passed` (10/10).** Score line above reflects the live confirmation. Pre-launch follow-up: verify an own/sub-domain in Resend so emails reach any recipient (the `resend.dev` sender only delivers to the Resend account address).
+
+---
+
 _Verified: 2026-06-03T12:55:00Z_
 _Verifier: Claude (gsd-verifier)_
+_Resolution appended: 2026-06-03 after live SMTP verification_
