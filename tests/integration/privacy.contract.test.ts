@@ -108,3 +108,25 @@ d("privacy contract: anonymous public-profile fetch has zero PII keys", () => {
     }
   });
 });
+
+// --- Layer 3: the Verified Seller badge (VERF-04) is a derived boolean, not a PII path ---
+//
+// The badge on /u/[username] is rendered from is_verified_seller(uuid) — a SECURITY
+// DEFINER boolean granted to anon, mirroring active_listing_count. This block proves the
+// badge addition did NOT open a new PII path: an anon caller gets back ONLY a boolean,
+// and the structural PII_KEYS layer above still proves phone + every other PII column is
+// physically absent from profiles_public. There is NO new column on the public table — the
+// flag is computed each read, so the worst-case anon caller can never reach phone/PII via it.
+d("verified-seller badge: anon gets only a boolean, never a PII path", () => {
+  it("is_verified_seller is anon-callable and returns a boolean", async () => {
+    const supabase = anonClient();
+    // An unknown user id → false. The point is the RPC is reachable by anon and the
+    // ONLY thing it yields is a primitive boolean (no row, no PII columns).
+    const { data, error } = await supabase.rpc("is_verified_seller", {
+      profile_id: "00000000-0000-0000-0000-000000000000",
+    });
+    expect(error).toBeNull();
+    expect(typeof data).toBe("boolean");
+    expect(data).toBe(false);
+  });
+});
