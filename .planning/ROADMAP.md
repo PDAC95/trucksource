@@ -85,7 +85,12 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. A seller can verify their phone number by entering a one-time code sent to it
   3. A seller can accept marketplace terms as part of becoming verified
   4. A Verified Seller badge appears on the profile only of sellers who completed email + phone verification + terms acceptance, with the verified state computed server-side
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 02-01-PLAN.md — Wave 1: 0002 migration (phone nullable + phone_verified_at + marketplace_terms_accepted_at + terms_version; otp_send_attempts + abuse_events RLS tables; is_verified_seller fn) + badge/RLS integration tests
+- [ ] 02-02-PLAN.md — Wave 1: pure helpers — toE164Plus1 (+1-only E.164, TDD) + shared Zod schemas (phone/OTP/terms)
+- [ ] 02-03-PLAN.md — Wave 2: hardened OTP pipeline — Twilio Verify client, Postgres rate-limit + spend-cap, Resend admin alert, BotID wiring, sendOtp/checkOtp/acceptTerms actions + guard-order unit tests
+- [ ] 02-04-PLAN.md — Wave 3: resume-on-abandon verify wizard (phone → 6-box OTP w/ countdown + change-number → marketplace terms) + e2e + live human-verify checkpoint
+- [ ] 02-05-PLAN.md — Wave 2: Verified badge render on /u/[username] via is_verified_seller RPC + privacy-contract extension
 
 ### Phase 3: Fitment Taxonomy & Slang Library
 **Goal**: The 8-level fitment library exists as queryable reference data — Make → Model → Configuration → Common Search Terms → Part Categories → Materials → Condition → Special Filters, plus The Barnyard — with trucker slang modeled as a synonym table and a part able to map to many trucks/configs/terms/categories. Its schema quality caps everything downstream.
@@ -190,7 +195,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 0. Setup & Scaffolding | 1/1 | Complete | 2026-06-01 |
 | 0.1 Wiring & Tooling | 1/1 | In review | - |
 | 1. Foundation & Privacy Model | 5/5 | Complete (verified-partial) | 2026-06-03 |
-| 2. Verified Seller & Phone OTP | 0/TBD | Not started | - |
+| 2. Verified Seller & Phone OTP | 0/5 | Planned | - |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |
 | 4. My Garage | 0/TBD | Not started | - |
 | 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
