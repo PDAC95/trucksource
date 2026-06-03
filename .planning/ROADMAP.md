@@ -21,7 +21,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 
 - [ ] **Phase 0: Setup & Scaffolding** - Next.js 16 + React 19 + TS + Tailwind v4 + shadcn scaffold, route groups, dormant Supabase client skeletons, .env.example — no tables/RLS/auth yet
 - [ ] **Phase 0.1: Wiring & Tooling** (INSERTED) - Connect Supabase Staging + Vercel; Prettier/ESLint, husky+lint-staged, Vitest+Playwright, GitHub Actions CI
-- [ ] **Phase 1: Foundation & Privacy Model** - Supabase + SSR auth, RLS default-deny baseline, public/private profile split, registration with public username
+- [x] **Phase 1: Foundation & Privacy Model** - Supabase + SSR auth, RLS default-deny baseline, public/private profile split, registration with public username (completed 2026-06-03, verified-partial — live email round-trip deferred to custom SMTP)
 - [ ] **Phase 2: Verified Seller & Phone OTP** - Email + phone OTP + terms acceptance → server-computed Verified badge
 - [ ] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data
 - [ ] **Phase 4: My Garage** - Users save one or more trucks (make/model/config) to their profile; powers "fits my truck" filtering and accelerates seller fitment
@@ -189,7 +189,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 |-------|----------------|--------|-----------|
 | 0. Setup & Scaffolding | 1/1 | Complete | 2026-06-01 |
 | 0.1 Wiring & Tooling | 1/1 | In review | - |
-| 1. Foundation & Privacy Model | 0/5 | Planned | - |
+| 1. Foundation & Privacy Model | 5/5 | Complete (verified-partial) | 2026-06-03 |
 | 2. Verified Seller & Phone OTP | 0/TBD | Not started | - |
 | 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |
 | 4. My Garage | 0/TBD | Not started | - |
