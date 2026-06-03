@@ -40,9 +40,14 @@ Requirements: VERF-01, VERF-02, VERF-03, VERF-04.
 - **Revocation: badge is server-computed and recomputed.** Verified state is computed server-side from (email verified AND phone verified AND terms accepted). If any condition stops being true (e.g. phone changed), the badge disappears automatically. No manual admin-revoke UI in this phase (that's Phase 10), but the computed model must not assume verification is permanent.
 - **Terms: checkbox + link to full terms.** "I accept the marketplace terms" checkbox with a link to the full terms page. Persist acceptance with **timestamp + accepted version**.
 
+### Resolved during planning (2026-06-03 — supersedes research Open Questions)
+- **Registration phone vs verified phone:** The registration `phone` (NOT NULL in migration `0001`) **pre-fills** the wizard as a UX convenience, but OTP verification is **mandatory regardless**. The badge keys on a new `phone_verified_at` column — never on the mere presence of `phone`. An unverified registration phone grants no badge.
+- **Registration terms vs marketplace terms (DISTINCT):** The `0001` `terms_accepted_at` is a general **account TOS** accepted at signup. The **marketplace (selling) terms** required by VERF-03 are a *separate* acceptance captured in wizard step 3. Phase 2 adds `terms_version` and records the marketplace acceptance; the badge requires the **marketplace** acceptance, not the registration TOS. (Decide column shape in planning — e.g. distinct `marketplace_terms_accepted_at` so the two acceptances don't collide.)
+- **Spend-cap threshold:** Conservative global ceiling (~**200 sends/day**) exposed as a **tunable env var** (no redeploy to change), set well above expected legitimate volume given the +1-only gate and per-phone caps. Paired with a Twilio usage-trigger billing alert at a matching $ amount.
+
 ### Claude's Discretion
-- **CAPTCHA / bot-detection mechanism** — research compares **Vercel BotID** vs **Cloudflare Turnstile** for best fit with Twilio Verify + Vercel hosting, then picks. Must be low/zero user friction and sit in front of the OTP send button.
-- Exact rate-limit storage mechanism and spend-cap threshold value.
+- **CAPTCHA / bot-detection mechanism** — research selected **Vercel BotID** (invisible, host-native, `checkBotId()` in the Server Action) over Cloudflare Turnstile. Locked.
+- Exact rate-limit storage mechanism (research recommends a Postgres table — no new infra).
 - Wizard visual design, copy/microcopy, error and edge-state styling.
 - Terms page content/structure (this phase only needs the acceptance + persistence mechanism).
 
