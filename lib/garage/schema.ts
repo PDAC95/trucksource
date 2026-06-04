@@ -24,3 +24,7 @@ export const truckSchema = z.object({
 });
 
 export type TruckInput = z.infer<typeof truckSchema>;
+
+// The RHF working type — the schema's INPUT side (before z.coerce runs). Selects
+// hand RHF strings; the resolver coerces them to the TruckInput (output) shape.
+export type TruckFormValues = z.input<typeof truckSchema>;
