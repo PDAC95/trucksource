@@ -117,7 +117,10 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. A user can view, edit, and remove the trucks in their garage
   3. A buyer can filter the feed/search to parts that fit a selected garage truck with one click ("fits my truck") — the filtering hook is consumed by Phase 7 search
   4. A seller's garage trucks pre-fill / accelerate the fitment suggestions when they create a listing — consumed by Phase 6 Fitment Intelligence
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 04-01-PLAN.md — Wave 1: migration 0004 (garage_trucks owner-scoped, 4 RLS owner policies, coalesce(config_id,0) unique index) + shared truckSchema + listMyTrucks() P6/P7 contract + Wave-0 anon-RLS gate & schema unit tests
+- [ ] 04-02-PLAN.md — Wave 2: addTruck/updateTruck/deleteTruck Server Actions (getClaims-scoped, shared-zod re-validate, model_configurations combo re-check, soft cap, 23505 duplicate)
+- [ ] 04-03-PLAN.md — Wave 3: /profile/garage card list + empty state, Add/Edit cascade modal (Make→Model→Config), confirmed delete, skippable dashboard banner + live human-verify
 
 ### Phase 5: Listings, Photos & EXIF-Safe Storage
 **Goal**: A seller can create, edit, and sell a listing with the full public field set, tag it against the fitment library, and upload multiple photos that are stripped of all metadata server-side — so no photo can ever leak the seller's exact location.
@@ -200,7 +203,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 1. Foundation & Privacy Model | 5/5 | Complete (verified-partial) | 2026-06-03 |
 | 2. Verified Seller & Phone OTP | 5/5 | Complete | 2026-06-04 |
 | 3. Fitment Taxonomy & Slang Library | 0/3 | Planned | - |
-| 4. My Garage | 0/TBD | Not started | - |
+| 4. My Garage | 0/3 | Planned | - |
 | 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
 | 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
