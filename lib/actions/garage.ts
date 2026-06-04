@@ -50,7 +50,7 @@ export async function addTruck(input: unknown): Promise<AddTruckResult> {
 
   const parsed = truckSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
-  const { modelId, configId, nickname } = parsed.data;
+  const { modelId, configId, year, nickname } = parsed.data;
 
   // 3) SOFT CAP — RLS scopes the count to the owner's own rows.
   const { count } = await supabase
@@ -78,6 +78,7 @@ export async function addTruck(input: unknown): Promise<AddTruckResult> {
       user_id: userId,
       model_id: modelId,
       config_id: configId ?? null,
+      year,
       nickname: nickname || null, // empty-string ⇒ NULL (no nickname)
     })
     .select("id")
@@ -127,7 +128,7 @@ export async function updateTruck(
 
   const parsed = truckSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
-  const { modelId, configId, nickname } = parsed.data;
+  const { modelId, configId, year, nickname } = parsed.data;
 
   // COMBO RE-CHECK — only when a config was chosen (same rule as addTruck).
   if (configId != null) {
@@ -147,6 +148,7 @@ export async function updateTruck(
     .update({
       model_id: modelId,
       config_id: configId ?? null,
+      year,
       nickname: nickname || null, // empty-string ⇒ NULL (no nickname)
     })
     .eq("id", id)

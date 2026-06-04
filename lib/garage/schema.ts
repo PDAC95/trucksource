@@ -12,14 +12,18 @@ import { z } from "zod";
  * A garage truck the user is adding/editing.
  *   - modelId: Make+Model required (the make is implied by the model row).
  *   - configId: optional/nullable — omitted/null ⇒ a MODEL-LEVEL truck ("any 379").
+ *   - year: REQUIRED model/manufacture year (heavy-truck plausible range
+ *     1970..2027, mirroring the DB CHECK in 0005). Year is a distinguishing
+ *     attribute — same model/config in a different year is a distinct truck.
  *   - nickname: optional, ≤40 chars; "" allowed (an empty field is "no nickname").
  *
- * Radix Selects emit string values, so ids are coerced with z.coerce.number()
+ * Radix Selects emit string values, so ids/year are coerced with z.coerce.number()
  * (same reason register/actions.ts coerces select-driven ids).
  */
 export const truckSchema = z.object({
   modelId: z.coerce.number().int().positive(),
   configId: z.coerce.number().int().positive().nullable().optional(),
+  year: z.coerce.number().int().min(1970).max(2027),
   nickname: z.string().max(40).optional().or(z.literal("")),
 });
 

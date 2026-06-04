@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 export type GarageTruck = {
   id: number; // truck_id — the stable handle Phase 7 passes around
   nickname: string | null;
+  year: number; // model/manufacture year (required, 1970..2027)
   makeId: number;
   makeName: string;
   modelId: number;
@@ -32,6 +33,7 @@ export type GarageTruck = {
 type GarageTruckRow = {
   id: number;
   nickname: string | null;
+  year: number;
   config_id: number | null;
   model_id: number;
   models: {
@@ -52,7 +54,7 @@ export async function listMyTrucks(): Promise<GarageTruck[]> {
   const { data, error } = await supabase
     .from("garage_trucks")
     .select(
-      "id, nickname, config_id, model_id, models:model_id ( id, name, makes:make_id ( id, name ) ), configurations:config_id ( id, name )",
+      "id, nickname, year, config_id, model_id, models:model_id ( id, name, makes:make_id ( id, name ) ), configurations:config_id ( id, name )",
     )
     .order("created_at", { ascending: false });
 
@@ -62,6 +64,7 @@ export async function listMyTrucks(): Promise<GarageTruck[]> {
   return rows.map((r) => ({
     id: r.id,
     nickname: r.nickname,
+    year: r.year,
     makeId: r.models?.makes?.id ?? 0,
     makeName: r.models?.makes?.name ?? "",
     modelId: r.models?.id ?? r.model_id,
