@@ -250,3 +250,300 @@ insert into public.special_filters (name, sort_order) values
   ('Take-Off', 7),
   ('Glider-Compatible', 8)
 on conflict (name) do nothing;
+
+-- ===========================================================================
+-- L4) search_terms (FITL-04) — the curated trucker-slang dictionary.
+-- The precision differentiator: every term below MUST resolve (Task 2 arc targets) to a
+-- seeded make / model / configuration. Quality over quantity. citext → case-insensitive.
+-- ===========================================================================
+insert into public.search_terms (term) values
+  -- doc-cited (required)
+  ('359 Guys'),
+  ('Flat Glass Kenworth'),
+  ('Aerodyne'),
+  ('Large Car'),
+  ('Glider'),
+  -- model nicknames / shorthand owner-operators actually type
+  ('W9'),
+  ('Wide Nine'),
+  ('Long Nine'),
+  ('389 Guys'),
+  ('379 Guys'),
+  ('Extended Hood Pete'),
+  ('EXHD'),
+  ('T800 Daycab'),
+  ('Dub T800'),
+  ('W990'),
+  ('Studio'),
+  ('Studio Sleeper Pete'),
+  -- configuration / body slang
+  ('Flat Top'),
+  ('Long Hood'),
+  ('Wide Hood'),
+  ('Square Light'),
+  ('Square Headlight'),
+  ('Flat Glass'),
+  ('Curved Glass'),
+  ('Day Cab'),
+  ('Stand Up'),
+  ('Condo'),
+  -- make-level
+  ('Pete'),
+  ('Bilt'),
+  ('KW'),
+  ('Kenny'),
+  ('Show Truck')
+on conflict (term) do nothing;
+
+-- ===========================================================================
+-- search_term_targets (FITL-04) — the polymorphic exclusive arc. For each term, one row
+-- per resolved entity, resolving BOTH term and target by natural key. A term may resolve
+-- to several entities (each its own single-target row). on conflict do nothing → idempotent.
+-- ===========================================================================
+
+-- --- MODEL-level terms ---
+-- '359 Guys' → Peterbilt 359
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+join public.models mo on mo.make_id = mk.id and mo.name = '359'
+where st.term = '359 Guys'
+on conflict do nothing;
+
+-- '379 Guys' → Peterbilt 379
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+join public.models mo on mo.make_id = mk.id and mo.name = '379'
+where st.term = '379 Guys'
+on conflict do nothing;
+
+-- '389 Guys' → Peterbilt 389
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+join public.models mo on mo.make_id = mk.id and mo.name = '389'
+where st.term = '389 Guys'
+on conflict do nothing;
+
+-- 'Extended Hood Pete' → Peterbilt 379EXHD AND Peterbilt 389
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+join public.models mo on mo.make_id = mk.id and mo.name in ('379EXHD','389')
+where st.term = 'Extended Hood Pete'
+on conflict do nothing;
+
+-- 'EXHD' → Peterbilt 379EXHD
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+join public.models mo on mo.make_id = mk.id and mo.name = '379EXHD'
+where st.term = 'EXHD'
+on conflict do nothing;
+
+-- 'Studio Sleeper Pete' → Peterbilt 379 AND 389 (the studio-sleeper classics)
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+join public.models mo on mo.make_id = mk.id and mo.name in ('379','389')
+where st.term = 'Studio Sleeper Pete'
+on conflict do nothing;
+
+-- 'W9' / 'Wide Nine' / 'Long Nine' → Kenworth W900 family
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Kenworth'
+join public.models mo on mo.make_id = mk.id and mo.name in ('W900','W900L','W900B')
+where st.term in ('W9','Wide Nine')
+on conflict do nothing;
+
+-- 'Long Nine' → Kenworth W900L specifically (the long-hood nine)
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Kenworth'
+join public.models mo on mo.make_id = mk.id and mo.name = 'W900L'
+where st.term = 'Long Nine'
+on conflict do nothing;
+
+-- 'W990' → Kenworth W990
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Kenworth'
+join public.models mo on mo.make_id = mk.id and mo.name = 'W990'
+where st.term = 'W990'
+on conflict do nothing;
+
+-- 'T800 Daycab' / 'Dub T800' → Kenworth T800
+insert into public.search_term_targets (search_term_id, model_id)
+select st.id, mo.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Kenworth'
+join public.models mo on mo.make_id = mk.id and mo.name = 'T800'
+where st.term in ('T800 Daycab','Dub T800')
+on conflict do nothing;
+
+-- 'Flat Glass Kenworth' → make Kenworth AND config 'Flat Glass' (two arc rows)
+insert into public.search_term_targets (search_term_id, make_id)
+select st.id, mk.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Kenworth'
+where st.term = 'Flat Glass Kenworth'
+on conflict do nothing;
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Flat Glass'
+where st.term = 'Flat Glass Kenworth'
+on conflict do nothing;
+
+-- --- CONFIG-level terms ---
+-- 'Aerodyne' → config Aerodyne
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Aerodyne'
+where st.term = 'Aerodyne'
+on conflict do nothing;
+
+-- 'Flat Top' → config Flat-top
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Flat-top'
+where st.term = 'Flat Top'
+on conflict do nothing;
+
+-- 'Long Hood' / 'Wide Hood' → config Extended Hood
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Extended Hood'
+where st.term in ('Long Hood','Wide Hood')
+on conflict do nothing;
+
+-- 'Square Light' / 'Square Headlight' / 'Flat Glass' → config Flat Glass
+-- (the square-window classic cab is the home of square sealed-beam headlights)
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Flat Glass'
+where st.term in ('Square Light','Square Headlight','Flat Glass')
+on conflict do nothing;
+
+-- 'Curved Glass' → config Curved Glass
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Curved Glass'
+where st.term = 'Curved Glass'
+on conflict do nothing;
+
+-- 'Day Cab' → config Day Cab
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Day Cab'
+where st.term = 'Day Cab'
+on conflict do nothing;
+
+-- 'Stand Up' → config Stand-up Sleeper
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Stand-up Sleeper'
+where st.term = 'Stand Up'
+on conflict do nothing;
+
+-- 'Studio' → config Studio Sleeper
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Studio Sleeper'
+where st.term = 'Studio'
+on conflict do nothing;
+
+-- 'Condo' → config Sleeper (a "condo" is the big walk-in sleeper)
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Sleeper'
+where st.term = 'Condo'
+on conflict do nothing;
+
+-- 'Large Car' → the long-hood show-truck ideal; spans the Extended Hood config
+-- (a defensible canonical mapping: "large car" = the big extended-hood tractor).
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Extended Hood'
+where st.term = 'Large Car'
+on conflict do nothing;
+
+-- 'Show Truck' → config Extended Hood (the show-truck build is the long-hood tractor)
+insert into public.search_term_targets (search_term_id, config_id)
+select st.id, cf.id
+from public.search_terms st
+join public.configurations cf on cf.name = 'Extended Hood'
+where st.term = 'Show Truck'
+on conflict do nothing;
+
+-- --- MAKE-level terms ---
+-- 'Glider' → both makes Peterbilt + Kenworth (a glider kit is sold per chassis make).
+-- Generic term → resolve to the makes it spans (two arc rows).
+insert into public.search_term_targets (search_term_id, make_id)
+select st.id, mk.id
+from public.search_terms st
+join public.makes mk on mk.name in ('Peterbilt','Kenworth')
+where st.term = 'Glider'
+on conflict do nothing;
+
+-- 'Pete' / 'Bilt' → make Peterbilt
+insert into public.search_term_targets (search_term_id, make_id)
+select st.id, mk.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Peterbilt'
+where st.term in ('Pete','Bilt')
+on conflict do nothing;
+
+-- 'KW' / 'Kenny' → make Kenworth
+insert into public.search_term_targets (search_term_id, make_id)
+select st.id, mk.id
+from public.search_terms st
+join public.makes mk on mk.name = 'Kenworth'
+where st.term in ('KW','Kenny')
+on conflict do nothing;
+
+-- ===========================================================================
+-- SEED-INTEGRITY ASSERTION (REQUIRED GATE).
+-- The exclusive-arc FKs already make a target pointing at a non-existent entity impossible
+-- at insert time. This do-block catches the orthogonal case: a search_terms row that
+-- received ZERO target rows (a dangling term). If any exist, the whole seed fails fast.
+-- ===========================================================================
+do $$
+declare
+  dangling_count int;
+  dangling_list text;
+begin
+  select count(*), string_agg(st.term::text, ', ')
+    into dangling_count, dangling_list
+  from public.search_terms st
+  where not exists (
+    select 1 from public.search_term_targets t where t.search_term_id = st.id
+  );
+
+  if dangling_count > 0 then
+    raise exception 'Seed integrity: % slang term(s) resolve to no entity: %',
+      dangling_count, dangling_list;
+  end if;
+end
+$$;
