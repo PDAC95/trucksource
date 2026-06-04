@@ -89,3 +89,103 @@ export async function addTruck(input: unknown): Promise<AddTruckResult> {
   }
   return { ok: true, id: data.id };
 }
+
+// Positive-int id guard for the edit/delete handles (the client passes a number,
+// but it is untrusted like everything else at this boundary).
+function isValidId(id: unknown): id is number {
+  return typeof id === "number" && Number.isInteger(id) && id > 0;
+}
+
+export type UpdateTruckResult =
+  | { ok: true }
+  | {
+      ok: false;
+      error:
+        | "unauthenticated"
+        | "invalid"
+        | "invalid_combo"
+        | "duplicate"
+        | "not_found";
+    };
+
+/**
+ * Edit the caller's own truck (GRGE-02). Same trust-boundary guards as addTruck:
+ * getClaims identity, truckSchema re-validation, config-applicability re-check.
+ * RLS scopes the row to the owner; a redundant .eq("user_id") is kept for clarity.
+ * Zero rows affected (not owner / nonexistent) => not_found; 23505 => duplicate.
+ */
+export async function updateTruck(
+  id: number,
+  input: unknown,
+): Promise<UpdateTruckResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const parsed = truckSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const { modelId, configId, nickname } = parsed.data;
+
+  // COMBO RE-CHECK — only when a config was chosen (same rule as addTruck).
+  if (configId != null) {
+    const { data: combo } = await supabase
+      .from("model_configurations")
+      .select("model_id")
+      .eq("model_id", modelId)
+      .eq("configuration_id", configId)
+      .maybeSingle();
+    if (!combo) return { ok: false, error: "invalid_combo" };
+  }
+
+  // RLS using/with-check already restricts the row to the owner; the explicit
+  // user_id eq is harmless belt-and-suspenders for clarity, not the security line.
+  const { data, error } = await supabase
+    .from("garage_trucks")
+    .update({
+      model_id: modelId,
+      config_id: configId ?? null,
+      nickname: nickname || null, // empty-string ⇒ NULL (no nickname)
+    })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("id");
+
+  if (error) {
+    if (error.code === "23505") return { ok: false, error: "duplicate" };
+    return { ok: false, error: "invalid" };
+  }
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+  return { ok: true };
+}
+
+export type DeleteTruckResult =
+  | { ok: true }
+  | { ok: false; error: "unauthenticated" | "invalid" | "not_found" };
+
+/**
+ * Delete the caller's own truck (GRGE-02). RLS scopes the delete to the owner;
+ * zero rows affected => not_found. The confirmation dialog lives in the UI plan —
+ * this action just performs the owner-scoped delete.
+ */
+export async function deleteTruck(id: number): Promise<DeleteTruckResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const { data, error } = await supabase
+    .from("garage_trucks")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select("id");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+  return { ok: true };
+}
