@@ -55,10 +55,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### My Garage
 
-- [ ] **GRGE-01**: User can add one or more trucks to their garage (Make → Model → Configuration from the fitment library), optionally — not required at registration
-- [ ] **GRGE-02**: User can view, edit, and remove trucks in their garage
-- [ ] **GRGE-03**: Buyer can filter the feed/search to parts that fit a selected garage truck ("Fits my truck"), with one click
-- [ ] **GRGE-04**: A seller's garage trucks pre-fill / accelerate Fitment Intelligence suggestions when they create a listing
+- [x] **GRGE-01**: User can add one or more trucks to their garage (Make → Model → Configuration from the fitment library), optionally — not required at registration
+- [x] **GRGE-02**: User can view, edit, and remove trucks in their garage
+- [x] **GRGE-03**: Buyer can filter the feed/search to parts that fit a selected garage truck ("Fits my truck"), with one click
+- [x] **GRGE-04**: A seller's garage trucks pre-fill / accelerate Fitment Intelligence suggestions when they create a listing
 
 ### Fitment Intelligence
 
@@ -163,10 +163,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FITL-08 | Phase 3 | Complete |
 | FITL-09 | Phase 3 | Complete |
 | FITL-10 | Phase 3 | Complete |
-| GRGE-01 | Phase 4 | Pending |
-| GRGE-02 | Phase 4 | Pending |
-| GRGE-03 | Phase 4 | Pending |
-| GRGE-04 | Phase 4 | Pending |
+| GRGE-01 | Phase 4 | Complete |
+| GRGE-02 | Phase 4 | Complete |
+| GRGE-03 | Phase 4 | Complete |
+| GRGE-04 | Phase 4 | Complete |
 | LIST-01 | Phase 5 | Pending |
 | LIST-02 | Phase 5 | Pending |
 | LIST-03 | Phase 5 | Pending |

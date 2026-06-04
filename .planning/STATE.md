@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase-complete
-last_updated: "2026-06-04T17:43:04.125Z"
+status: in-progress
+last_updated: "2026-06-04T18:53:29.000Z"
 progress:
   total_phases: 11
   completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
+  total_plans: 16
+  completed_plans: 14
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 3 — Fitment Taxonomy & Slang Library is **COMPLETE** (3/3 plans). Plan 03-01 shipped the 8-level fitment schema as reference tables; Plan 03-02 seeded the reviewed launch dataset (Peterbilt+Kenworth makes, 17 iconic models, 9 shared configs + 44 applicability links, a 45-node part_categories tree, L6–L8 dimensions, and a 32-term trucker-slang dictionary where every term arc-resolves to a real entity — 0 dangling), applied to Staging idempotently; Plan 03-03 added `tests/integration/fitment.test.ts` — the CI gate (8 tests) proving all 10 tables anon-readable + anon-write-denied, the launch data seeded, and EVERY slang term resolves (zero orphans), with the full suite green (68 passed) so Phase 3 did not regress the Phase 1-2 privacy/RLS gates. Next: Phase 4 — My Garage.
+**Current focus:** Phase 4 — My Garage is **IN PROGRESS** (1/3 plans). Plan 04-01 laid the data + contract foundation: `garage_trucks` — the project's FIRST owner-scoped read+write `authenticated` table — with RLS default-deny, 4 owner policies (S/I/U/D) all `(select auth.uid()) = user_id`, NO anon policy, a `coalesce(config_id,0)` per-user unique index, and a `user_id` index (applied to Staging via `db query --linked -f`). It also shipped the shared `truckSchema` (Zod, single client+server source of truth), the stable owner-scoped `listMyTrucks()`/`GarageTruck` helper (the P6/P7 contract — joins only fitment names, config_id NULL ⇒ model granularity), and the Wave-0 tests: `garage.test.ts` (anon RLS gate — anon SELECT 0 rows + anon INSERT denied, the phase's privacy re-verification) + `garage-schema.test.ts`. Full suite green (15 files, 77 passed, 1 skipped) — no Phase 1-3 regression. GRGE-01..04 data layer complete. Next: Plan 04-02 (add/edit/delete actions).
 
 ## Current Position
 
-Phase: 3 of 11 (Fitment Taxonomy & Slang Library) — COMPLETE
-Plan: 03-03 done (3/3) — Phase 3 closed
-Status: 03-03 complete & committed — `tests/integration/fitment.test.ts` is the CI gate for Phase 3, mirroring rls.test.ts (node env, `INTEGRATION_ENABLED` self-skip, `anonClient`). 8 tests, all green against Staging: (1) all 10 reference tables anon-readable; (2) anon INSERT into a reference table denied (service-role-only writes); (3) seed presence — Peterbilt/Kenworth + models (W900/379) + configs (Aerodyne) + non-empty applicability join + L5–L8 dimensions + a categories tree with both a top-level and a child; (4) THE gated deliverable — the orphan-term set (search_terms with no search_term_targets, computed client-side from two anon SELECTs) is EMPTY, the 5 doc-cited terms present, and the exclusive arc holds (exactly one of make/model/config per target). Full suite green: 13 files, 68 passed, 1 skipped — no Phase 1-2 privacy/RLS regression. Commits: 183fb10 (test file, Tasks 1+2), 8ccce74 (full-suite-green record, Task 3). 03-02 commits: 9a4fe4a, 73f3e92, 2cf2694, 97a3803. 03-01 commits: 43367a1, d7fddbf.
-Last activity: 2026-06-04 — Plan 03-03 added the fitment CI gate; Phase 3 complete. Next: Phase 4 — My Garage.
+Phase: 4 of 11 (My Garage) — IN PROGRESS
+Plan: 04-01 done (1/3)
+Status: 04-01 complete & committed — `garage_trucks` is the first owner-scoped read+write `authenticated` table (migration `0004_garage.sql` applied to Staging; verified RLS on, 4 owner policies, 3 indexes). 4 owner policies (S/I/U/D) all `(select auth.uid()) = user_id`, NO anon policy, NO SECURITY DEFINER; model_id + nullable config_id (make derived via models.make_id), coalesce(config_id,0) per-user unique index, on delete cascade(user)/restrict(model,config). Shipped `lib/garage/schema.ts` (shared truckSchema), `lib/garage/queries.ts` (listMyTrucks()/GarageTruck — the P6/P7 contract, joins only fitment names, config_id NULL ⇒ model granularity), `tests/integration/garage.test.ts` (anon RLS gate: anon SELECT 0 rows + anon INSERT denied — the phase privacy re-verification), `tests/unit/garage-schema.test.ts`. Full suite green: 15 files, 77 passed, 1 skipped — no Phase 1-3 regression. Commits: a41f263 (migration), a932966 (schema+queries), e758596 (tests). GRGE-01..04 data layer done.
+Last activity: 2026-06-04 — Plan 04-01 laid the My Garage data + contract foundation. Next: Plan 04-02.
 
-Progress: [██████████] 100% (3/3 plans in Phase 3 — phase complete)
+Progress: [███░░░░░░░] 33% (1/3 plans in Phase 4)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [██████████] 100% (3/3 plans in Phase 3 — phase 
 | Phase 03-fitment-taxonomy-slang-library P01 | ~3min | 3 tasks | 1 files |
 | Phase 03-fitment-taxonomy-slang-library P02 | ~2min | 4 tasks | 2 files |
 | Phase 03-fitment-taxonomy-slang-library P03 | ~2min | 3 tasks | 1 files |
+| Phase 04-my-garage P01 | 4min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [Phase 03-fitment-taxonomy-slang-library]: [DB] seed.sql is idempotent + FK-by-natural-key (no literal ids); applied to Staging non-destructively via 'supabase db query --linked -f' (NOT db reset --linked); a closing do-block raises if any slang term has zero targets. 32 terms, 0 dangling — all anon-readable across 10 tables.
 - [Phase 03-fitment-taxonomy-slang-library]: [Process] AI-generated launch dataset (models/configs/slang) was USER-REVIEWED at the 03-02 human-verify checkpoint and approved as-is, no corrections — the slang→entity mappings are accepted as the launch quality bar.
 - [Phase 03-fitment-taxonomy-slang-library]: [Testing] fitment.test.ts is the Phase-3 CI gate (8 tests): 10-table anon-read + anon-write-deny, seed presence, and the gated every-slang-term-resolves assertion (orphan set computed client-side from two anon SELECTs). Mirrors rls.test.ts (node env, self-skip, anonClient). Seed integrity now triple-layered: num_nonnulls CHECK (write) + seed do-block (apply) + read-side anon assertion (CI).
+- [Phase 04-my-garage]: [DB] garage_trucks is the first owner-scoped read+write authenticated table: 4 owner policies (S/I/U/D) all (select auth.uid()) = user_id, NO anon policy, NO SECURITY DEFINER; RLS owner-only IS the Phase-4 privacy gate (proven by garage.test.ts: anon SELECT 0 rows + anon INSERT denied).
+- [Phase 04-my-garage]: [DB] Stores model_id + nullable config_id (make derived via models.make_id, no make_id column); config_id NULL = model-level truck; coalesce(config_id,0) unique index dedupes per user incl. NULL arm; on delete cascade(user)/restrict(model,config).
+- [Phase 04-my-garage]: [Contract] listMyTrucks()/GarageTruck is the stable owner-scoped read surface P6/P7 import (joins only fitment names, never profiles_*); config_id NULL => filter at MODEL granularity is the documented GRGE-03/04 rule. No default/active-truck concept (explicit selector at filter time).
 
 ### Pending Todos
 
@@ -123,7 +127,8 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-04
-Stopped at: **03-03 COMPLETE — Phase 3 closed.** Created `tests/integration/fitment.test.ts` mirroring rls.test.ts exactly (node env, `INTEGRATION_ENABLED ? describe : describe.skip`, `anonClient` from `./_supabase`). Two describe blocks / 8 `it`s: (1) all 10 reference tables anon-readable + an anon INSERT into `makes` denied; (2) seed presence (Peterbilt/KW, W900/379, Aerodyne, non-empty model_configurations, L5–L8, a categories tree with a top-level + a child) and THE gated assertion — the orphan-term set computed client-side from two anon SELECTs (search_terms vs search_term_targets) is EMPTY, the 5 doc-cited terms present, exclusive arc holds. Ran live against Staging: 8/8 pass. Full suite: 13 files / 68 passed, 1 skipped — no Phase 1-2 regression. Commits: 183fb10 (test file), 8ccce74 (full-suite-green record). `03-03-SUMMARY.md` written; STATE + ROADMAP updated; FITL-01..08 already complete. Next: Phase 4 — My Garage (plan it).
+Stopped at: **04-01 COMPLETE — Phase 4 opened (1/3 plans).** Migration `0004_garage.sql` ships `garage_trucks`, the project's first owner-scoped read+write `authenticated` table: model_id (not null, restrict) + nullable config_id (restrict, NULL = model-level), user_id (uuid, cascade), nickname (≤40 CHECK); user_id index + coalesce(config_id,0) per-user unique index; RLS in-migration with 4 owner policies (S/I/U/D) all `(select auth.uid()) = user_id`, NO anon policy, NO SECURITY DEFINER. Applied to Staging via `db query --linked -f` (verified: RLS on, 4 policies, 3 indexes). Also shipped `lib/garage/schema.ts` (shared truckSchema — model required, config optional/nullable, nickname ≤40, coerces string ids) and `lib/garage/queries.ts` (`listMyTrucks(): Promise<GarageTruck[]>` — the stable P6/P7 read contract via the cookie client, joins ONLY fitment names, documents config-NULL ⇒ model granularity, no default-truck concept). Wave-0 tests: `tests/integration/garage.test.ts` (anon RLS gate — anon SELECT 0 rows + anon INSERT denied, mirrors rls.test.ts; ran live 9/9 with the unit file) + `tests/unit/garage-schema.test.ts`. Full suite green: 15 files / 77 passed, 1 skipped — no Phase 1-3 regression. Commits: a41f263 (migration), a932966 (schema+queries), e758596 (tests). `04-01-SUMMARY.md` written; STATE + ROADMAP updated; GRGE-01..04 marked complete. Next: Plan 04-02 (garage add/edit/delete Server Actions reusing truckSchema + server-side model_configurations applicability re-check).
+Previous session: 2026-06-04 — **03-03 COMPLETE — Phase 3 closed.** Created `tests/integration/fitment.test.ts` mirroring rls.test.ts (8 tests, live against Staging): 10-table anon-read + anon-write-deny, seed presence, and the gated every-slang-term-resolves assertion (orphan set EMPTY). Full suite 13 files / 68 passed, 1 skipped. Commits: 183fb10, 8ccce74.
 Previous session: 2026-06-04 — **03-02 COMPLETE.** User reviewed/approved the AI-generated seed; applied `supabase/seed.sql` to Staging non-destructively via `supabase db query --linked -f`, re-ran for idempotency, the `do $$` integrity assertion did not raise. All 10 tables anon-seeded (makes=2, models=17, configurations=9, model_configurations=44, search_terms=32, search_term_targets=40, part_categories=45, materials=8, conditions=8, special_filters=8), 0 dangling. Commits: 9a4fe4a, 73f3e92, 2cf2694, 97a3803.
 Earlier session: Completed 03-01-PLAN.md — opening Phase 3 (1/3 plans). Migration `0003_fitment_taxonomy.sql` ships the full 8-level fitment schema as reference tables: `makes→models→configurations` (configurations a shared master) + `model_configurations` applicability join; the slang link `search_terms` (citext unique) + `search_term_targets` (3 nullable FKs + `num_nonnulls=1` CHECK + idempotent unique index); flat `part_categories` (self-ref tree), `materials`, `conditions`, `special_filters`. Every table: RLS in-migration, one anon+authenticated SELECT policy, no write policy. Applied to Staging via `supabase db push`; all 10 tables anon-readable, anon INSERT blocked. Commits: 43367a1 (hierarchical core), d7fddbf (slang arc + L5–L8). Next: Plan 03-02 (seed.sql — the real fitment data), then 03-03 (tests).
 Resume file: None
