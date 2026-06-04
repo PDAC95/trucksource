@@ -40,8 +40,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **FITL-06**: Fitment library models Materials as Level 6 (Stainless Steel, Chrome, Aluminum, OEM, Aftermarket, etc.)
 - [x] **FITL-07**: Fitment library models Condition as Level 7 (New, NOS, New Take-Off, Like New, Used, Refurbished, Damaged, Core)
 - [x] **FITL-08**: Fitment library models Special Search Filters as Level 8 (Wide/Narrow Hood, Flat/Curved Glass, Day Cab, Sleeper, Heavy Haul, Universal Fit, etc.)
-- [ ] **FITL-09**: Fitment library includes "The Barnyard" anything-goes category (shop equipment, tools, collectibles, engines, transmissions, trailers, etc.)
-- [ ] **FITL-10**: A single part can be associated with many trucks/configurations/terms/categories (many-to-many fitment tagging)
+- [x] **FITL-09**: Fitment library includes "The Barnyard" anything-goes category (shop equipment, tools, collectibles, engines, transmissions, trailers, etc.)
+- [x] **FITL-10**: A single part can be associated with many trucks/configurations/terms/categories (many-to-many fitment tagging)
 
 ### Listings
 
@@ -161,8 +161,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FITL-06 | Phase 3 | Complete |
 | FITL-07 | Phase 3 | Complete |
 | FITL-08 | Phase 3 | Complete |
-| FITL-09 | Phase 3 | Pending |
-| FITL-10 | Phase 3 | Pending |
+| FITL-09 | Phase 3 | Complete |
+| FITL-10 | Phase 3 | Complete |
 | GRGE-01 | Phase 4 | Pending |
 | GRGE-02 | Phase 4 | Pending |
 | GRGE-03 | Phase 4 | Pending |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-04T17:14:06.219Z"
+last_updated: "2026-06-04T17:31:15.750Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 3 — Fitment Taxonomy & Slang Library is **IN PROGRESS** (1/3 plans). Plan 03-01 shipped the 8-level fitment schema as reference tables (`makes→models→configurations` hierarchy + `model_configurations` join, the `search_terms`/`search_term_targets` exclusive-arc slang link, and flat `part_categories`/`materials`/`conditions`/`special_filters`), all RLS default-deny with public SELECT, applied to Staging. Next: Plan 03-02 (seed.sql) then 03-03 (tests).
+**Current focus:** Phase 3 — Fitment Taxonomy & Slang Library is **IN PROGRESS** (2/3 plans). Plan 03-01 shipped the 8-level fitment schema as reference tables; Plan 03-02 seeded the reviewed launch dataset (Peterbilt+Kenworth makes, 17 iconic models, 9 shared configs + 44 applicability links, a 45-node part_categories tree, L6–L8 dimensions, and a 32-term trucker-slang dictionary where every term arc-resolves to a real entity — 0 dangling), applied to Staging idempotently and confirmed anon-readable across all 10 reference tables. Next: Plan 03-03 (tests).
 
 ## Current Position
 
 Phase: 3 of 11 (Fitment Taxonomy & Slang Library) — IN PROGRESS
-Plan: 03-01 done (1/3)
-Status: 03-01 complete & committed — migration `0003_fitment_taxonomy.sql` defines all 10 Phase-3 reference tables, each with RLS enabled in-migration, one anon+authenticated SELECT policy, and zero write policies (service-role-only). The slang link is FK-enforced: `search_term_targets` has three nullable FKs (make/model/config) + `exactly_one_target` CHECK (`num_nonnulls=1`), never a discriminator pattern. `configurations` is a shared master (decision-backed divergence from ARCHITECTURE.md's per-model sketch); applicability lives in `model_configurations`. Applied to Staging via `supabase db push`; all 10 tables confirmed anon-readable and anon INSERT confirmed blocked by RLS. Commits: 43367a1 (hierarchical core), d7fddbf (slang arc + L5–L8).
-Last activity: 2026-06-04 — Plan 03-01 schema-only (no data; seed is 03-02). Tables are empty but carry the unique constraints/indexes needed for idempotent `on conflict` seeding.
+Plan: 03-02 done (2/3)
+Status: 03-02 complete & committed — the reviewed launch dataset is now LIVE on Staging. `supabase/seed.sql` is idempotent and FK-by-natural-key (no literal ids): makes=2, models=17, configurations=9, model_configurations=44, search_terms=32, search_term_targets=40, part_categories=45, materials=8, conditions=8, special_filters=8. Every slang term arc-resolves to ≥1 seeded make/model/config (0 dangling; the 5 doc-cited terms all resolve), enforced by a closing `do $$` integrity assertion that did not raise. Applied to Staging non-destructively via `supabase db query --linked -f` (NOT `db reset --linked`), re-run to prove idempotency, and confirmed anon-readable across all 10 tables. `listing-fitment-join-spec.md` locks the 7 Phase-5 `listing_*` join tables + `is_barnyard` (FITL-09/10). Commits: 9a4fe4a (reference seed), 73f3e92 (slang + assertion), 2cf2694 (join spec), 97a3803 (Staging apply + anon verify). 03-01 commits: 43367a1, d7fddbf.
+Last activity: 2026-06-04 — Plan 03-02 seeded + applied + verified on Staging. Next: Plan 03-03 (tests against the seeded data).
 
-Progress: [███░░░░░░░] 33% (1/3 plans in Phase 3)
+Progress: [██████░░░░] 67% (2/3 plans in Phase 3)
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [███░░░░░░░] 33% (1/3 plans in Phase 3)
 | Phase 02-verified-seller-phone-otp P04 | ~35min | 4 tasks | 8 files |
 | Phase 02-verified-seller-phone-otp P04 | ~35min | 4 tasks | 8 files |
 | Phase 03-fitment-taxonomy-slang-library P01 | ~3min | 3 tasks | 1 files |
+| Phase 03-fitment-taxonomy-slang-library P02 | ~2min | 4 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Recent decisions affecting current work:
 - [Phase 02]: [Verify] /verify wizard step is server-derived from profiles_private (force-dynamic) — same columns the badge reads — so the flow resumes on return and never restarts; client steps advance only via router.refresh().
 - [Phase 03-fitment-taxonomy-slang-library]: [DB] configurations is a SHARED MASTER (unique name), not per-model — diverges from ARCHITECTURE.md's configurations.model_id by decision; applicability lives in model_configurations so search_term_targets.config_id resolves to one canonical row
 - [Phase 03-fitment-taxonomy-slang-library]: [DB] Slang link is an exclusive-arc polymorphic FK: search_term_targets has 3 nullable FKs (make/model/config) + exactly_one_target CHECK num_nonnulls=1; never a target_type/target_id discriminator — real FKs guarantee the target entity exists (RESEARCH Pitfall 1). citext term + coalesce(...,0) unique index make the seed idempotent
+- [Phase 03-fitment-taxonomy-slang-library]: [DB] seed.sql is idempotent + FK-by-natural-key (no literal ids); applied to Staging non-destructively via 'supabase db query --linked -f' (NOT db reset --linked); a closing do-block raises if any slang term has zero targets. 32 terms, 0 dangling — all anon-readable across 10 tables.
+- [Phase 03-fitment-taxonomy-slang-library]: [Process] AI-generated launch dataset (models/configs/slang) was USER-REVIEWED at the 03-02 human-verify checkpoint and approved as-is, no corrections — the slang→entity mappings are accepted as the launch quality bar.
 
 ### Pending Todos
 
@@ -109,7 +112,7 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- [Phase 3] Heavy-truck fitment taxonomy is product-novel (no clean ACES catalog) — researched (03-RESEARCH.md) and the schema is now live on Staging (03-01). Remaining risk shifts to the SEED quality (03-02): the real make/model/config/slang data is the product's quality ceiling, not the table shape.
+- [Phase 3] Heavy-truck fitment taxonomy is product-novel (no clean ACES catalog) — schema live (03-01) and the seed now shipped + user-reviewed + applied to Staging (03-02). Seed-quality risk is mitigated for launch (data accepted as-is); the dictionary stays extensible (natural-key, idempotent seed re-runnable to add terms). Residual: real-world slang coverage will need expansion as users surface terms search misses (Phase 7 telemetry).
 - [Phase 5] EXIF strip-and-re-encode pipeline is a "looks done but isn't" trap — flagged for deeper research; needs automated no-GPS test.
 - [Phase 6] Fitment Intelligence precision/recall is unproven — needs "report wrong fitment" feedback loop live to calibrate.
 - [Phase 9] Contact/chat abuse + Realtime Broadcast-from-trigger pattern warrant validation beyond the happy path.
@@ -118,6 +121,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-04
-Stopped at: **03-02 PAUSED at Task 4 checkpoint (human-verify, blocking).** Tasks 1-3 done & committed: `supabase/seed.sql` (idempotent, FK-by-natural-key, no literal ids) seeds Peterbilt+Kenworth makes, ~17 iconic models, the shared configuration master + domain-grounded `model_configurations` applicability, the 2-level `part_categories` tree, and bounded `materials`/`conditions`/`special_filters`; plus a 32-term curated slang dictionary (incl. the 5 doc-cited: 359 Guys, Flat Glass Kenworth, Aerodyne, Large Car, Glider) where every term arc-resolves to a seeded make/model/config, closed by a `do $$` integrity assertion that raises if any term dangles. `listing-fitment-join-spec.md` locks the 7 Phase-5 `listing_*` join tables + `is_barnyard` (FITL-09/10). Commits: 9a4fe4a (reference seed), 73f3e92 (slang + assertion), 2cf2694 (join spec). **AWAITING:** user reviews the AI-generated seed domain data (models/configs/slang correctness), requests any corrections, then approves AND applies the reviewed seed to Staging (the integrity do-block must run without raising). SUMMARY.md is intentionally NOT yet written — the plan is not complete past the checkpoint.
+Stopped at: **03-02 COMPLETE.** Resumed the Task-4 human-verify checkpoint: user reviewed the AI-generated seed domain data and approved it as-is (no corrections). Applied `supabase/seed.sql` to Staging non-destructively via `supabase db query --linked -f` (NOT `db reset --linked`), re-ran to prove idempotency, and the closing `do $$` integrity assertion ran without raising. Confirmed via the anon Supabase client that all 10 reference tables return seeded rows (makes=2, models=17, configurations=9, model_configurations=44, search_terms=32, search_term_targets=40, part_categories=45, materials=8, conditions=8, special_filters=8) with 0 dangling slang terms and all 5 doc-cited terms resolving. Task 4 committed `97a3803`; `03-02-SUMMARY.md` written; STATE + ROADMAP updated. Next: Plan 03-03 (tests against the seeded data) closes Phase 3.
 Previous session: Completed 03-01-PLAN.md — opening Phase 3 (1/3 plans). Migration `0003_fitment_taxonomy.sql` ships the full 8-level fitment schema as reference tables: `makes→models→configurations` (configurations a shared master) + `model_configurations` applicability join; the slang link `search_terms` (citext unique) + `search_term_targets` (3 nullable FKs + `num_nonnulls=1` CHECK + idempotent unique index); flat `part_categories` (self-ref tree), `materials`, `conditions`, `special_filters`. Every table: RLS in-migration, one anon+authenticated SELECT policy, no write policy. Applied to Staging via `supabase db push`; all 10 tables anon-readable, anon INSERT blocked. Commits: 43367a1 (hierarchical core), d7fddbf (slang arc + L5–L8). Next: Plan 03-02 (seed.sql — the real fitment data), then 03-03 (tests).
 Resume file: None
