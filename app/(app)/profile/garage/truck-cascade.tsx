@@ -48,6 +48,15 @@ import { Button } from "@/components/ui/button";
 // Radix Select values are strings; this sentinel represents "no config chosen".
 const NO_CONFIG = "__none__";
 
+// Year options for the (required) Year select: current year + 1 down to 1970,
+// matching the DB CHECK in migration 0005 (heavy-truck plausible range).
+const YEAR_MAX = 2027;
+const YEAR_MIN = 1970;
+const YEARS = Array.from(
+  { length: YEAR_MAX - YEAR_MIN + 1 },
+  (_, i) => YEAR_MAX - i,
+);
+
 // The make derivation for edit pre-fill comes from the parent (GarageTruck.makeId)
 // since truckSchema itself carries only modelId — we track the selected make in
 // local state to drive the dependent fetches.
@@ -55,6 +64,7 @@ export type TruckCascadeDefaults = {
   makeId: number;
   modelId: number;
   configId: number | null;
+  year: number;
   nickname: string;
 };
 
@@ -79,6 +89,7 @@ export function TruckCascade({
     defaultValues: {
       modelId: defaults?.modelId,
       configId: defaults?.configId ?? null,
+      year: defaults?.year,
       nickname: defaults?.nickname ?? "",
     },
   });
@@ -240,6 +251,35 @@ export function TruckCascade({
                   {configs.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* YEAR — REQUIRED (truckSchema.year). Select of current+1 down to 1970. */}
+        <FormField
+          control={form.control}
+          name="year"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Year</FormLabel>
+              <Select
+                value={field.value ? String(field.value) : undefined}
+                onValueChange={(v) => field.onChange(Number(v))}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a year" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {YEARS.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
                     </SelectItem>
                   ))}
                 </SelectContent>

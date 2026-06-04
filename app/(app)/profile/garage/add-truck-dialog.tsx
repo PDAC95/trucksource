@@ -88,6 +88,7 @@ export function AddTruckDialog({
         makeId: truck.makeId,
         modelId: truck.modelId,
         configId: truck.configId,
+        year: truck.year,
         nickname: truck.nickname ?? "",
       }
     : undefined;

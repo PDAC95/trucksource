@@ -38,7 +38,10 @@ import { AddTruckDialog } from "./add-truck-dialog";
 // page.
 
 function fitmentLabel(t: GarageTruck): string {
-  return [t.makeName, t.modelName, t.configName].filter(Boolean).join(" ");
+  // Year leads the fitment string, e.g. "2019 Peterbilt 379 Day Cab".
+  return [t.year, t.makeName, t.modelName, t.configName]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function TruckCard({
