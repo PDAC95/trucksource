@@ -102,7 +102,10 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. Trucker slang and aliases (e.g. "359 Guys", "Flat Glass Kenworth", "Aerodyne") are stored as data in a synonym/alias table, not hardcoded into queries
   3. A single part record can be associated with many trucks, configurations, terms, and categories simultaneously (many-to-many tagging)
   4. The launch make/region taxonomy and slang dictionary are seeded and browsable
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 03-01-PLAN.md — Wave 1: migration 0003 (8 reference tables + model_configurations + search_term_targets exclusive arc, RLS default-deny + public-read on each) applied to Staging
+- [ ] 03-02-PLAN.md — Wave 2: idempotent supabase/seed.sql (Peterbilt+KW models, shared configs, L5–L8, curated 20–40-term slang dictionary, seed-integrity do-block) + Phase-5 listing↔fitment/Barnyard spec + user-review checkpoint
+- [ ] 03-03-PLAN.md — Wave 3: tests/integration/fitment.test.ts (anon read/write-deny gate + seed-presence + every-slang-term-resolves) + full-suite regression
 
 ### Phase 4: My Garage
 **Goal**: A user can save one or more of their trucks (Make → Model → Configuration from the fitment library) to their profile — optionally, never forced at registration — so buyers can later filter to "fits my truck" and sellers get faster, pre-filled fitment when listing.
@@ -196,7 +199,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 0.1 Wiring & Tooling | 1/1 | In review | - |
 | 1. Foundation & Privacy Model | 5/5 | Complete (verified-partial) | 2026-06-03 |
 | 2. Verified Seller & Phone OTP | 5/5 | Complete | 2026-06-04 |
-| 3. Fitment Taxonomy & Slang Library | 0/TBD | Not started | - |
+| 3. Fitment Taxonomy & Slang Library | 0/3 | Planned | - |
 | 4. My Garage | 0/TBD | Not started | - |
 | 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
