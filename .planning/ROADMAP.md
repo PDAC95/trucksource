@@ -24,7 +24,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [x] **Phase 1: Foundation & Privacy Model** - Supabase + SSR auth, RLS default-deny baseline, public/private profile split, registration with public username (completed 2026-06-03, verified-partial — live email round-trip deferred to custom SMTP)
 - [x] **Phase 2: Verified Seller & Phone OTP** - Email + phone OTP + terms acceptance → server-computed Verified badge (completed 2026-06-04, verified 12/12; live Twilio round-trip confirmed)
 - [x] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data (completed 2026-06-04, verified 10/10 must-haves; seed applied to Staging, slang integrity gate green)
-- [ ] **Phase 4: My Garage** - Users save one or more trucks (make/model/config) to their profile; powers "fits my truck" filtering and accelerates seller fitment
+- [x] **Phase 4: My Garage** - Users save one or more trucks (make/model/config/**year**) to their profile; powers "fits my truck" filtering and accelerates seller fitment (completed 2026-06-04, live flow user-approved; required model year added)
 - [ ] **Phase 5: Listings, Photos & EXIF-Safe Storage** - Create/edit/sell listings, multi-photo upload with server-side EXIF strip, fitment tagging, shipping + contact preference
 - [ ] **Phase 6: Fitment Intelligence** - Rules-based suggestion of applicable trucks/configs/categories; seller-confirmed, never auto-applied; garage pre-fill
 - [ ] **Phase 7: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, "fits my truck" personalization, public profile, event logging
@@ -202,8 +202,8 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 0.1 Wiring & Tooling | 1/1 | In review | - |
 | 1. Foundation & Privacy Model | 5/5 | Complete (verified-partial) | 2026-06-03 |
 | 2. Verified Seller & Phone OTP | 5/5 | Complete | 2026-06-04 |
-| 3. Fitment Taxonomy & Slang Library | 0/3 | Planned | - |
-| 4. My Garage | 0/3 | Planned | - |
+| 3. Fitment Taxonomy & Slang Library | 3/3 | Complete | 2026-06-04 |
+| 4. My Garage | 3/3 | Complete | 2026-06-04 |
 | 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
 | 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
