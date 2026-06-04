@@ -32,14 +32,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Fitment Library
 
-- [ ] **FITL-01**: Fitment library models Make as Level 1 (Peterbilt, Kenworth, Freightliner, Western Star, Volvo, Mack, International, and others)
-- [ ] **FITL-02**: Fitment library models Model as Level 2, scoped under each Make
-- [ ] **FITL-03**: Fitment library models Configuration as Level 3 (e.g. Standard/Extended Hood, Day Cab, Sleeper, Flat Top, Mid/High Roof, Glider)
-- [ ] **FITL-04**: Fitment library models Common Search Terms / trucker slang as Level 4 (e.g. "359 Guys", "Flat Glass Kenworth", "Aerodyne")
-- [ ] **FITL-05**: Fitment library models Part Categories as Level 5 (Bumpers, Grilles, Visors, Deck Plates, etc.)
-- [ ] **FITL-06**: Fitment library models Materials as Level 6 (Stainless Steel, Chrome, Aluminum, OEM, Aftermarket, etc.)
-- [ ] **FITL-07**: Fitment library models Condition as Level 7 (New, NOS, New Take-Off, Like New, Used, Refurbished, Damaged, Core)
-- [ ] **FITL-08**: Fitment library models Special Search Filters as Level 8 (Wide/Narrow Hood, Flat/Curved Glass, Day Cab, Sleeper, Heavy Haul, Universal Fit, etc.)
+- [x] **FITL-01**: Fitment library models Make as Level 1 (Peterbilt, Kenworth, Freightliner, Western Star, Volvo, Mack, International, and others)
+- [x] **FITL-02**: Fitment library models Model as Level 2, scoped under each Make
+- [x] **FITL-03**: Fitment library models Configuration as Level 3 (e.g. Standard/Extended Hood, Day Cab, Sleeper, Flat Top, Mid/High Roof, Glider)
+- [x] **FITL-04**: Fitment library models Common Search Terms / trucker slang as Level 4 (e.g. "359 Guys", "Flat Glass Kenworth", "Aerodyne")
+- [x] **FITL-05**: Fitment library models Part Categories as Level 5 (Bumpers, Grilles, Visors, Deck Plates, etc.)
+- [x] **FITL-06**: Fitment library models Materials as Level 6 (Stainless Steel, Chrome, Aluminum, OEM, Aftermarket, etc.)
+- [x] **FITL-07**: Fitment library models Condition as Level 7 (New, NOS, New Take-Off, Like New, Used, Refurbished, Damaged, Core)
+- [x] **FITL-08**: Fitment library models Special Search Filters as Level 8 (Wide/Narrow Hood, Flat/Curved Glass, Day Cab, Sleeper, Heavy Haul, Universal Fit, etc.)
 - [ ] **FITL-09**: Fitment library includes "The Barnyard" anything-goes category (shop equipment, tools, collectibles, engines, transmissions, trailers, etc.)
 - [ ] **FITL-10**: A single part can be associated with many trucks/configurations/terms/categories (many-to-many fitment tagging)
 
@@ -153,14 +153,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERF-02 | Phase 2 | Complete |
 | VERF-03 | Phase 2 | Complete |
 | VERF-04 | Phase 2 | Complete |
-| FITL-01 | Phase 3 | Pending |
-| FITL-02 | Phase 3 | Pending |
-| FITL-03 | Phase 3 | Pending |
-| FITL-04 | Phase 3 | Pending |
-| FITL-05 | Phase 3 | Pending |
-| FITL-06 | Phase 3 | Pending |
-| FITL-07 | Phase 3 | Pending |
-| FITL-08 | Phase 3 | Pending |
+| FITL-01 | Phase 3 | Complete |
+| FITL-02 | Phase 3 | Complete |
+| FITL-03 | Phase 3 | Complete |
+| FITL-04 | Phase 3 | Complete |
+| FITL-05 | Phase 3 | Complete |
+| FITL-06 | Phase 3 | Complete |
+| FITL-07 | Phase 3 | Complete |
+| FITL-08 | Phase 3 | Complete |
 | FITL-09 | Phase 3 | Pending |
 | FITL-10 | Phase 3 | Pending |
 | GRGE-01 | Phase 4 | Pending |

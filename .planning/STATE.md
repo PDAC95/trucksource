@@ -3,25 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-04T15:41:32.134Z"
+last_updated: "2026-06-04T17:14:06.219Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: in_progress
-last_updated: "2026-06-04T15:33:13.345Z"
-progress:
-  total_phases: 11
-  completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 13
+  completed_plans: 11
 ---
 
 # Project State
@@ -31,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-01)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 2 — Verified Seller / Phone OTP is **COMPLETE** (5/5 plans). The full verified-seller flow ships: privacy-split phone/terms columns + is_verified_seller badge RPC (02-01), pure +1 geo + wizard Zod schemas (02-02), hardened OTP Server Actions + anti-abuse stack (02-03), the resume-on-abandon verification wizard UI (02-04), and the public verified badge (02-05). Next: Phase 3 — Fitment Taxonomy (flagged for /gsd:research-phase; product-novel).
+**Current focus:** Phase 3 — Fitment Taxonomy & Slang Library is **IN PROGRESS** (1/3 plans). Plan 03-01 shipped the 8-level fitment schema as reference tables (`makes→models→configurations` hierarchy + `model_configurations` join, the `search_terms`/`search_term_targets` exclusive-arc slang link, and flat `part_categories`/`materials`/`conditions`/`special_filters`), all RLS default-deny with public SELECT, applied to Staging. Next: Plan 03-02 (seed.sql) then 03-03 (tests).
 
 ## Current Position
 
-Phase: 2 of 11 (Verified Seller / Phone OTP) — COMPLETE
-Plan: 02-01 + 02-02 + 02-03 + 02-04 + 02-05 done (5/5)
-Status: 02-04 complete & committed — the force-dynamic /verify wizard (phone → 6-box OTP with live resend countdown + change-number → marketplace terms) derives its step server-side from the user's own profiles_private row, so it resumes on return and never restarts. Verified LIVE end-to-end with Twilio Verify configured on the dev env: real SMS delivered, code + terms accepted, redirected to dashboard; mid-flow resume landed on the OTP step; Staging data confirms phone_verified_at + marketplace_terms_accepted_at SET (terms_version=2026-06-03) and is_verified_seller RPC returns true. Commits: 9ffea5c (page + input-otp), fa18982 (step components), 377edc2 (e2e).
-Last activity: 2026-06-04 — Plan 02-04 closed the phase. Wizard is DB-as-state (single source of truth = profiles_private, the same columns the badge reads); client steps advance only via router.refresh() so the force-dynamic server page is the sole step-decider. Deferred (not regressions): BotID is prod-only (untested live locally); /terms link target route still missing (same gap as register form). Twilio trial account sends only to Verified Caller IDs until upgraded.
+Phase: 3 of 11 (Fitment Taxonomy & Slang Library) — IN PROGRESS
+Plan: 03-01 done (1/3)
+Status: 03-01 complete & committed — migration `0003_fitment_taxonomy.sql` defines all 10 Phase-3 reference tables, each with RLS enabled in-migration, one anon+authenticated SELECT policy, and zero write policies (service-role-only). The slang link is FK-enforced: `search_term_targets` has three nullable FKs (make/model/config) + `exactly_one_target` CHECK (`num_nonnulls=1`), never a discriminator pattern. `configurations` is a shared master (decision-backed divergence from ARCHITECTURE.md's per-model sketch); applicability lives in `model_configurations`. Applied to Staging via `supabase db push`; all 10 tables confirmed anon-readable and anon INSERT confirmed blocked by RLS. Commits: 43367a1 (hierarchical core), d7fddbf (slang arc + L5–L8).
+Last activity: 2026-06-04 — Plan 03-01 schema-only (no data; seed is 03-02). Tables are empty but carry the unique constraints/indexes needed for idempotent `on conflict` seeding.
 
-Progress: [██████████] 100% (5/5 plans in Phase 2)
+Progress: [███░░░░░░░] 33% (1/3 plans in Phase 3)
 
 ## Performance Metrics
 
@@ -74,6 +61,7 @@ Progress: [██████████] 100% (5/5 plans in Phase 2)
 | Phase 02-verified-seller-phone-otp P03 | 7min | 3 tasks | 12 files |
 | Phase 02-verified-seller-phone-otp P04 | ~35min | 4 tasks | 8 files |
 | Phase 02-verified-seller-phone-otp P04 | ~35min | 4 tasks | 8 files |
+| Phase 03-fitment-taxonomy-slang-library P01 | ~3min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -111,6 +99,8 @@ Recent decisions affecting current work:
 - [Phase 02]: [Verify] Only the abuse store (otp_send_attempts/abuse_events) uses the service-role admin client; all owner PII writes (phone, phone_verified_at, marketplace terms) go through the cookie-bound getClaims user client so owner RLS scopes them. Abuse alerting is best-effort/error-swallowed — the abuse_events row is the durable record, the Resend admin email is opportunistic.
 - [Phase 02]: [Infra] botid@1.5.11 moved initBotId to 'botid/client/core' (the 'botid/client' entry is now the <BotIdClient> component). [Testing] 'server-only' is aliased to a no-op stub (tests/stubs/server-only.ts) in vitest.config so server-only lib modules unit-test under jsdom; the real RSC boundary is still enforced at Next build.
 - [Phase 02]: [Verify] /verify wizard step is server-derived from profiles_private (force-dynamic) — same columns the badge reads — so the flow resumes on return and never restarts; client steps advance only via router.refresh().
+- [Phase 03-fitment-taxonomy-slang-library]: [DB] configurations is a SHARED MASTER (unique name), not per-model — diverges from ARCHITECTURE.md's configurations.model_id by decision; applicability lives in model_configurations so search_term_targets.config_id resolves to one canonical row
+- [Phase 03-fitment-taxonomy-slang-library]: [DB] Slang link is an exclusive-arc polymorphic FK: search_term_targets has 3 nullable FKs (make/model/config) + exactly_one_target CHECK num_nonnulls=1; never a target_type/target_id discriminator — real FKs guarantee the target entity exists (RESEARCH Pitfall 1). citext term + coalesce(...,0) unique index make the seed idempotent
 
 ### Pending Todos
 
@@ -119,7 +109,7 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- [Phase 3] Heavy-truck fitment taxonomy is product-novel (no clean ACES catalog) — flagged for /gsd:research-phase; prototype early.
+- [Phase 3] Heavy-truck fitment taxonomy is product-novel (no clean ACES catalog) — researched (03-RESEARCH.md) and the schema is now live on Staging (03-01). Remaining risk shifts to the SEED quality (03-02): the real make/model/config/slang data is the product's quality ceiling, not the table shape.
 - [Phase 5] EXIF strip-and-re-encode pipeline is a "looks done but isn't" trap — flagged for deeper research; needs automated no-GPS test.
 - [Phase 6] Fitment Intelligence precision/recall is unproven — needs "report wrong fitment" feedback loop live to calibrate.
 - [Phase 9] Contact/chat abuse + Realtime Broadcast-from-trigger pattern warrant validation beyond the happy path.
@@ -128,5 +118,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-06-04
-Stopped at: Completed 02-04-PLAN.md — closing Phase 2 (5/5 plans). The resume-on-abandon /verify wizard (phone → 6-box OTP w/ live resend countdown + change-number → marketplace terms) is live-verified end-to-end with Twilio Verify configured on the dev env: real SMS, code + terms accepted, dashboard redirect; mid-flow resume landed on OTP; Staging confirms phone_verified_at + marketplace_terms_accepted_at SET (terms_version=2026-06-03) and is_verified_seller RPC true. Commits: 9ffea5c (page + input-otp), fa18982 (steps), 377edc2 (e2e). Twilio dev creds (TWILIO_*, OTP_SEND_DAILY_CAP=200, RESEND_API_KEY, ABUSE_ALERT_EMAIL=12gapatricio@gmail.com) now in .env.local — trial account, sends only to Verified Caller IDs until upgraded. Next: Phase 3 (Fitment Taxonomy) — flagged for /gsd:research-phase.
+Stopped at: Completed 03-01-PLAN.md — opening Phase 3 (1/3 plans). Migration `0003_fitment_taxonomy.sql` ships the full 8-level fitment schema as reference tables: `makes→models→configurations` (configurations a shared master) + `model_configurations` applicability join; the slang link `search_terms` (citext unique) + `search_term_targets` (3 nullable FKs + `num_nonnulls=1` CHECK + idempotent unique index); flat `part_categories` (self-ref tree), `materials`, `conditions`, `special_filters`. Every table: RLS in-migration, one anon+authenticated SELECT policy, no write policy. Applied to Staging via `supabase db push`; all 10 tables anon-readable, anon INSERT blocked. Commits: 43367a1 (hierarchical core), d7fddbf (slang arc + L5–L8). Next: Plan 03-02 (seed.sql — the real fitment data), then 03-03 (tests).
 Resume file: None
