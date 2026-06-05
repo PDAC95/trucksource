@@ -132,7 +132,12 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. A seller can upload multiple photos to a listing, and every stored/displayed photo has all metadata — including EXIF GPS — stripped server-side (verified by an automated no-GPS test)
   3. A seller can select a shipping option per listing: Shipping Available / Local Pickup Only / Shipping Assistance Requested
   4. A seller can set an account-level contact preference: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 05-01-PLAN.md — Wave 1: 0006 listings/fitment/photos/view-events migration (RLS default-deny) + 0007 storage bucket/RLS + lib/images/strip.ts EXIF gate + P0 no-GPS test + listings RLS integration test + sharp/exifr/dnd-kit deps
+- [ ] 05-02-PLAN.md — Wave 1: listingSchema (client+server zod) + getConditions reader + 0008 active_listing_count rewrite (PRIV-03) + schema unit tests
+- [ ] 05-03-PLAN.md — Wave 2: createListing/updateListing/uploadListingPhoto/removeListingPhoto Server Actions (getClaims, EXIF-strip wiring, photo-path ownership, combo re-check, owner RLS) + getListing/getMyListings read surface + actions unit test
+- [ ] 05-04-PLAN.md — Wave 3: sectioned listing form (RHF+listingSchema) — multi-fit cascade + Barnyard toggle, dnd-kit photo uploader (immediate upload, first=cover), shipping radio, /sell + /sell/[id]/edit, live human-verify
+- [ ] 05-05-PLAN.md — Wave 3: 0009 contact_preference on profiles_public (LIST-07) + /account control + public /listings/[id] detail page (zero PII) + listing-view event logging + next/image host whitelist
 
 ### Phase 6: Fitment Intelligence
 **Goal**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories from the populated library (pre-filled by the seller's garage where relevant); the seller confirms (never auto-applied), and a confirmed listing then surfaces in every applicable fitment search result. Tuned for precision over recall.
@@ -204,7 +209,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 2. Verified Seller & Phone OTP | 5/5 | Complete | 2026-06-04 |
 | 3. Fitment Taxonomy & Slang Library | 3/3 | Complete | 2026-06-04 |
 | 4. My Garage | 3/3 | Complete | 2026-06-04 |
-| 5. Listings, Photos & EXIF-Safe Storage | 0/TBD | Not started | - |
+| 5. Listings, Photos & EXIF-Safe Storage | 0/5 | Planned | - |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
 | 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
 | 8. Social Layer | 0/TBD | Not started | - |
