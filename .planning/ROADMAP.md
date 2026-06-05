@@ -209,7 +209,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 2. Verified Seller & Phone OTP | 5/5 | Complete | 2026-06-04 |
 | 3. Fitment Taxonomy & Slang Library | 3/3 | Complete | 2026-06-04 |
 | 4. My Garage | 3/3 | Complete | 2026-06-04 |
-| 5. Listings, Photos & EXIF-Safe Storage | 0/5 | Planned | - |
+| 5. Listings, Photos & EXIF-Safe Storage | 1/5 | In Progress|  |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
 | 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
 | 8. Social Layer | 0/TBD | Not started | - |

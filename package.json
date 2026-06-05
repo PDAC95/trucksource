@@ -77,8 +77,6 @@
     "*.{json,css,md}": [
       "prettier --write"
     ],
-    "*.sql": [
-      "prettier --write"
-    ]
+    "*.sql": []
   }
 }
