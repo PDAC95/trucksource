@@ -133,8 +133,8 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   3. A seller can select a shipping option per listing: Shipping Available / Local Pickup Only / Shipping Assistance Requested
   4. A seller can set an account-level contact preference: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
 **Plans**: 5 plans
-- [ ] 05-01-PLAN.md — Wave 1: 0006 listings/fitment/photos/view-events migration (RLS default-deny) + 0007 storage bucket/RLS + lib/images/strip.ts EXIF gate + P0 no-GPS test + listings RLS integration test + sharp/exifr/dnd-kit deps
-- [ ] 05-02-PLAN.md — Wave 1: listingSchema (client+server zod) + getConditions reader + 0008 active_listing_count rewrite (PRIV-03) + schema unit tests
+- [x] 05-01-PLAN.md — Wave 1: 0006 listings/fitment/photos/view-events migration (RLS default-deny) + 0007 storage bucket/RLS + lib/images/strip.ts EXIF gate + P0 no-GPS test + listings RLS integration test + sharp/exifr/dnd-kit deps
+- [x] 05-02-PLAN.md — Wave 1: listingSchema (client+server zod) + getConditions reader + 0008 active_listing_count rewrite (PRIV-03) + schema unit tests
 - [ ] 05-03-PLAN.md — Wave 2: createListing/updateListing/uploadListingPhoto/removeListingPhoto Server Actions (getClaims, EXIF-strip wiring, photo-path ownership, combo re-check, owner RLS) + getListing/getMyListings read surface + actions unit test
 - [ ] 05-04-PLAN.md — Wave 3: sectioned listing form (RHF+listingSchema) — multi-fit cascade + Barnyard toggle, dnd-kit photo uploader (immediate upload, first=cover), shipping radio, /sell + /sell/[id]/edit, live human-verify
 - [ ] 05-05-PLAN.md — Wave 3: 0009 contact_preference on profiles_public (LIST-07) + /account control + public /listings/[id] detail page (zero PII) + listing-view event logging + next/image host whitelist
