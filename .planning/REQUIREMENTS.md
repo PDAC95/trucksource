@@ -45,9 +45,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Listings
 
-- [ ] **LIST-01**: Seller can create a listing with public part info: Part Title, Part Number, Make, Model, Fitment, Condition, Material, Asking Price, Damage Notes, Date Listed
-- [ ] **LIST-02**: Seller can upload multiple photos with a listing
-- [ ] **LIST-03**: Uploaded photos have all metadata (including EXIF GPS) stripped server-side before they are stored or displayed
+- [x] **LIST-01**: Seller can create a listing with public part info: Part Title, Part Number, Make, Model, Fitment, Condition, Material, Asking Price, Damage Notes, Date Listed
+- [x] **LIST-02**: Seller can upload multiple photos with a listing
+- [x] **LIST-03**: Uploaded photos have all metadata (including EXIF GPS) stripped server-side before they are stored or displayed
 - [ ] **LIST-04**: Seller can select a shipping option: Shipping Available / Local Pickup Only / Shipping Assistance Requested
 - [ ] **LIST-05**: Seller can edit their own listings
 - [ ] **LIST-06**: Seller can mark their own listing as "Sold"
@@ -167,9 +167,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GRGE-02 | Phase 4 | Complete |
 | GRGE-03 | Phase 4 | Complete |
 | GRGE-04 | Phase 4 | Complete |
-| LIST-01 | Phase 5 | Pending |
-| LIST-02 | Phase 5 | Pending |
-| LIST-03 | Phase 5 | Pending |
+| LIST-01 | Phase 5 | Complete |
+| LIST-02 | Phase 5 | Complete |
+| LIST-03 | Phase 5 | Complete |
 | LIST-04 | Phase 5 | Pending |
 | LIST-05 | Phase 5 | Pending |
 | LIST-07 | Phase 5 | Pending |
