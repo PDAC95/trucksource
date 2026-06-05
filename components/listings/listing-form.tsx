@@ -190,17 +190,24 @@ export function ListingForm({
 
     setPending(true);
     React.startTransition(async () => {
-      const result =
-        mode === "edit" && listingId != null
-          ? await updateListing(listingId, payload)
-          : await createListing(payload);
+      // Edit and create return different success shapes (only createListing carries
+      // an id), so keep the branches separate to narrow the union cleanly.
+      if (mode === "edit" && listingId != null) {
+        const result = await updateListing(listingId, payload);
+        if (result.ok) {
+          toast.success("Listing updated");
+          router.push(`/listings/${listingId}`); // CONTEXT: redirect to the listing
+        } else {
+          toast.error(actionErrorMessage(result.error));
+          setPending(false);
+        }
+        return;
+      }
 
+      const result = await createListing(payload);
       if (result.ok) {
-        toast.success(
-          mode === "edit" ? "Listing updated" : "Listing published",
-        );
-        const id = mode === "edit" ? listingId! : result.id;
-        router.push(`/listings/${id}`); // CONTEXT: redirect to the public listing
+        toast.success("Listing published");
+        router.push(`/listings/${result.id}`); // CONTEXT: redirect to the listing
       } else {
         toast.error(actionErrorMessage(result.error));
         setPending(false);
@@ -276,7 +283,9 @@ export function ListingForm({
                       step="0.01"
                       placeholder="0.00"
                       {...field}
-                      value={field.value ?? ""}
+                      value={
+                        field.value == null ? "" : String(field.value as number)
+                      }
                     />
                   </FormControl>
                   <FormMessage />
