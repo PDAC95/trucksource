@@ -14,3 +14,31 @@ Out-of-scope discoveries logged during execution (not fixed by the owning plan).
   At first attempt `public.listings` did not exist (created by parallel plan 05-01, same wave) →
   `42P01`. Retried after 05-01 landed `0006_listings.sql`; 0008 applied cleanly and the RPC was
   verified (`active_listing_count('…000'::uuid)` returns 0). No outstanding action.
+
+## From 05-04 execution (2026-06-05)
+
+- **Incomplete untracked 05-05 artifacts present in the working tree.** `app/(app)/account/page.tsx`
+  imports `./contact-preference-form`, which does not exist yet → a project-wide `tsc --noEmit`
+  error (`TS2307`). These files (`app/(app)/account/`, `lib/account/`, `lib/actions/account.ts`,
+  `supabase/migrations/0009_contact_preference.sql`, `tests/integration/contact-preference.test.ts`)
+  are uncommitted outputs of a partial/parallel plan 05-05 run, NOT owned by 05-04. Out of scope —
+  05-04 owns only `components/listings/*` + `app/(app)/sell/*`, which compile clean in isolation.
+  Owner: 05-05 (will be completed/committed by the 05-05 executor). Not fixed here.
+
+## From 05-05 execution (2026-06-05)
+
+- **Two tsc / `npm run build` type errors in `components/listings/listing-form.tsx`** (committed by
+  05-04 in `0510486`, NOT a 05-05 file):
+  1. `listing-form.tsx:202:58 — Property 'id' does not exist on type '{ ok: true; }'`. The publish
+     handler does `const id = mode === "edit" ? listingId! : result.id`. The `result` union is
+     `UpdateListingResult | CreateListingResult`; only `createListing`'s success arm carries `id`, so
+     TS cannot prove `.id` exists on the joined union. The ternary needs to read `result.id` only
+     inside the create branch (where the union is already narrowed).
+  2. `listing-form.tsx:279:23 — Type '{}' is not assignable to ... value` on the askingPrice `<Input>`
+     (`field.value ?? ""` where the RHF field value is typed `{}`).
+  These are owned by plan 05-04 (`components/listings/*`). 05-05's own files
+  (`components/listings/listing-detail.tsx`, `lib/actions/listing-view.ts`,
+  `app/(public)/listings/[id]/page.tsx`, `app/(app)/account/*`, `lib/account/*`,
+  `lib/actions/account.ts`) all compile clean — they do NOT appear in the tsc output. The phase-level
+  "build green" gate is therefore RED for a 05-04 defect, not a 05-05 one. Out of scope — not fixed
+  here. Owner: 05-04.
