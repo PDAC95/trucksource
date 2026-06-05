@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **LIST-04**: Seller can select a shipping option: Shipping Available / Local Pickup Only / Shipping Assistance Requested
 - [x] **LIST-05**: Seller can edit their own listings
 - [ ] **LIST-06**: Seller can mark their own listing as "Sold"
-- [ ] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
+- [x] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
 
 ### My Garage
 
@@ -172,7 +172,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIST-03 | Phase 5 | Complete |
 | LIST-04 | Phase 5 | Pending |
 | LIST-05 | Phase 5 | Complete |
-| LIST-07 | Phase 5 | Pending |
+| LIST-07 | Phase 5 | Complete |
 | FINT-01 | Phase 6 | Pending |
 | FINT-02 | Phase 6 | Pending |
 | FINT-03 | Phase 6 | Pending |
