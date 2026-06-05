@@ -49,7 +49,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIST-02**: Seller can upload multiple photos with a listing
 - [x] **LIST-03**: Uploaded photos have all metadata (including EXIF GPS) stripped server-side before they are stored or displayed
 - [ ] **LIST-04**: Seller can select a shipping option: Shipping Available / Local Pickup Only / Shipping Assistance Requested
-- [ ] **LIST-05**: Seller can edit their own listings
+- [x] **LIST-05**: Seller can edit their own listings
 - [ ] **LIST-06**: Seller can mark their own listing as "Sold"
 - [ ] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
 
@@ -171,7 +171,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIST-02 | Phase 5 | Complete |
 | LIST-03 | Phase 5 | Complete |
 | LIST-04 | Phase 5 | Pending |
-| LIST-05 | Phase 5 | Pending |
+| LIST-05 | Phase 5 | Complete |
 | LIST-07 | Phase 5 | Pending |
 | FINT-01 | Phase 6 | Pending |
 | FINT-02 | Phase 6 | Pending |
