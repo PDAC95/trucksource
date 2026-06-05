@@ -108,3 +108,213 @@ export async function removeListingPhoto(
     .remove([path]);
   return { ok: !error };
 }
+
+// Positive-int id guard for the edit handle (the client passes a number, but it is
+// untrusted like everything else at this boundary — copied from garage.ts).
+function isValidId(id: unknown): id is number {
+  return typeof id === "number" && Number.isInteger(id) && id > 0;
+}
+
+export type CreateListingResult =
+  | { ok: true; id: number }
+  | {
+      ok: false;
+      error:
+        | "unauthenticated"
+        | "invalid"
+        | "invalid_combo"
+        | "invalid_photo_path"
+        | "insert_failed";
+    };
+
+/**
+ * Create a listing (LIST-01), mirroring addTruck's trust boundary. Order:
+ *   1. getClaims identity (else unauthenticated)
+ *   2. listingSchema re-validation (else invalid)
+ *   3. photo-path ownership: every submitted path must start with `<uid>/` (Pitfall 5,
+ *      else invalid_photo_path) — a seller can't attach another user's staged bytes
+ *   4. per-fitment combo re-check vs model_configurations (only when configId set;
+ *      else invalid_combo) — same rule as addTruck
+ *   5. insert the listing under owner RLS (seller_id = userId); else insert_failed
+ *   6. bulk-insert listing_fitment + ordered listing_photos (index 0 = cover) under
+ *      the EXISTS owner-write policy
+ *
+ * v1 accepts best-effort SEQUENTIAL inserts (05-RESEARCH Open Q3): if a child insert
+ * fails after the listing row lands, the listing exists with partial children. The
+ * future atomic upgrade is a SECURITY INVOKER RPC — deliberately NOT built now.
+ */
+export async function createListing(
+  input: unknown,
+): Promise<CreateListingResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  const parsed = listingSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const v = parsed.data;
+
+  // 3) PHOTO-PATH OWNERSHIP (Pitfall 5) — reject any path outside the caller's folder.
+  if (v.photoPaths.some((p) => !p.startsWith(`${userId}/`)))
+    return { ok: false, error: "invalid_photo_path" };
+
+  // 4) COMBO RE-CHECK — each fitment with a config must be a real model/config pair.
+  for (const f of v.fitment) {
+    if (f.configId != null) {
+      const { data: combo } = await supabase
+        .from("model_configurations")
+        .select("model_id")
+        .eq("model_id", f.modelId)
+        .eq("configuration_id", f.configId)
+        .maybeSingle();
+      if (!combo) return { ok: false, error: "invalid_combo" };
+    }
+  }
+
+  // 5) INSERT the listing — seller_id explicit (RLS with-check also enforces it).
+  // status / date_listed default in the DB (v1 publishes 'active').
+  const { data: listing, error } = await supabase
+    .from("listings")
+    .insert({
+      seller_id: userId,
+      title: v.title,
+      part_number: v.partNumber || null,
+      asking_price: v.askingPrice,
+      condition_id: v.conditionId,
+      shipping_option: v.shippingOption,
+      damage_notes: v.damageNotes || null,
+      is_barnyard: v.isBarnyard,
+    })
+    .select("id")
+    .single();
+
+  if (error || !listing) return { ok: false, error: "insert_failed" };
+
+  // 6) CHILDREN — fitment combos + ordered photos (index 0 is the cover). These pass
+  // the EXISTS owner-write policy because the parent listing's seller_id = userId.
+  if (v.fitment.length > 0) {
+    await supabase.from("listing_fitment").insert(
+      v.fitment.map((f) => ({
+        listing_id: listing.id,
+        model_id: f.modelId,
+        config_id: f.configId ?? null,
+      })),
+    );
+  }
+  if (v.photoPaths.length > 0) {
+    await supabase.from("listing_photos").insert(
+      v.photoPaths.map((storage_path, index) => ({
+        listing_id: listing.id,
+        storage_path,
+        sort_order: index, // index 0 = cover
+      })),
+    );
+  }
+
+  // Caller redirects to /listings/<id> (CONTEXT: publish -> public page).
+  return { ok: true, id: listing.id };
+}
+
+export type UpdateListingResult =
+  | { ok: true }
+  | {
+      ok: false;
+      error:
+        | "unauthenticated"
+        | "invalid"
+        | "invalid_combo"
+        | "invalid_photo_path"
+        | "not_found";
+    };
+
+/**
+ * Edit the caller's own listing (LIST-05), mirroring updateTruck. Same guards as
+ * createListing (getClaims, schema, photo-path ownership, combo re-check). The
+ * listings update is owner-scoped: zero rows affected (non-owner OR nonexistent)
+ * collapses to not_found — no existence leak (the updateTruck rule).
+ *
+ * CHILD SYNC = "replace children": delete this listing's existing listing_fitment +
+ * listing_photos (the EXISTS owner-write policy scopes the delete) then re-insert
+ * from the submitted arrays. The simplest correct edit — the submitted arrays are
+ * the new full truth for fitment + photo order.
+ */
+export async function updateListing(
+  id: number,
+  input: unknown,
+): Promise<UpdateListingResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const parsed = listingSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const v = parsed.data;
+
+  // PHOTO-PATH OWNERSHIP (Pitfall 5) — same guard as createListing.
+  if (v.photoPaths.some((p) => !p.startsWith(`${userId}/`)))
+    return { ok: false, error: "invalid_photo_path" };
+
+  // COMBO RE-CHECK — same rule as createListing.
+  for (const f of v.fitment) {
+    if (f.configId != null) {
+      const { data: combo } = await supabase
+        .from("model_configurations")
+        .select("model_id")
+        .eq("model_id", f.modelId)
+        .eq("configuration_id", f.configId)
+        .maybeSingle();
+      if (!combo) return { ok: false, error: "invalid_combo" };
+    }
+  }
+
+  // Owner-scoped update; RLS restricts the row to the owner, the explicit seller_id
+  // eq is belt-and-suspenders. Zero rows => not_found (non-owner or nonexistent).
+  const { data: updated, error } = await supabase
+    .from("listings")
+    .update({
+      title: v.title,
+      part_number: v.partNumber || null,
+      asking_price: v.askingPrice,
+      condition_id: v.conditionId,
+      shipping_option: v.shippingOption,
+      damage_notes: v.damageNotes || null,
+      is_barnyard: v.isBarnyard,
+    })
+    .eq("id", id)
+    .eq("seller_id", userId)
+    .select("id");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!updated || updated.length === 0)
+    return { ok: false, error: "not_found" };
+
+  // REPLACE CHILDREN — wipe then re-insert fitment + photos (owner-write EXISTS scopes
+  // the delete to this listing). Submitted arrays are the new full truth.
+  await supabase.from("listing_fitment").delete().eq("listing_id", id);
+  await supabase.from("listing_photos").delete().eq("listing_id", id);
+
+  if (v.fitment.length > 0) {
+    await supabase.from("listing_fitment").insert(
+      v.fitment.map((f) => ({
+        listing_id: id,
+        model_id: f.modelId,
+        config_id: f.configId ?? null,
+      })),
+    );
+  }
+  if (v.photoPaths.length > 0) {
+    await supabase.from("listing_photos").insert(
+      v.photoPaths.map((storage_path, index) => ({
+        listing_id: id,
+        storage_path,
+        sort_order: index, // index 0 = cover
+      })),
+    );
+  }
+
+  return { ok: true };
+}
