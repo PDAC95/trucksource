@@ -10,9 +10,7 @@ Out-of-scope discoveries logged during execution (not fixed by the owning plan).
   (no file overlap with 05-02's `lib/listings/*` + migration 0008). 05-02's own modules compile clean.
   Owner: 05-01.
 
-- **Migration `0008_active_listing_count.sql` could not be applied to Staging during 05-02** because
-  `public.listings` does not exist yet — it is created by plan 05-01, which runs in the SAME wave and
-  had not landed its migration at 05-02 execution time. The plan's `language sql` body resolves
-  `public.listings` at function-creation time. The migration FILE is complete and content-verified;
-  it must be APPLIED to Staging AFTER 05-01's listings migration lands (wave-ordering constraint the
-  orchestrator owns). Apply with: `supabase db query --linked -f supabase/migrations/0008_active_listing_count.sql`.
+- **[RESOLVED] Migration `0008_active_listing_count.sql` Staging apply was blocked on 05-01's `listings` table.**
+  At first attempt `public.listings` did not exist (created by parallel plan 05-01, same wave) →
+  `42P01`. Retried after 05-01 landed `0006_listings.sql`; 0008 applied cleanly and the RPC was
+  verified (`active_listing_count('…000'::uuid)` returns 0). No outstanding action.

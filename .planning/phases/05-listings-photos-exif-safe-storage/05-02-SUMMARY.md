@@ -87,17 +87,17 @@ completed: 2026-06-05
 
 ### Blocking issue (could not fully resolve within this plan's wave)
 
-**1. [Rule 3 - Blocking] migration 0008 cannot apply to Staging until 05-01's `listings` table lands**
+**1. [Rule 3 - Blocking] migration 0008 could not apply to Staging until 05-01's `listings` table landed — RESOLVED before plan close**
 - **Found during:** Task 2
-- **Issue:** The plan declares 05-02 "independent of 05-01," but the `language sql` body of `active_listing_count` references `public.listings`, which Postgres resolves at function-creation time. `public.listings` is created by plan 05-01, which runs in the SAME wave and had not committed its migration at 05-02 execution time. `supabase db query --linked -f` returned `42P01: relation "public.listings" does not exist`.
-- **Resolution:** The migration FILE is complete and content-verified (the plan's automated check passed). Staging application is deferred to after 05-01's listings migration lands — a wave-ordering constraint the orchestrator owns. Logged to `deferred-items.md` with the exact apply command. No code change to the migration is warranted (the body is correct; only the apply order is constrained).
+- **Issue:** The plan declares 05-02 "independent of 05-01," but the `language sql` body of `active_listing_count` references `public.listings`, which Postgres resolves at function-creation time. `public.listings` is created by plan 05-01, which runs in the SAME wave. At first apply attempt `supabase db query --linked -f` returned `42P01: relation "public.listings" does not exist`.
+- **Resolution:** Committed the content-verified migration file, then RETRIED the Staging apply once 05-01 had landed its `0006_listings.sql`. Migration 0008 applied cleanly; verified `select public.active_listing_count('…000'::uuid)` returns `0` for a seller with no active listings (correct anon-safe integer, no error). No code change to the migration was needed — only the apply order was constrained.
 - **Files modified:** none beyond the planned migration file
-- **Committed in:** `b426e99` (Task 2); deferral noted in `deferred-items.md`
+- **Committed in:** `b426e99` (Task 2)
 
 ---
 
-**Total deviations:** 1 blocking (resolution deferred to wave ordering, not a code fix)
-**Impact on plan:** No scope change. The migration file artifact is delivered and content-verified; only its Staging application waits on 05-01. All schema/reader code is complete and tested.
+**Total deviations:** 1 blocking (wave-ordering; resolved by retrying the apply after 05-01 landed, no code fix)
+**Impact on plan:** No scope change. All schema/reader code is complete + tested; migration 0008 is applied + verified on Staging.
 
 ## Issues Encountered
 - A pre-existing tsc error in `tests/unit/exif-strip.test.ts` (owned by parallel plan 05-01, sharp `ifd0` typing) was observed during the global typecheck. Out of scope for 05-02 (no file overlap; 05-02's own modules compile clean). Logged to `deferred-items.md` for 05-01's owner.
@@ -108,7 +108,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 - `listingSchema` is the stable contract for 05-03/05-04 (create/edit actions) and 05-05 (form UI) — they must import it, never re-derive rules.
 - `getConditions()` is ready to feed the form's required Condition select.
-- **Blocker for the orchestrator:** apply `supabase/migrations/0008_active_listing_count.sql` to Staging AFTER 05-01's `listings` migration is applied, then verify the RPC returns a real count (0 for a fresh seller).
+- `active_listing_count` is applied + verified on Staging (RPC returns 0 for a fresh seller) — no orchestrator follow-up needed.
 
 ---
 *Phase: 05-listings-photos-exif-safe-storage*
