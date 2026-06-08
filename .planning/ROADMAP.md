@@ -150,7 +150,12 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. A seller's public name defaults to the anonymous system handle; the seller can opt in to show a real/business name (replacing the handle) through a deliberate action with a clear "this will be public" warning, and the legal private name is never exposed by it
   3. A listing automatically expires 90 days after listing/last renewal; the seller is notified near expiry and can renew in one click; an unrenewed listing becomes `expired` (hidden from search, not deleted, reactivable in one click)
   4. When the same seller creates a listing similar to one they already have, a soft non-blocking warning is shown but they can always publish
-**Plans**: TBD
+**Plans**: 5 plans
+- [ ] 5.1-01-PLAN.md — Wave 1: migration 0010 (seller_type + display_name on profiles_public, status CHECK +expired, expires_at + backfill, partial + trigram indexes, notifications table, find_similar_own_listings fn) + badge contract + extended account schema + Wave-0 privacy/reveal-revert/flip tests
+- [ ] 5.1-02-PLAN.md — Wave 2: ACCT-07/08 — updateSellerType/updateDisplayName actions, reusable SellerTypeBadge, reveal-confirmation display-name form + revert, /account controls, public profile shows coalesce(display_name, username) + badge
+- [ ] 5.1-03-PLAN.md — Wave 2: LIST-09 lifecycle — renew/reactivate actions (active-only / expired-only, +90d), lifecycle-aware reads (owner expiringSoon/expired; buyer excludes expired), My Listings expiry/Reactivate states + detail-page owner Renew + guard-order test
+- [ ] 5.1-04-PLAN.md — Wave 2: LIST-10 — findSimilarOwnListings advisory probe (pg_trgm RPC, never blocks), non-accusatory duplicate-warning dialog with links + Publish anyway, create-form wiring (createListing unchanged)
+- [ ] 5.1-05-PLAN.md — Wave 3: LIST-09 automation — pg_cron daily active→expired flip (0011) + secret-guarded Vercel Cron near-expiry route (Resend email + in-app notification via service-role admin) + owner notifications reader
 
 ### Phase 6: Fitment Intelligence
 **Goal**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories from the populated library (pre-filled by the seller's garage where relevant); the seller confirms (never auto-applied), and a confirmed listing then surfaces in every applicable fitment search result. Tuned for precision over recall.
@@ -223,7 +228,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 3. Fitment Taxonomy & Slang Library | 3/3 | Complete | 2026-06-04 |
 | 4. My Garage | 3/3 | Complete | 2026-06-04 |
 | 5. Listings, Photos & EXIF-Safe Storage | 5/5 | Complete (LIST-08 min-3-photos gap pending) | 2026-06-08 |
-| 5.1 Stakeholder Trust & Lifecycle (INSERTED) | 0/TBD | Not started | - |
+| 5.1 Stakeholder Trust & Lifecycle (INSERTED) | 0/5 | Not started | - |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
 | 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
 | 8. Social Layer | 0/TBD | Not started | - |
