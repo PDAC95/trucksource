@@ -48,7 +48,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIST-01**: Seller can create a listing with public part info: Part Title, Part Number, Make, Model, Fitment, Condition, Material, Asking Price, Damage Notes, Date Listed
 - [x] **LIST-02**: Seller can upload multiple photos with a listing
 - [x] **LIST-03**: Uploaded photos have all metadata (including EXIF GPS) stripped server-side before they are stored or displayed
-- [ ] **LIST-04**: Seller can select a shipping option: Shipping Available / Local Pickup Only / Shipping Assistance Requested
+- [x] **LIST-04**: Seller can select a shipping option: Shipping Available / Local Pickup Only / Shipping Assistance Requested
 - [x] **LIST-05**: Seller can edit their own listings
 - [ ] **LIST-06**: Seller can mark their own listing as "Sold"
 - [x] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
@@ -170,7 +170,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIST-01 | Phase 5 | Complete |
 | LIST-02 | Phase 5 | Complete |
 | LIST-03 | Phase 5 | Complete |
-| LIST-04 | Phase 5 | Pending |
+| LIST-04 | Phase 5 | Complete |
 | LIST-05 | Phase 5 | Complete |
 | LIST-07 | Phase 5 | Complete |
 | FINT-01 | Phase 6 | Pending |

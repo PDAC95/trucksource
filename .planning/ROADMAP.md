@@ -25,7 +25,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [x] **Phase 2: Verified Seller & Phone OTP** - Email + phone OTP + terms acceptance → server-computed Verified badge (completed 2026-06-04, verified 12/12; live Twilio round-trip confirmed)
 - [x] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data (completed 2026-06-04, verified 10/10 must-haves; seed applied to Staging, slang integrity gate green)
 - [x] **Phase 4: My Garage** - Users save one or more trucks (make/model/config/**year**) to their profile; powers "fits my truck" filtering and accelerates seller fitment (completed 2026-06-04, live flow user-approved; required model year added)
-- [ ] **Phase 5: Listings, Photos & EXIF-Safe Storage** - Create/edit/sell listings, multi-photo upload with server-side EXIF strip, fitment tagging, shipping + contact preference
+- [x] **Phase 5: Listings, Photos & EXIF-Safe Storage** - Create/edit/sell listings, multi-photo upload with server-side EXIF strip, fitment tagging, shipping + contact preference (completed 2026-06-08, 5/5 plans; live seller listing flow user-approved at UAT; pre-launch blocker: photo upload needs signed-URL-direct-to-Storage for Vercel's 4.5MB body cap)
 - [ ] **Phase 6: Fitment Intelligence** - Rules-based suggestion of applicable trucks/configs/categories; seller-confirmed, never auto-applied; garage pre-fill
 - [ ] **Phase 7: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, "fits my truck" personalization, public profile, event logging
 - [ ] **Phase 8: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold

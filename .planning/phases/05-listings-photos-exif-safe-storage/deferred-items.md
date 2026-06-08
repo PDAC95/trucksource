@@ -42,3 +42,24 @@ Out-of-scope discoveries logged during execution (not fixed by the owning plan).
   `lib/actions/account.ts`) all compile clean — they do NOT appear in the tsc output. The phase-level
   "build green" gate is therefore RED for a 05-04 defect, not a 05-05 one. Out of scope — not fixed
   here. Owner: 05-04.
+  **[RESOLVED]** Fixed by 05-04 in commit `6e5809b` (narrowed the create/update result union, coerced
+  the price input value); `npx tsc --noEmit` is now clean.
+
+## From 05-04 close / live UAT (2026-06-08)
+
+- **[PRE-LAUNCH BLOCKER — photo pipeline] Vercel ~4.5MB request-body cap will reject 10MB photo uploads
+  in production.** During live UAT, photo uploads hit Next.js's default 1MB Server Action body cap;
+  raising `experimental.serverActions.bodySizeLimit` to `"12mb"` in `next.config.ts` (commit `86d0fae`)
+  unblocked **local** uploads. BUT Vercel's platform caps the serverless request body at ~4.5MB, and
+  photos are up to 10MB each (per `lib/images/strip.ts`), so the current upload path will **fail in
+  production**. The uploader needs a **signed-URL-direct-to-Storage** path (client uploads straight to
+  the `listing-photos` bucket via a signed URL; the Server Action no longer carries the file bytes).
+  EXIF/no-GPS strip must still happen server-side — re-encode on a Storage trigger / Edge Function, or
+  keep stripping in the action by sending the already-uploaded object key instead of the raw file.
+  Owner: photo-pipeline follow-up (Phase 5 hardening / pre-launch). Not fixed in 05-04.
+
+- **[Photo pipeline follow-up] Published photos remain at their `<uid>/staging/...webp` path.** Uploads
+  land in a per-user `staging/` prefix and are NOT moved to a final/published location after the listing
+  publishes. A future orphan-file cleanup that treats `staging/` as transient could delete live listing
+  photos. Decide on a publish-time move (or redefine `staging/` as the permanent home) before any cleanup
+  job ships. Owner: photo-pipeline follow-up. Not fixed in 05-04.
