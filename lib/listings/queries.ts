@@ -55,12 +55,8 @@ type ListingDetailRow = {
   is_barnyard: boolean;
   status: string;
   date_listed: string;
+  seller_id: string;
   conditions: { name: string } | null;
-  profiles_public: {
-    username: string;
-    state_province: string | null;
-    country: string | null;
-  } | null;
   listing_photos: { storage_path: string; sort_order: number }[] | null;
   listing_fitment:
     | {
@@ -86,9 +82,8 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, " +
+      "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, seller_id, " +
         "conditions:condition_id ( name ), " +
-        "profiles_public:seller_id ( username, state_province, country ), " +
         "listing_photos ( storage_path, sort_order ), " +
         "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) )",
     )
@@ -98,6 +93,20 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
   if (error || !data) return null;
 
   const row = data as unknown as ListingDetailRow;
+
+  // seller_id references auth.users (NOT profiles_public), so PostgREST can't embed
+  // the seller in the query above — resolve it with a separate enumerated read of
+  // profiles_public (public columns only, never PII; Pitfall 7). Mirrors /u/[username].
+  const { data: sellerRow } = await supabase
+    .from("profiles_public")
+    .select("username, state_province, country")
+    .eq("id", row.seller_id)
+    .maybeSingle();
+  const seller = sellerRow as {
+    username: string;
+    state_province: string | null;
+    country: string | null;
+  } | null;
 
   const photos: ListingPhoto[] = (row.listing_photos ?? [])
     .slice()
@@ -126,9 +135,9 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
     status: row.status,
     dateListed: row.date_listed,
     seller: {
-      username: row.profiles_public?.username ?? "",
-      stateProvince: row.profiles_public?.state_province ?? null,
-      country: row.profiles_public?.country ?? null,
+      username: seller?.username ?? "",
+      stateProvince: seller?.state_province ?? null,
+      country: seller?.country ?? null,
     },
     photos,
     fitment,

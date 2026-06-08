@@ -219,9 +219,19 @@ export function ListingForm({
     ? (CONTACT_PREFERENCE_LABEL[contactPreference] ?? contactPreference)
     : null;
 
+  // When zod validation blocks submit, RHF calls onSubmit NEVER — surface the first
+  // failing field so the user isn't left with a silent dead Publish button.
+  function onInvalid(errors: Record<string, { message?: string }>) {
+    const first = Object.values(errors)[0];
+    toast.error(first?.message ?? "Please check the highlighted fields.");
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-10">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+        className="grid gap-10"
+      >
         {/* ── SECTION 1: PART DATA ───────────────────────────────── */}
         <section className="grid gap-4">
           <div>
@@ -300,7 +310,7 @@ export function ListingForm({
                 <FormItem>
                   <FormLabel>Condition</FormLabel>
                   <Select
-                    value={field.value ? String(field.value) : undefined}
+                    value={field.value ? String(field.value) : ""}
                     onValueChange={(v) => field.onChange(Number(v))}
                   >
                     <FormControl>
@@ -357,11 +367,25 @@ export function ListingForm({
             fitment={fitment}
             onChange={(next) => {
               setFitment(next);
+              // Keep the RHF field in sync so zodResolver's barnyard-or-fitment
+              // refine sees the real fitment list (component-managed state alone
+              // never reaches the resolver, which silently blocks submit).
+              form.setValue(
+                "fitment",
+                next.map((f) => ({
+                  modelId: f.modelId,
+                  configId: f.configId ?? null,
+                })),
+                { shouldValidate: true },
+              );
               if (next.length > 0) setFitmentError(null);
             }}
             isBarnyard={isBarnyard}
             onBarnyardChange={(next) => {
               setIsBarnyard(next);
+              // Mirror into the RHF field so the resolver's refine passes when
+              // Barnyard is on (otherwise Publish fails validation silently).
+              form.setValue("isBarnyard", next, { shouldValidate: true });
               if (next) setFitmentError(null);
             }}
           />

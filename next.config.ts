@@ -29,6 +29,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Server Actions default to a 1MB request body — far below the 10MB-per-photo
+  // cap enforced server-side in lib/images/strip.ts (MAX_BYTES). uploadListingPhoto
+  // streams one raw photo per call, and the RSC/FormData encoding inflates the
+  // payload, so we lift the limit to 12mb (10MB photo + encoding overhead).
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
+  },
 };
 
 // Wrap with withBotId so Vercel BotID can route its protected-path proxying.
