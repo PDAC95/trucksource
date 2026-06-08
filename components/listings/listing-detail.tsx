@@ -22,12 +22,12 @@ const usdFormatter = new Intl.NumberFormat("en-US", {
 
 function shippingLabel(option: string): string {
   switch (option) {
-    case "ships":
+    case "shipping_available":
       return "Shipping available";
     case "local_pickup":
       return "Local pickup only";
-    case "ships_or_pickup":
-      return "Shipping or local pickup";
+    case "shipping_assistance":
+      return "Shipping assistance requested";
     default:
       return option;
   }
