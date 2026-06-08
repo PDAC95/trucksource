@@ -15,6 +15,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **ACCT-04**: System can generate a public username automatically (e.g. PeterbiltParts483) if the seller does not choose one
 - [x] **ACCT-05**: User can log in and stay logged in across sessions
 - [x] **ACCT-06**: User can log out from any page
+- [ ] **ACCT-07**: Seller can declare a seller type (Dealer, Truck Dismantler, Manufacturer, Owner Operator, Fleet Mechanic, Repair Shop, Fleet Owner) shown as an informational badge — it does not change permissions or capabilities (stakeholder check.md, 2026-06-08)
+- [ ] **ACCT-08**: Seller's public name is a single chosen display name — default is the system-generated anonymous handle; the seller may opt in to show a real/business name (replacing the handle) via a deliberate action with a "this will be public" warning. The chosen public name is distinct from the private legal name and is never auto-populated from `profiles_private` (stakeholder check.md, 2026-06-08)
 
 ### Privacy & Public Profile
 
@@ -52,6 +54,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIST-05**: Seller can edit their own listings
 - [ ] **LIST-06**: Seller can mark their own listing as "Sold"
 - [x] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
+- [ ] **LIST-08**: A listing requires a minimum of 3 photos to publish (stakeholder check.md, 2026-06-08) — Phase 5 gap closure
+- [ ] **LIST-09**: A listing expires 90 days after listing/last renewal; expiry is frictionless — the seller is notified near expiry and renews with one click (another 90 days); an unrenewed listing becomes `expired` (hidden from search, NOT deleted; data + photos intact; reactivable in one click) (stakeholder check.md, 2026-06-08)
+- [ ] **LIST-10**: When the same seller creates a listing similar to one they already have (same seller + same/similar title), a soft non-blocking warning is shown ("you already have a similar listing"); the seller can always publish — a seller legitimately may have multiple similar parts (stakeholder check.md, 2026-06-08)
 
 ### My Garage
 
@@ -145,6 +150,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACCT-04 | Phase 1 | Complete |
 | ACCT-05 | Phase 1 | Complete |
 | ACCT-06 | Phase 1 | Complete |
+| ACCT-07 | Phase 5.1 | Pending |
+| ACCT-08 | Phase 5.1 | Pending |
 | PRIV-01 | Phase 1 | Complete |
 | PRIV-02 | Phase 1 | Complete |
 | PRIV-03 | Phase 1 | Complete |
@@ -173,6 +180,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIST-04 | Phase 5 | Complete |
 | LIST-05 | Phase 5 | Complete |
 | LIST-07 | Phase 5 | Complete |
+| LIST-08 | Phase 5 (gap) | Pending |
+| LIST-09 | Phase 5.1 | Pending |
+| LIST-10 | Phase 5.1 | Pending |
 | FINT-01 | Phase 6 | Pending |
 | FINT-02 | Phase 6 | Pending |
 | FINT-03 | Phase 6 | Pending |
@@ -203,12 +213,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMA-04 | Phase 10 | Pending |
 
 **Coverage:**
-- v1 requirements: 62 total (58 original + 4 GARAGE added 2026-06-01)
-- Mapped to phases: 62 ✓
+- v1 requirements: 67 total (58 original + 4 GARAGE added 2026-06-01 + 5 stakeholder additions 2026-06-08)
+- Mapped to phases: 67 ✓
 - Unmapped: 0 ✓
 
-Per-phase distribution: P1=10, P2=4, P3=10, P4=4 (Garage), P5=6, P6=3, P7=5, P8=3, P9=7, P10=10.
+Per-phase distribution: P1=10, P2=4, P3=10, P4=4 (Garage), P5=6 + LIST-08 gap, P5.1=4 (ACCT-07/08, LIST-09/10), P6=3, P7=5, P8=3, P9=7, P10=10.
+
+**Stakeholder additions (check.md, 2026-06-08):** ACCT-07 (seller type badge), ACCT-08 (opt-in public display name), LIST-08 (min 3 photos), LIST-09 (90-day expiry/renewal), LIST-10 (soft duplicate warning). Ratings & reviews requested but kept v2 (REP-01/02). The large real part-category catalog (~600 lines) will be loaded as the `part_categories` seed once stakeholders confirm how literal it should be (flat-provisional first, then mapped to the 8-level taxonomy) — tracked as a data task, not a requirement.
 
 ---
 *Requirements defined: 2026-06-01*
-*Last updated: 2026-06-01 after adding My Garage (Phase 4) and renumbering*
+*Last updated: 2026-06-08 — added 5 stakeholder requirements (check.md) + Phase 5.1; My Garage (Phase 4) added 2026-06-01*

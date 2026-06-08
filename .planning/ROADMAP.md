@@ -26,6 +26,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [x] **Phase 3: Fitment Taxonomy & Slang Library** - 8-level fitment library + The Barnyard + slang synonym table, many-to-many tagging, seed data (completed 2026-06-04, verified 10/10 must-haves; seed applied to Staging, slang integrity gate green)
 - [x] **Phase 4: My Garage** - Users save one or more trucks (make/model/config/**year**) to their profile; powers "fits my truck" filtering and accelerates seller fitment (completed 2026-06-04, live flow user-approved; required model year added)
 - [x] **Phase 5: Listings, Photos & EXIF-Safe Storage** - Create/edit/sell listings, multi-photo upload with server-side EXIF strip, fitment tagging, shipping + contact preference (completed 2026-06-08, 5/5 plans; live seller listing flow user-approved at UAT; pre-launch blocker: photo upload needs signed-URL-direct-to-Storage for Vercel's 4.5MB body cap)
+- [ ] **Phase 5.1: Stakeholder Trust & Lifecycle** (INSERTED) - Seller-type informational badge, opt-in public display name (default anonymous), 90-day frictionless listing expiry/renewal, soft same-seller duplicate warning (from stakeholder check.md, 2026-06-08). LIST-08 (min 3 photos) handled separately as a Phase 5 gap.
 - [ ] **Phase 6: Fitment Intelligence** - Rules-based suggestion of applicable trucks/configs/categories; seller-confirmed, never auto-applied; garage pre-fill
 - [ ] **Phase 7: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, "fits my truck" personalization, public profile, event logging
 - [ ] **Phase 8: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold
@@ -139,6 +140,18 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [ ] 05-04-PLAN.md — Wave 3: sectioned listing form (RHF+listingSchema) — multi-fit cascade + Barnyard toggle, dnd-kit photo uploader (immediate upload, first=cover), shipping radio, /sell + /sell/[id]/edit, live human-verify
 - [ ] 05-05-PLAN.md — Wave 3: 0009 contact_preference on profiles_public (LIST-07) + /account control + public /listings/[id] detail page (zero PII) + listing-view event logging + next/image host whitelist
 
+### Phase 5.1: Stakeholder Trust & Lifecycle (INSERTED)
+**Goal**: Fold in the trust-and-lifecycle features the stakeholders requested (check.md, 2026-06-08) without reopening already-verified phases: sellers carry an informational type badge, they control their public identity (anonymous by default), listings keep inventory fresh via a frictionless 90-day expiry/renewal cycle, and same-seller duplicate posting is gently discouraged — none of it changing the privacy model or seller permissions.
+**Depends on**: Phase 1 (profiles), Phase 2 (verified-seller signal), Phase 5 (listings + create form)
+**Requirements**: ACCT-07, ACCT-08, LIST-09, LIST-10
+**Cross-cutting gate**: Privacy/RLS re-verified — `seller_type` and the opt-in public display name live on `profiles_public` (non-PII, owner-written); the chosen display name is never auto-populated from `profiles_private`. The `expired` status and `expires_at` add no public PII. Same posture as the rest of the marketplace surfaces.
+**Success Criteria** (what must be TRUE):
+  1. A seller can declare a seller type (Dealer, Truck Dismantler, Manufacturer, Owner Operator, Fleet Mechanic, Repair Shop, Fleet Owner), shown as an informational badge on their public profile; it changes no permissions
+  2. A seller's public name defaults to the anonymous system handle; the seller can opt in to show a real/business name (replacing the handle) through a deliberate action with a clear "this will be public" warning, and the legal private name is never exposed by it
+  3. A listing automatically expires 90 days after listing/last renewal; the seller is notified near expiry and can renew in one click; an unrenewed listing becomes `expired` (hidden from search, not deleted, reactivable in one click)
+  4. When the same seller creates a listing similar to one they already have, a soft non-blocking warning is shown but they can always publish
+**Plans**: TBD
+
 ### Phase 6: Fitment Intelligence
 **Goal**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories from the populated library (pre-filled by the seller's garage where relevant); the seller confirms (never auto-applied), and a confirmed listing then surfaces in every applicable fitment search result. Tuned for precision over recall.
 **Depends on**: Phase 3 (taxonomy), Phase 5 (listings), Phase 4 (garage pre-fill)
@@ -199,7 +212,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
+Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -209,7 +222,8 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 | 2. Verified Seller & Phone OTP | 5/5 | Complete | 2026-06-04 |
 | 3. Fitment Taxonomy & Slang Library | 3/3 | Complete | 2026-06-04 |
 | 4. My Garage | 3/3 | Complete | 2026-06-04 |
-| 5. Listings, Photos & EXIF-Safe Storage | 1/5 | In Progress|  |
+| 5. Listings, Photos & EXIF-Safe Storage | 5/5 | Complete (LIST-08 min-3-photos gap pending) | 2026-06-08 |
+| 5.1 Stakeholder Trust & Lifecycle (INSERTED) | 0/TBD | Not started | - |
 | 6. Fitment Intelligence | 0/TBD | Not started | - |
 | 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
 | 8. Social Layer | 0/TBD | Not started | - |
@@ -218,5 +232,6 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 6 �
 
 ---
 *Roadmap created: 2026-06-01*
-*Depth: comprehensive (10 phases) — derived from the research dependency chain; My Garage added as Phase 4 on 2026-06-01*
-*Coverage: 62/62 v1 requirements mapped (58 original + 4 GARAGE)*
+*Depth: comprehensive — derived from the research dependency chain; My Garage added as Phase 4 on 2026-06-01; Phase 5.1 (Stakeholder Trust & Lifecycle) inserted 2026-06-08 from check.md*
+*Coverage: 67/67 v1 requirements mapped (58 original + 4 GARAGE + 5 stakeholder additions)*
+*Part-category catalog (~600 lines, check.md): pending stakeholder confirmation; will seed `part_categories` flat-provisional → mapped to the 8-level taxonomy. Ratings & reviews requested but kept v2 (REP-01/02).*
