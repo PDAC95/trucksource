@@ -41,6 +41,8 @@ type EditableRow = {
         configurations: { name: string } | null;
       }[]
     | null;
+  listing_categories: { category_id: number }[] | null;
+  listing_search_terms: { term_id: number }[] | null;
 };
 
 export default async function EditListingPage({
@@ -72,7 +74,9 @@ export default async function EditListingPage({
     .select(
       "id, seller_id, title, part_number, asking_price, condition_id, shipping_option, damage_notes, is_barnyard, " +
         "listing_photos ( storage_path, sort_order ), " +
-        "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) )",
+        "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) ), " +
+        "listing_categories ( category_id ), " +
+        "listing_search_terms ( term_id )",
     )
     .eq("id", listingId)
     .eq("seller_id", userId)
@@ -105,6 +109,16 @@ export default async function EditListingPage({
       status: "ready" as const,
     }));
 
+  // Phase-6 pre-fill (FINT-03): the persisted category/term ids feed the form's
+  // defaults so the suggestion UI (Plan 06-04) can EXCLUDE already-confirmed tags
+  // from re-suggestion (Pitfall 5 "don't re-suggest confirmed").
+  const categoryIds: number[] = (row.listing_categories ?? []).map(
+    (c) => c.category_id,
+  );
+  const searchTermIds: number[] = (row.listing_search_terms ?? []).map(
+    (t) => t.term_id,
+  );
+
   const defaults: ListingFormDefaults = {
     title: row.title,
     partNumber: row.part_number ?? "",
@@ -115,6 +129,8 @@ export default async function EditListingPage({
     isBarnyard: row.is_barnyard,
     fitment,
     photos,
+    categoryIds,
+    searchTermIds,
   };
 
   // Account contact preference (added in 05-05) — DISPLAY-ONLY, defaulted defensively.

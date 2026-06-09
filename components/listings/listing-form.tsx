@@ -108,6 +108,12 @@ export type ListingFormDefaults = {
   isBarnyard: boolean;
   fitment: FitmentSelection[];
   photos: UploadedPhoto[];
+  // Phase-6 persisted dimensions (FINT-03). Optional here so the create path (no
+  // pre-fill) and the edit path (read-back from page.tsx) both type-check. Plan
+  // 06-04 owns this form and wires these into the category selector + suggestion
+  // chips; this is the minimal unblocking field so the edit-page pre-fill compiles.
+  categoryIds?: number[];
+  searchTermIds?: number[];
 };
 
 export function ListingForm({

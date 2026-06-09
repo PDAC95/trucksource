@@ -23,6 +23,11 @@ export type ListingFitment = {
   configName: string | null; // null = model-level fit
 };
 
+// Phase-6 confirmed dimensions (FINT-03). Public reference rows only — names
+// resolved from part_categories / search_terms, never any profiles_* table.
+export type ListingCategory = { id: number; name: string };
+export type ListingSearchTerm = { id: number; term: string };
+
 export type ListingDetail = {
   id: number;
   title: string;
@@ -42,6 +47,8 @@ export type ListingDetail = {
   };
   photos: ListingPhoto[];
   fitment: ListingFitment[];
+  categories: ListingCategory[]; // confirmed part-categories (FINT-03)
+  searchTerms: ListingSearchTerm[]; // confirmed slang search-terms (FINT-03)
 };
 
 // Shape of the embedded row Supabase returns from the select below. To-one embeds
@@ -72,6 +79,18 @@ type ListingDetailRow = {
         configurations: { name: string } | null;
       }[]
     | null;
+  listing_categories:
+    | {
+        category_id: number;
+        part_categories: { name: string } | null;
+      }[]
+    | null;
+  listing_search_terms:
+    | {
+        term_id: number;
+        search_terms: { term: string } | null;
+      }[]
+    | null;
 };
 
 /**
@@ -94,7 +113,9 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
       "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, expires_at, seller_id, " +
         "conditions:condition_id ( name ), " +
         "listing_photos ( storage_path, sort_order ), " +
-        "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) )",
+        "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) ), " +
+        "listing_categories ( category_id, part_categories:category_id ( name ) ), " +
+        "listing_search_terms ( term_id, search_terms:term_id ( term ) )",
     )
     .eq("id", id)
     .maybeSingle();
@@ -132,6 +153,17 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
     configName: f.configurations?.name ?? null,
   }));
 
+  // FINT-03 confirmed dimensions — names resolved from PUBLIC reference tables only
+  // (part_categories / search_terms; no profiles_* touched, Pitfall 7). Drop any row
+  // whose joined name is null (same null-tolerance as the fitment mapping above).
+  const categories: ListingCategory[] = (row.listing_categories ?? [])
+    .filter((c) => c.part_categories?.name)
+    .map((c) => ({ id: c.category_id, name: c.part_categories!.name }));
+
+  const searchTerms: ListingSearchTerm[] = (row.listing_search_terms ?? [])
+    .filter((t) => t.search_terms?.term)
+    .map((t) => ({ id: t.term_id, term: t.search_terms!.term }));
+
   return {
     id: row.id,
     title: row.title,
@@ -151,6 +183,8 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
     },
     photos,
     fitment,
+    categories,
+    searchTerms,
   };
 }
 

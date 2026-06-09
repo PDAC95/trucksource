@@ -150,6 +150,40 @@ export function ListingDetail({
           </div>
         )}
 
+        {/* PART CATEGORIES (FINT-03) — confirmed taxonomy tags, as badges. Renders
+            only when present so it stays invisible for category-less listings. */}
+        {listing.categories.length > 0 && (
+          <div className="grid gap-2">
+            <h2 className="text-muted-foreground text-sm font-medium">
+              Part categories
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {listing.categories.map((c) => (
+                <Badge key={c.id} variant="outline">
+                  {c.name}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SEARCH TERMS (FINT-03) — confirmed trucker-slang tags. Makes the accepted
+            suggestions visible before Phase-7 search exists. */}
+        {listing.searchTerms.length > 0 && (
+          <div className="grid gap-2">
+            <h2 className="text-muted-foreground text-sm font-medium">
+              Also tagged
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {listing.searchTerms.map((t) => (
+                <Badge key={t.id} variant="outline">
+                  {t.term}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* DAMAGE NOTES */}
         {listing.damageNotes && (
           <div className="grid gap-2">
