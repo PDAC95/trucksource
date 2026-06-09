@@ -127,7 +127,10 @@ export type ListingFormDefaults = {
   // 06-04 owns this form and wires these into the category selector + suggestion
   // chips; this is the minimal unblocking field so the edit-page pre-fill compiles.
   categoryIds?: number[];
-  searchTermIds?: number[];
+  // Persisted search-term tags WITH names+kind (edit pre-fill) so they render as
+  // removable confirmed chips and survive re-save. Ids alone aren't enough: the
+  // form needs the name to display them and the kind to de-dupe.
+  searchTerms?: SuggestedTag[];
 };
 
 export function ListingForm({
@@ -177,7 +180,12 @@ export function ListingForm({
   const [categoryIds, setCategoryIds] = React.useState<number[]>(
     defaults?.categoryIds ?? [],
   );
-  const [searchTerms, setSearchTerms] = React.useState<SuggestedTag[]>([]);
+  // Pre-filled from defaults in edit mode (persisted slang tags WITH names), so they
+  // show as removable confirmed chips, are excluded from re-suggestion, AND are
+  // re-submitted on save (otherwise updateListing's replace-children drops them).
+  const [searchTerms, setSearchTerms] = React.useState<SuggestedTag[]>(
+    defaults?.searchTerms ?? [],
+  );
   const [suggestions, setSuggestions] = React.useState<SuggestionGroup[]>([]);
   const [dismissed, setDismissed] = React.useState<Set<string>>(new Set());
   const [isSuggesting, startSuggest] = React.useTransition();
@@ -259,7 +267,10 @@ export function ListingForm({
 
   function onAcceptTag(t: SuggestedTag) {
     if (t.kind === "category") {
-      setCategoryIds((prev) => (prev.includes(t.id) ? prev : [...prev, t.id]));
+      // One category per listing (single-select): accepting a category suggestion
+      // sets it as THE category, mirroring the Part-category dropdown.
+      setCategoryId(t.id);
+      setCategoryIds([t.id]);
       return;
     }
     setSearchTerms((prev) =>
@@ -301,6 +312,8 @@ export function ListingForm({
       ),
       tags: g.tags.filter((t) => {
         if (t.kind === "category") return !categoryIds.includes(t.id);
+        // `searchTerms` includes edit-mode pre-filled tags, so already-confirmed
+        // terms (e.g. "Large Car") are never re-suggested.
         return !searchTerms.some((x) => x.id === t.id && x.kind === t.kind);
       }),
     }))
@@ -566,9 +579,10 @@ export function ListingForm({
               onValueChange={(v) => {
                 const id = Number(v);
                 setCategoryId(id);
-                setCategoryIds((prev) =>
-                  prev.includes(id) ? prev : [...prev, id],
-                );
+                // Single-select: the chosen category REPLACES the previous one (a
+                // listing has exactly one part category v1). Accumulating here was a
+                // bug — it tagged the listing with every category ever picked.
+                setCategoryIds([id]);
               }}
             >
               <SelectTrigger className="w-full">

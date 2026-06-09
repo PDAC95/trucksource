@@ -8,6 +8,7 @@ import { listingPhotoPublicUrl } from "@/lib/listings/storage";
 import type { ListingInput } from "@/lib/listings/schema";
 import type { ListingFormDefaults } from "@/components/listings/listing-form";
 import type { FitmentSelection } from "@/components/listings/fitment-multi-select";
+import type { SuggestedTag } from "@/lib/fitment/types";
 import type { UploadedPhoto } from "@/components/listings/photo-uploader";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -42,7 +43,9 @@ type EditableRow = {
       }[]
     | null;
   listing_categories: { category_id: number }[] | null;
-  listing_search_terms: { term_id: number }[] | null;
+  listing_search_terms:
+    | { term_id: number; search_terms: { term: string } | null }[]
+    | null;
 };
 
 export default async function EditListingPage({
@@ -76,7 +79,7 @@ export default async function EditListingPage({
         "listing_photos ( storage_path, sort_order ), " +
         "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) ), " +
         "listing_categories ( category_id ), " +
-        "listing_search_terms ( term_id )",
+        "listing_search_terms ( term_id, search_terms:term_id ( term ) )",
     )
     .eq("id", listingId)
     .eq("seller_id", userId)
@@ -115,9 +118,17 @@ export default async function EditListingPage({
   const categoryIds: number[] = (row.listing_categories ?? []).map(
     (c) => c.category_id,
   );
-  const searchTermIds: number[] = (row.listing_search_terms ?? []).map(
-    (t) => t.term_id,
-  );
+  // Persisted slang/search-term tags WITH their display names+kind, so the form can
+  // render them as removable confirmed chips (not just exclude them from suggestions).
+  // Without the name the form can't show or re-submit the tag -> updateListing would
+  // replace-children with an empty set and silently DROP the term on save.
+  const searchTerms: SuggestedTag[] = (row.listing_search_terms ?? [])
+    .filter((t) => t.search_terms?.term)
+    .map((t) => ({
+      kind: "search_term" as const,
+      id: t.term_id,
+      name: t.search_terms!.term,
+    }));
 
   const defaults: ListingFormDefaults = {
     title: row.title,
@@ -130,7 +141,7 @@ export default async function EditListingPage({
     fitment,
     photos,
     categoryIds,
-    searchTermIds,
+    searchTerms,
   };
 
   // Account contact preference (added in 05-05) — DISPLAY-ONLY, defaulted defensively.
