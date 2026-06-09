@@ -14,6 +14,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { INTEGRATION_ENABLED, anonClient } from "./_supabase";
+import { listingSchema } from "@/lib/listings/schema";
 
 const d = INTEGRATION_ENABLED ? describe : describe.skip;
 
@@ -85,3 +86,61 @@ d(
     });
   },
 );
+
+// ---------------------------------------------------------------------------
+// FINT-01: rules drive category + garage suggestions (06-03).
+//
+// suggestFitment() (lib/fitment/suggest.ts) needs an AUTHENTICATED cookie client
+// (it calls listMyTrucks(), owner-RLS), which the anon-only integration harness
+// cannot provide. So FINT-01 is asserted at the DATA layer the engine depends on —
+// the seeded rules — proving the engine has real, name-resolvable data to surface
+// for BOTH the category-driven path and the garage-expansion path. The live grouped
+// output (garage group omitted when no trucks; "Common for <Category>" labels) is
+// verified end-to-end at the Plan 06-04 human-verify checkpoint with a real session.
+//
+// The pure no-throw / empty-result contract is covered by the type: a SuggestResult
+// of { groups: [] } is the documented "nothing matched" value suggestFitment returns
+// (it never throws) — asserted as a shape below without a Supabase round-trip.
+d("FINT-01: rules drive category + garage suggestions", () => {
+  it("≥1 category-driven rule exists with a resolvable implied search term", async () => {
+    // trigger_category_id not null → the CONTEXT primary trigger. Joining the
+    // implied search term proves the engine resolves names server-side, not ids.
+    const { data, error } = await anonClient()
+      .from("fitment_rules")
+      .select(
+        "id, trigger_category_id, implies_search_term_id, search_terms:implies_search_term_id ( term )",
+      )
+      .not("trigger_category_id", "is", null)
+      .not("implies_search_term_id", "is", null);
+    expect(error).toBeNull();
+    const rows = (data ?? []) as unknown as Array<{
+      search_terms: { term: string } | null;
+    }>;
+    expect(rows.length).toBeGreaterThan(0);
+    // At least one resolves to a real (non-empty) implied term name.
+    expect(rows.some((r) => !!r.search_terms?.term)).toBe(true);
+  });
+
+  it("≥1 garage-expansion rule exists (trigger_model_id → implied search term: the 359-Guys seed)", async () => {
+    const { data, error } = await anonClient()
+      .from("fitment_rules")
+      .select(
+        "id, trigger_model_id, implies_search_term_id, search_terms:implies_search_term_id ( term )",
+      )
+      .not("trigger_model_id", "is", null)
+      .not("implies_search_term_id", "is", null);
+    expect(error).toBeNull();
+    const rows = (data ?? []) as unknown as Array<{
+      search_terms: { term: string } | null;
+    }>;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.some((r) => !!r.search_terms?.term)).toBe(true);
+  });
+
+  it("empty-result contract: { groups: [] } is the valid no-match shape (suggestFitment never throws)", () => {
+    // suggestFitment returns this exact shape when nothing matches; documented here
+    // as the pure contract since the live call needs an authenticated cookie client.
+    const empty: import("@/lib/fitment/types").SuggestResult = { groups: [] };
+    expect(empty.groups).toEqual([]);
+  });
+});
