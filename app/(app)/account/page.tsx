@@ -3,8 +3,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Toaster } from "@/components/ui/sonner";
 import type { ContactPreference } from "@/lib/account/schema";
+import type { SellerType } from "@/lib/seller/badge";
 
 import { ContactPreferenceForm } from "./contact-preference-form";
+import { SellerTypeForm } from "@/components/account/seller-type-form";
+import { DisplayNameForm } from "@/components/account/display-name-form";
 
 // Owner-scoped, per-user settings — never cache one user's account data for
 // another (invariant 6). The (app) layout already gates auth and is force-dynamic;
@@ -25,13 +28,16 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("profiles_public")
-    .select("contact_preference")
+    .select("username, contact_preference, seller_type, display_name")
     .eq("id", userId)
     .maybeSingle();
 
   // Default to the most-private option if the row/column read is ever absent.
   const current = (profile?.contact_preference ??
     "messaging_only") as ContactPreference;
+  const sellerType = (profile?.seller_type ?? null) as SellerType | null;
+  const displayName = (profile?.display_name ?? null) as string | null;
+  const username = profile?.username ?? "";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -40,11 +46,13 @@ export default async function AccountPage() {
           Account settings
         </h1>
         <p className="text-muted-foreground text-sm">
-          Choose how buyers can reach you about your listings.
+          Manage how you appear to buyers and how they can reach you.
         </p>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 grid gap-10">
+        <DisplayNameForm current={{ displayName, username }} />
+        <SellerTypeForm current={sellerType} />
         <ContactPreferenceForm current={current} />
       </div>
 
