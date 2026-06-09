@@ -219,6 +219,29 @@ export async function createListing(
     );
   }
 
+  // Phase-6 dimensions (FINT-03): confirmed part-categories + slang search-terms.
+  // Same best-effort sequential posture as the fitment/photo inserts above (no new
+  // error variant) — and the SAME owner-write EXISTS policy admits them because the
+  // parent listing's seller_id = userId. An accepted model/config SUGGESTION flows
+  // through v.fitment above (no separate plumbing): the accept path and a manual
+  // add produce identical listing_fitment rows — that is the FINT-03 claim.
+  if (v.categoryIds.length > 0) {
+    await supabase.from("listing_categories").insert(
+      v.categoryIds.map((category_id) => ({
+        listing_id: listing.id,
+        category_id,
+      })),
+    );
+  }
+  if (v.searchTermIds.length > 0) {
+    await supabase.from("listing_search_terms").insert(
+      v.searchTermIds.map((term_id) => ({
+        listing_id: listing.id,
+        term_id,
+      })),
+    );
+  }
+
   // Caller redirects to /listings/<id> (CONTEXT: publish -> public page).
   return { ok: true, id: listing.id };
 }
@@ -299,10 +322,13 @@ export async function updateListing(
   if (!updated || updated.length === 0)
     return { ok: false, error: "not_found" };
 
-  // REPLACE CHILDREN — wipe then re-insert fitment + photos (owner-write EXISTS scopes
-  // the delete to this listing). Submitted arrays are the new full truth.
+  // REPLACE CHILDREN — wipe then re-insert fitment + photos + the Phase-6 dimensions
+  // (owner-write EXISTS scopes every delete to this listing). Submitted arrays are
+  // the new full truth. Order is preserved: delete all children, then re-insert all.
   await supabase.from("listing_fitment").delete().eq("listing_id", id);
   await supabase.from("listing_photos").delete().eq("listing_id", id);
+  await supabase.from("listing_categories").delete().eq("listing_id", id);
+  await supabase.from("listing_search_terms").delete().eq("listing_id", id);
 
   if (v.fitment.length > 0) {
     await supabase.from("listing_fitment").insert(
@@ -321,6 +347,18 @@ export async function updateListing(
         sort_order: index, // index 0 = cover
       })),
     );
+  }
+  if (v.categoryIds.length > 0) {
+    await supabase
+      .from("listing_categories")
+      .insert(
+        v.categoryIds.map((category_id) => ({ listing_id: id, category_id })),
+      );
+  }
+  if (v.searchTermIds.length > 0) {
+    await supabase
+      .from("listing_search_terms")
+      .insert(v.searchTermIds.map((term_id) => ({ listing_id: id, term_id })));
   }
 
   return { ok: true };

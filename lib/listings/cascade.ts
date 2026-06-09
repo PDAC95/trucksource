@@ -27,3 +27,29 @@ export async function getConditions(): Promise<ConditionOption[]> {
   if (error || !data) return [];
   return data as ConditionOption[];
 }
+
+export type PartCategoryOption = {
+  id: number;
+  name: string;
+  parentId: number | null;
+};
+
+/**
+ * The seeded 2-level part-category tree (FINT-03). Roots (parent_id NULL) come
+ * first, then children, each group alphabetised by name — the order the Phase-6
+ * category selector + suggestion chips (Plan 06-04) consume. Same posture as
+ * getConditions: anon-public reference read of the Phase-6 `part_categories`
+ * table (public-read, no write policy), cookie-bound server client, [] on error.
+ */
+export async function getPartCategories(): Promise<PartCategoryOption[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("part_categories")
+    .select("id, name, parent_id")
+    .order("parent_id", { nullsFirst: true })
+    .order("name");
+  if (error || !data) return [];
+  return (data as { id: number; name: string; parent_id: number | null }[]).map(
+    (c) => ({ id: c.id, name: c.name, parentId: c.parent_id }),
+  );
+}
