@@ -67,9 +67,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Fitment Intelligence
 
-- [ ] **FINT-01**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories based on the part details
+- [x] **FINT-01**: When a seller creates a listing, the system suggests applicable trucks, configurations, and categories based on the part details
 - [ ] **FINT-02**: Suggested fitments are presented for seller confirmation and are never auto-applied
-- [ ] **FINT-03**: A confirmed listing appears in every applicable fitment search result and truck category
+- [x] **FINT-03**: A confirmed listing appears in every applicable fitment search result and truck category
 
 ### Search, Feed & Discovery
 
@@ -183,9 +183,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LIST-08 | Phase 5 (gap) | Pending |
 | LIST-09 | Phase 5.1 | Complete |
 | LIST-10 | Phase 5.1 | Complete |
-| FINT-01 | Phase 6 | Pending |
+| FINT-01 | Phase 6 | Complete |
 | FINT-02 | Phase 6 | Pending |
-| FINT-03 | Phase 6 | Pending |
+| FINT-03 | Phase 6 | Complete |
 | SRCH-01 | Phase 7 | Pending |
 | SRCH-02 | Phase 7 | Pending |
 | SRCH-03 | Phase 7 | Pending |
