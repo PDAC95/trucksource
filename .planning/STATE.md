@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-09T12:52:22.102Z"
+last_updated: "2026-06-09T12:52:59.225Z"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 26
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 ---
@@ -114,6 +114,7 @@ Progress: [██████████] 100% (5/5 plans in Phase 5 — phase 
 | Phase 05.1 P01 | ~5 min | 3 tasks | 8 files |
 | Phase 05.1 P04 | ~6 min | 2 tasks | 4 files |
 | Phase 05.1-stakeholder-trust-lifecycle-inserted P02 | ~7 min | 3 tasks | 8 files |
+| Phase 05.1-stakeholder-trust-lifecycle-inserted P03 | ~12 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -181,6 +182,7 @@ Recent decisions affecting current work:
 - [Phase 05-listings-photos-exif-safe-storage]: [Read/Bug] getListing could not embed profiles_public:seller_id via PostgREST — seller_id FKs auth.users, which has no FK to profiles_public (PGRST200 → null → 404). Fixed by resolving the seller in a SEPARATE enumerated profiles_public read (public columns, no PII; mirrors /u/[username]). This touched a 05-05-owned file (lib/listings/queries.ts) but was required to make the 05-04 publish→redirect flow work end-to-end.
 - [Phase 05.1]: [LIST-10] Same-seller duplicate warning shipped as a SEPARATE advisory Server Action (findSimilarOwnListings, lib/listings/duplicates.ts, threshold 0.6 passed to the owner-scoped SECURITY INVOKER find_similar_own_listings RPC, trigram-index-backed). createListing stays UNCHANGED; the create form probes on publish-attempt and, on matches, shows a non-accusatory dialog (own-listing edit-links + Publish anyway) that NEVER blocks — degrades to [] on unauth/error. Gate (e) proven by tests/unit/duplicate-probe.test.ts. Threshold to validate against the real launch dataset at the human-verify gate (reordered-word variants). Commits ff0c433, d29cba6 (Task-2 message cross-attributed to 05.1-02 by the parallel pre-commit hook stash/restore; files verified correct in HEAD by file-on-disk).
 - [Phase 05.1-stakeholder-trust-lifecycle-inserted]: [ACCT-07/08] updateSellerType/updateDisplayName clone updateContactPreference (getClaims, owner-RLS, no service-role); updateDisplayName returns resolved publicName for the preview toast; revert writes display_name=null and never touches username so the original handle structurally returns
+- [Phase 05.1-stakeholder-trust-lifecycle-inserted]: [LIST-09] renewListing (active-only) + reactivateListing (expired-only, status->active) set expires_at=now+90d, owner-scoped via explicit .eq(seller_id).eq(status,...) + owner RLS, zero-rows->not_found, return new expiresAt; updateListing (editing) NEVER touches expires_at. getListing stays status-agnostic (owner edit path needs any status) — the BUYER exclusion of expired/sold is the public page's job (notFound on non-active), NOT the query and NOT RLS (listings is public-read on ALL rows; Pitfall 5). getMyListings keeps all statuses + derives expiringSoon (isExpiringSoon: active && 0<d<=7). RenewButton self-hides on healthy active rows; shows Renew (near-expiry) / Reactivate (expired) in My Listings + owner-only on the detail page. The DB daily flip + ~7-day notify remain 5.1-05. Commits: dbfe27d (actions+helpers), a09635f (reads+buyer exclusion), f2bbb49 (UI+test).
 
 ### Pending Todos
 
