@@ -44,6 +44,11 @@ export type FitmentEntry = z.infer<typeof fitmentEntry>;
  *     at least one fitment; a Barnyard listing may carry none.
  *   - photoPaths: storage paths of already-uploaded (EXIF-stripped) photos, capped
  *     at 8 (CONTEXT limit). First entry is the cover.
+ *   - categoryIds: optional Phase-6 part-category ids (FINT-03). NOT part of the
+ *     barnyard-or-fitment requirement — a listing may carry zero categories.
+ *   - searchTermIds: optional Phase-6 slang-tag (search_term) ids (FINT-03). Also
+ *     NOT part of the fitment requirement. Both default to []; ids are coerced from
+ *     the Radix-select string convention (same as fitment/conditionId).
  */
 export const listingSchema = z
   .object({
@@ -60,6 +65,8 @@ export const listingSchema = z
     isBarnyard: z.boolean().default(false),
     fitment: z.array(fitmentEntry).default([]),
     photoPaths: z.array(z.string()).max(8).default([]),
+    categoryIds: z.array(z.coerce.number().int().positive()).default([]),
+    searchTermIds: z.array(z.coerce.number().int().positive()).default([]),
   })
   .refine((v) => v.isBarnyard || v.fitment.length >= 1, {
     message: "Add at least one fitment, or mark The Barnyard.",

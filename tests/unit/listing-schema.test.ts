@@ -28,6 +28,9 @@ describe("listingSchema", () => {
     // defaults applied
     expect(r.isBarnyard).toBe(false);
     expect(r.photoPaths).toEqual([]);
+    // Phase-6 dimensions default to empty.
+    expect(r.categoryIds).toEqual([]);
+    expect(r.searchTermIds).toEqual([]);
   });
 
   it("rejects a missing title", () => {
@@ -120,5 +123,37 @@ describe("listingSchema", () => {
         fitment: [{ modelId: 5, configId: null }],
       }).success,
     ).toBe(true);
+  });
+
+  // --- Phase-6 dimensions: categoryIds + searchTermIds (FINT-03) ---
+
+  it("accepts categoryIds + searchTermIds and coerces string ids", () => {
+    const r = listingSchema.parse({
+      ...base,
+      categoryIds: ["3", 5],
+      searchTermIds: ["2"],
+    });
+    expect(r.categoryIds).toEqual([3, 5]);
+    expect(r.searchTermIds).toEqual([2]);
+  });
+
+  it("rejects non-positive / non-int category or term ids", () => {
+    expect(listingSchema.safeParse({ ...base, categoryIds: [0] }).success).toBe(
+      false,
+    );
+    expect(
+      listingSchema.safeParse({ ...base, searchTermIds: [1.5] }).success,
+    ).toBe(false);
+  });
+
+  it("categoryIds do NOT satisfy the barnyard-or-fitment refine", () => {
+    // A non-Barnyard listing with NO fitment must still fail even when categoryIds
+    // is non-empty — categories are not a fitment.
+    const { fitment, ...rest } = base;
+    const r = listingSchema.safeParse({ ...rest, categoryIds: [3, 5] });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues.some((i) => i.path.includes("fitment"))).toBe(true);
+    }
   });
 });
