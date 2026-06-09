@@ -166,7 +166,11 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   1. While creating a listing, the seller is shown suggested applicable trucks, configurations, and categories derived from the part details
   2. Suggested fitments are presented for explicit seller confirmation and are never applied automatically
   3. Once a seller confirms fitments, the listing appears in every applicable fitment search result and truck category
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 06-01-PLAN.md — Wave 1: migration 0012 (fitment_rules exclusive-arc FK rules + listing_categories + listing_search_terms join tables, RLS in-migration) + migration 0013 idempotent seed rules + extended listingSchema (categoryIds/searchTermIds) + Wave-0 RLS/seed integration gate & schema unit test
+- [ ] 06-02-PLAN.md — Wave 2: getPartCategories reader + category/search-term persistence in createListing/updateListing + read-back on getListing/detail page + edit-mode id pre-fill + FINT-03 accept-equals-manual equivalence test
+- [ ] 06-03-PLAN.md — Wave 2: lib/fitment/types.ts shared contract + lib/fitment/suggest.ts "use server" suggestion engine (FINT-01: category inference + garage→flat expansion from the SAME fitment_rules table; getClaims/RLS only, no service-role) + FINT-01 integration assertions
+- [ ] 06-04-PLAN.md — Wave 3: vendor Skeleton + grouped-chips suggestions component (no useEffect auto-apply, FINT-02) + Part-Category trigger select + real-time debounced wiring into listing-form (accept/add-all/dismiss through the single setFitment path) + live human-verify checkpoint
 
 ### Phase 7: Search, Feed & Public Profile
 **Goal**: A buyer can discover parts as the differentiator's payoff — browsing a feed and searching by keyword, facets, and trucker slang with typo/synonym tolerance, and filtering to "fits my truck" from their garage — and view a seller's public profile, with search and view events logged for analytics.
