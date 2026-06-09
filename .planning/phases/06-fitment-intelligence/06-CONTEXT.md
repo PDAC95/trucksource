@@ -42,6 +42,12 @@ This phase adds the **suggestion layer** on top of the existing manual fitment t
 - **Explainability via group headers.** The "why" is communicated by the group title ("From your garage", "Common for Bumpers") — no per-chip tooltips needed.
 - **Empty state = brief message.** When no rule applies (category without mappings, no garage): show a short line like "No automatic suggestions — add fitments manually below." Don't hide the section silently; direct the seller to the manual path.
 
+### Scope resolution (post-research, 2026-06-09 — LOCKED)
+Research revealed the listing form has **no Part Category selector** today, and `listing_fitment` persists only `(model_id, config_id)` — no listing↔category or ↔search_term tables exist. The CONTEXT trigger ("Part Category") and the garage→flat expansion ("359 Guys", "Long Hood") had nowhere to write. Resolved with the stakeholder:
+- **Schema scope = Category + Search Terms.** Phase 6 adds a Part-Category selector and persistence via new `listing_categories` (mandatory — FINT-03's "truck category" half) and `listing_search_terms` (where slang/flat-dimension suggestions land and what Phase 7 search reads). `listing_materials` / `listing_special_filters` are **deferred** unless a needed seed rule forces one (call it out in planning if so).
+- **Single Part-Category in v1 UI.** A single-select Part-Category control drives suggestions. Storage may be M2M (`listing_categories` join) for forward-compat, but the v1 trigger UI is single-select.
+- **Listing detail shows the new dimensions.** The public listing detail page renders confirmed categories + search terms alongside Make/Model/Config. Low cost, makes FINT-03 verifiable before Phase 7.
+
 ### Claude's Discretion
 - Exact chip styling, group spacing, and how the suggestions zone integrates visually with the existing `FitmentMultiSelect` section in `components/listings/listing-form.tsx`.
 - Whether the suggestion service is a Server Action vs Edge Function (ARCHITECTURE.md says Server Action `lib/fitment/suggest.ts`, promotable later).
