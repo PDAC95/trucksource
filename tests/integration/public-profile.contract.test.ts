@@ -7,7 +7,8 @@
 //
 // The selected columns here MUST stay in sync with
 // app/(public)/u/[username]/page.tsx: select("id, username, state_province,
-// country, member_since").
+// country, member_since, display_name, seller_type"). display_name and
+// seller_type (ACCT-07/08, plan 5.1-02) are owner-chosen NON-PII columns.
 //
 // Runs against Supabase Staging with the anon key only (see _supabase.ts) and
 // self-skips when the Supabase env vars are absent so a secret-less CI run does
@@ -24,6 +25,8 @@ const PAGE_SELECT_COLUMNS = [
   "state_province",
   "country",
   "member_since",
+  "display_name",
+  "seller_type",
 ] as const;
 
 const d = INTEGRATION_ENABLED ? describe : describe.skip;

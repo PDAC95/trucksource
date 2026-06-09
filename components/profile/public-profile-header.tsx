@@ -1,8 +1,16 @@
 import { MapPin, CalendarDays, Package, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { SellerTypeBadge } from "@/components/seller/seller-type-badge";
+import type { SellerType } from "@/lib/seller/badge";
 
 interface PublicProfileHeaderProps {
-  username: string;
+  /**
+   * The resolved public name (ACCT-08) = coalesce(display_name, username). Either the
+   * owner's opt-in display name or the anonymous handle — both are NON-PII.
+   */
+  publicName: string;
+  /** Owner-chosen informational seller type (ACCT-07), or null = no badge. */
+  sellerType: SellerType | null;
   stateProvince: string;
   country: string;
   /** ISO timestamp from profiles_public.member_since. */
@@ -26,14 +34,15 @@ function formatMemberSince(iso: string): string {
 }
 
 export function PublicProfileHeader({
-  username,
+  publicName,
+  sellerType,
   stateProvince,
   country,
   memberSince,
   activeListingCount,
   verified,
 }: PublicProfileHeaderProps) {
-  const initial = username.charAt(0).toUpperCase();
+  const initial = (publicName.charAt(0) || "?").toUpperCase();
   const listingLabel =
     activeListingCount === 1 ? "active listing" : "active listings";
 
@@ -49,8 +58,9 @@ export function PublicProfileHeader({
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {username}
+            {publicName}
           </h1>
+          <SellerTypeBadge sellerType={sellerType} />
           {verified && (
             <Badge variant="secondary" className="gap-1">
               <BadgeCheck className="size-3.5" aria-hidden /> Verified

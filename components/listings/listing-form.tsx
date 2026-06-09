@@ -19,6 +19,8 @@ import {
   type CreateListingResult,
   type UpdateListingResult,
 } from "@/lib/actions/listings";
+import { findSimilarOwnListings } from "@/lib/listings/duplicates";
+import type { SimilarListing } from "@/lib/listings/duplicates";
 
 import {
   Form,
@@ -45,6 +47,7 @@ import {
   type FitmentSelection,
 } from "./fitment-multi-select";
 import { PhotoUploader, type UploadedPhoto } from "./photo-uploader";
+import { DuplicateWarning } from "./duplicate-warning";
 
 // The single sectioned create/edit listing form (CONTEXT: ONE page with sections,
 // NOT a wizard, NO draft state). RHF + zodResolver(listingSchema) — the SAME schema
@@ -138,6 +141,17 @@ export function ListingForm({
   );
   const [fitmentError, setFitmentError] = React.useState<string | null>(null);
 
+  // Same-seller duplicate warning (LIST-10), CREATE path only. The probe runs on
+  // publish-attempt; if the seller already has similar listings we show a
+  // non-blocking dialog and stash the validated payload until they confirm. The
+  // probe is advisory — it never blocks (a failure returns [] → straight publish).
+  const [duplicateMatches, setDuplicateMatches] = React.useState<
+    SimilarListing[]
+  >([]);
+  const [pendingPayload, setPendingPayload] =
+    React.useState<ListingInput | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = React.useState(false);
+
   const form = useForm<ListingFormValues, unknown, ListingInput>({
     resolver: zodResolver(listingSchema),
     defaultValues: {
@@ -204,15 +218,56 @@ export function ListingForm({
         return;
       }
 
-      const result = await createListing(payload);
-      if (result.ok) {
-        toast.success("Listing published");
-        router.push(`/listings/${result.id}`); // CONTEXT: redirect to the listing
-      } else {
-        toast.error(actionErrorMessage(result.error));
-        setPending(false);
+      // CREATE path: BEFORE publishing, probe the seller's OWN listings for a
+      // fuzzy-similar title (LIST-10). The probe is advisory — never blocks. If it
+      // returns matches, open the non-blocking warning and stash the payload; the
+      // seller's "Publish anyway" then calls createListing unchanged. A probe
+      // failure returns [] → fall straight through to publish.
+      const matches = await findSimilarOwnListings(payload.title);
+      if (matches.length > 0) {
+        setDuplicateMatches(matches);
+        setPendingPayload(payload);
+        setShowDuplicateDialog(true);
+        setPending(false); // awaiting the seller's decision; not mid-publish
+        return;
       }
+
+      await runCreate(payload);
     });
+  }
+
+  // The actual publish call — createListing is UNCHANGED and called identically
+  // whether we reach it with no duplicates or via "Publish anyway".
+  async function runCreate(payload: ListingInput) {
+    const result = await createListing(payload);
+    if (result.ok) {
+      toast.success("Listing published");
+      router.push(`/listings/${result.id}`); // CONTEXT: redirect to the listing
+    } else {
+      toast.error(actionErrorMessage(result.error));
+      setPending(false);
+    }
+  }
+
+  // "Publish anyway" — one extra click, never blocked. Closes the warning and
+  // publishes the stashed payload via the unchanged createListing path.
+  function onPublishAnyway() {
+    const payload = pendingPayload;
+    setShowDuplicateDialog(false);
+    setPendingPayload(null);
+    setDuplicateMatches([]);
+    if (!payload) return;
+    setPending(true);
+    React.startTransition(async () => {
+      await runCreate(payload);
+    });
+  }
+
+  // "Go back" — dismiss the warning, keep the form as-is so the seller can edit.
+  function onDuplicateCancel() {
+    setShowDuplicateDialog(false);
+    setPendingPayload(null);
+    setDuplicateMatches([]);
   }
 
   const prefLabel = contactPreference
@@ -474,6 +529,14 @@ export function ListingForm({
           </Button>
         </div>
       </form>
+
+      {/* LIST-10 non-blocking same-seller duplicate warning (create path only). */}
+      <DuplicateWarning
+        open={showDuplicateDialog}
+        matches={duplicateMatches}
+        onPublishAnyway={onPublishAnyway}
+        onCancel={onDuplicateCancel}
+      />
     </Form>
   );
 }
