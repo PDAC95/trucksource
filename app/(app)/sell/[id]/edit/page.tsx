@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { getListing } from "@/lib/listings/queries";
-import { getConditions } from "@/lib/listings/cascade";
+import { getConditions, getPartCategories } from "@/lib/listings/cascade";
 import type { CascadeOption } from "@/lib/garage/cascade";
 import { listingPhotoPublicUrl } from "@/lib/listings/storage";
 import type { ListingInput } from "@/lib/listings/schema";
@@ -155,6 +155,9 @@ export default async function EditListingPage({
   const makes = (makesData ?? []) as CascadeOption[];
 
   const conditions = await getConditions();
+  // Phase-6 part-category tree — drives the Fitment suggestion trigger in edit mode
+  // (06-04). The form pre-fills categoryId from defaults.categoryIds[0].
+  const partCategories = await getPartCategories();
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -171,6 +174,7 @@ export default async function EditListingPage({
         defaults={defaults}
         makes={makes}
         conditions={conditions}
+        partCategories={partCategories}
         contactPreference={contactPreference}
       />
 

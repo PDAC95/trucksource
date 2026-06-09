@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { getConditions } from "@/lib/listings/cascade";
+import { getConditions, getPartCategories } from "@/lib/listings/cascade";
 import type { CascadeOption } from "@/lib/garage/cascade";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -32,6 +32,8 @@ export default async function SellPage() {
   const makes = (makesData ?? []) as CascadeOption[];
 
   const conditions = await getConditions();
+  // Phase-6 part-category tree — drives the Fitment suggestion trigger (06-04).
+  const partCategories = await getPartCategories();
 
   // Contact preference (added in 05-05). Read defensively: a missing column or row
   // collapses to the most-private default rather than breaking listing creation.
@@ -64,6 +66,7 @@ export default async function SellPage() {
         mode="create"
         makes={makes}
         conditions={conditions}
+        partCategories={partCategories}
         contactPreference={contactPreference}
       />
 

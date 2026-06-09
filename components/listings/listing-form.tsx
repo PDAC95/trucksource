@@ -12,7 +12,16 @@ import {
   type ListingFormValues,
 } from "@/lib/listings/schema";
 import type { CascadeOption } from "@/lib/garage/cascade";
-import type { ConditionOption } from "@/lib/listings/cascade";
+import type {
+  ConditionOption,
+  PartCategoryOption,
+} from "@/lib/listings/cascade";
+import { suggestFitment } from "@/lib/fitment/suggest";
+import type {
+  SuggestionGroup,
+  SuggestedFitment,
+  SuggestedTag,
+} from "@/lib/fitment/types";
 import {
   createListing,
   updateListing,
@@ -41,6 +50,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 
 import {
   FitmentMultiSelect,
@@ -48,6 +61,7 @@ import {
 } from "./fitment-multi-select";
 import { PhotoUploader, type UploadedPhoto } from "./photo-uploader";
 import { DuplicateWarning } from "./duplicate-warning";
+import { FitmentSuggestions } from "./fitment-suggestions";
 
 // The single sectioned create/edit listing form (CONTEXT: ONE page with sections,
 // NOT a wizard, NO draft state). RHF + zodResolver(listingSchema) — the SAME schema
@@ -121,6 +135,7 @@ export function ListingForm({
   listingId,
   makes,
   conditions,
+  partCategories = [],
   contactPreference,
   defaults,
 }: {
@@ -128,6 +143,9 @@ export function ListingForm({
   listingId?: number;
   makes: CascadeOption[];
   conditions: ConditionOption[];
+  // Optional-with-default so a page that hasn't yet wired getPartCategories still
+  // type-checks and simply renders no category options.
+  partCategories?: PartCategoryOption[];
   contactPreference?: string;
   defaults?: ListingFormDefaults;
 }) {
@@ -146,6 +164,37 @@ export function ListingForm({
     defaults?.isBarnyard ?? false,
   );
   const [fitmentError, setFitmentError] = React.useState<string | null>(null);
+
+  // ── Phase-6 Fitment Intelligence (FINT-01/02) ─────────────────────────────
+  // The single-select Part Category is the suggestion TRIGGER; `categoryIds` is
+  // the persisted M2M (CONTEXT: storage M2M, UI single-select v1). Setting the
+  // select updates BOTH. `searchTerms` holds accepted slang/special-filter/category
+  // tags; the submit array `searchTermIds` derives from it. `suggestions` is the
+  // ONLY thing the debounced effect writes — it NEVER touches `fitment` (FINT-02).
+  const [categoryId, setCategoryId] = React.useState<number | null>(
+    defaults?.categoryIds?.[0] ?? null,
+  );
+  const [categoryIds, setCategoryIds] = React.useState<number[]>(
+    defaults?.categoryIds ?? [],
+  );
+  const [searchTerms, setSearchTerms] = React.useState<SuggestedTag[]>([]);
+  const [suggestions, setSuggestions] = React.useState<SuggestionGroup[]>([]);
+  const [dismissed, setDismissed] = React.useState<Set<string>>(new Set());
+  const [isSuggesting, startSuggest] = React.useTransition();
+
+  // THE ONLY effect in this Fitment flow. It debounces suggestFitment on the
+  // chosen category and writes ONLY `suggestions` — never `fitment`, never any
+  // confirmed state (FINT-02). Acceptance happens exclusively in the click
+  // handlers below.
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      startSuggest(async () => {
+        const res = await suggestFitment({ partCategoryId: categoryId });
+        setSuggestions(res.groups);
+      });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [categoryId]);
 
   // Same-seller duplicate warning (LIST-10), CREATE path only. The probe runs on
   // publish-attempt; if the seller already has similar listings we show a
@@ -178,6 +227,85 @@ export function ListingForm({
     },
   });
 
+  // ── FINT-02 accept handlers — the ONLY path into confirmed state ──────────
+  // Every one of these runs ONLY from an explicit click (chip body / "Add all").
+  // No effect calls them. onAcceptFitment uses EXACTLY the FitmentMultiSelect
+  // onChange path (setFitment + form.setValue) so accepted == manually-added.
+  function onAcceptFitment(s: SuggestedFitment) {
+    const exists = fitment.some(
+      (f) =>
+        f.modelId === s.modelId &&
+        (f.configId ?? null) === (s.configId ?? null),
+    );
+    if (exists) return;
+    const next: FitmentSelection[] = [
+      ...fitment,
+      {
+        modelId: s.modelId,
+        configId: s.configId ?? null,
+        makeName: s.makeName,
+        modelName: s.modelName,
+        configName: s.configName,
+      },
+    ];
+    setFitment(next);
+    form.setValue(
+      "fitment",
+      next.map((f) => ({ modelId: f.modelId, configId: f.configId ?? null })),
+      { shouldValidate: true },
+    );
+    setFitmentError(null);
+  }
+
+  function onAcceptTag(t: SuggestedTag) {
+    if (t.kind === "category") {
+      setCategoryIds((prev) => (prev.includes(t.id) ? prev : [...prev, t.id]));
+      return;
+    }
+    setSearchTerms((prev) =>
+      prev.some((x) => x.id === t.id && x.kind === t.kind)
+        ? prev
+        : [...prev, t],
+    );
+  }
+
+  function onAddAll(group: SuggestionGroup) {
+    // One click = "add all" — still an explicit user action (FINT-02 satisfied).
+    group.fitments.forEach(onAcceptFitment);
+    group.tags.forEach(onAcceptTag);
+  }
+
+  function onDismiss(key: string) {
+    setDismissed((prev) => new Set(prev).add(key));
+  }
+
+  function removeSearchTerm(t: SuggestedTag) {
+    setSearchTerms((prev) =>
+      prev.filter((x) => !(x.id === t.id && x.kind === t.kind)),
+    );
+  }
+
+  // Filter suggestions against ALREADY-CONFIRMED state before rendering so the
+  // engine never re-suggests something the seller already has (Pitfall 5, also
+  // covers edit-mode pre-fill). Dismissed keys are filtered inside the component.
+  const filteredGroups: SuggestionGroup[] = suggestions
+    .map((g) => ({
+      ...g,
+      fitments: g.fitments.filter(
+        (s) =>
+          !fitment.some(
+            (f) =>
+              f.modelId === s.modelId &&
+              (f.configId ?? null) === (s.configId ?? null),
+          ),
+      ),
+      tags: g.tags.filter((t) => {
+        if (t.kind === "category") return !categoryIds.includes(t.id);
+        return !searchTerms.some((x) => x.id === t.id && x.kind === t.kind);
+      }),
+    }))
+    .filter((g) => g.fitments.length > 0 || g.tags.length > 0);
+
   function onSubmit(values: ListingInput) {
     // Compose the parts the schema validated (part data + shipping) with the
     // component-managed fitment / photos / barnyard.
@@ -193,6 +321,10 @@ export function ListingForm({
         configId: f.configId ?? null,
       })),
       photoPaths: readyPaths,
+      // Phase-6 confirmed dimensions (FINT-03): persisted M2M categories + accepted
+      // slang/search-term tags. Both already flow through listingSchema (06-01).
+      categoryIds,
+      searchTermIds: searchTerms.map((t) => t.id),
     };
 
     // Client-side mirror of the schema refine (Barnyard OR >=1 fitment) for inline UX.
@@ -423,6 +555,73 @@ export function ListingForm({
               Barnyard.
             </p>
           </div>
+
+          {/* Part Category — the suggestion TRIGGER (single-select v1). Choosing
+              one debounce-fetches grouped suggestion chips below. Setting it also
+              records the M2M category id that persists. */}
+          <div className="grid gap-1.5">
+            <Label>Part category</Label>
+            <Select
+              value={categoryId != null ? String(categoryId) : undefined}
+              onValueChange={(v) => {
+                const id = Number(v);
+                setCategoryId(id);
+                setCategoryIds((prev) =>
+                  prev.includes(id) ? prev : [...prev, id],
+                );
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pick a category to see suggestions" />
+              </SelectTrigger>
+              <SelectContent>
+                {partCategories.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.parentId != null ? `— ${c.name}` : c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Grouped suggestion chips (FINT-01). Accepting is the ONLY path into
+              confirmed state (FINT-02) — see the accept handlers above. */}
+          <FitmentSuggestions
+            groups={filteredGroups}
+            isLoading={isSuggesting}
+            hasTrigger={categoryId != null}
+            dismissed={dismissed}
+            onDismiss={onDismiss}
+            onAcceptFitment={onAcceptFitment}
+            onAcceptTag={onAcceptTag}
+            onAddAll={onAddAll}
+          />
+
+          {/* Confirmed search-term / slang tags — removable, so the seller sees
+              exactly what was accepted. (Confirmed model/config fitments render in
+              the FitmentMultiSelect badge list below.) */}
+          {searchTerms.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {searchTerms.map((t) => (
+                <Badge
+                  key={`${t.kind}-${t.id}`}
+                  variant="secondary"
+                  className="gap-1.5 py-1"
+                >
+                  {t.name}
+                  <button
+                    type="button"
+                    onClick={() => removeSearchTerm(t)}
+                    aria-label={`Remove tag ${t.name}`}
+                    className="hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+
           <FitmentMultiSelect
             makes={makes}
             fitment={fitment}
