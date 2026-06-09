@@ -9,6 +9,7 @@
 // also never asks for it.
 import { createClient } from "@/lib/supabase/server";
 import { listingPhotoPublicUrl } from "@/lib/listings/storage";
+import { isExpiringSoon } from "@/lib/listings/lifecycle";
 
 export type ListingPhoto = {
   path: string;
@@ -33,6 +34,7 @@ export type ListingDetail = {
   isBarnyard: boolean;
   status: string;
   dateListed: string;
+  expiresAt: string | null; // 90-day clock (LIST-09); null = never set / sold
   seller: {
     username: string;
     stateProvince: string | null;
@@ -55,6 +57,7 @@ type ListingDetailRow = {
   is_barnyard: boolean;
   status: string;
   date_listed: string;
+  expires_at: string | null;
   seller_id: string;
   conditions: { name: string } | null;
   listing_photos: { storage_path: string; sort_order: number }[] | null;
@@ -76,13 +79,19 @@ type ListingDetailRow = {
  * conditions.name, profiles_public (enumerated, no PII), ordered listing_photos,
  * and listing_fitment with fitment NAMES. Photo paths are resolved to public URLs.
  * Returns null when the id is not found.
+ *
+ * STATUS-AGNOSTIC BY DESIGN (LIST-09): getListing returns a row of ANY status
+ * (active/sold/expired) because the owner edit/detail path legitimately needs to
+ * read its own non-active listing. The BUYER-facing exclusion of expired/sold rows
+ * is the caller's job (the public page notFound()s non-active) — RLS makes listings
+ * public-read on ALL rows (Pitfall 5: status filtering is the app's job, not RLS's).
  */
 export async function getListing(id: number): Promise<ListingDetail | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, seller_id, " +
+      "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, expires_at, seller_id, " +
         "conditions:condition_id ( name ), " +
         "listing_photos ( storage_path, sort_order ), " +
         "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) )",
@@ -134,6 +143,7 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
     isBarnyard: row.is_barnyard,
     status: row.status,
     dateListed: row.date_listed,
+    expiresAt: row.expires_at,
     seller: {
       username: seller?.username ?? "",
       stateProvince: seller?.state_province ?? null,
@@ -149,6 +159,8 @@ export type MyListing = {
   title: string;
   status: string;
   coverUrl: string | null; // sort_order 0 photo, or null when no photos
+  expiresAt: string | null; // 90-day clock (LIST-09); null = never set / sold
+  expiringSoon: boolean; // active && within ~7 days of expiry (derived)
 };
 
 /**
@@ -156,6 +168,11 @@ export type MyListing = {
  * listings is a PUBLIC-read table, so it is NOT auto-scoped by RLS; we filter
  * explicitly by the getClaims seller_id. Returns the cover photo (lowest
  * sort_order) per listing. Returns [] when unauthenticated or on error.
+ *
+ * LIFECYCLE (LIST-09): keeps ALL statuses (active/sold/expired) — unlike the buyer
+ * reads, the seller MUST see expired rows to reactivate them. Each row carries
+ * expires_at + a derived expiringSoon (isExpiringSoon) so the UI can show the
+ * "Expires in X days" hint + Renew only when near expiry, and a discreet counter.
  */
 export async function getMyListings(): Promise<MyListing[]> {
   const supabase = await createClient();
@@ -165,7 +182,9 @@ export async function getMyListings(): Promise<MyListing[]> {
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, status, listing_photos ( storage_path, sort_order )")
+    .select(
+      "id, title, status, expires_at, listing_photos ( storage_path, sort_order )",
+    )
     .eq("seller_id", userId)
     .order("date_listed", { ascending: false });
 
@@ -175,6 +194,7 @@ export async function getMyListings(): Promise<MyListing[]> {
     id: number;
     title: string;
     status: string;
+    expires_at: string | null;
     listing_photos: { storage_path: string; sort_order: number }[] | null;
   };
 
@@ -189,6 +209,8 @@ export async function getMyListings(): Promise<MyListing[]> {
       coverUrl: cover
         ? listingPhotoPublicUrl(supabase, cover.storage_path)
         : null,
+      expiresAt: r.expires_at,
+      expiringSoon: isExpiringSoon(r.status, r.expires_at),
     };
   });
 }

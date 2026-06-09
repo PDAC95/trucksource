@@ -26,6 +26,16 @@ export default async function ListingDetailPage({
     notFound();
   }
 
+  // STATUS GATE (LIST-09, Pitfall 5): expired AND sold listings are invisible to
+  // buyers. getListing is status-agnostic (the owner edit path needs any status);
+  // the public page is where the buyer-facing exclusion lives. RLS makes listings
+  // public-read on ALL rows, so this app-layer filter — not RLS — hides dead
+  // inventory. notFound() before logging so a view is only recorded for a visible
+  // (active) listing.
+  if (listing.status !== "active") {
+    notFound();
+  }
+
   // Fire-and-forget the view event AFTER the listing is found, BEFORE rendering.
   // recordListingView swallows its own errors, so this can never fail the page.
   // Because the page is force-dynamic, this runs on every request.
