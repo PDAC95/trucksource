@@ -27,6 +27,13 @@ import { LISTING_PHOTOS_BUCKET } from "@/lib/listings/storage";
 // SAME listingSchema (single client+server source of truth), re-checks each fitment
 // combo against model_configurations server-side, and verifies every submitted photo
 // path lives under the caller's own <uid>/ folder (Pitfall 5).
+//
+// LIFECYCLE (LIST-09): renewListing / reactivateListing move the 90-day clock; they
+// are the ONLY actions that touch expires_at. updateListing (editing) deliberately
+// NEVER writes expires_at — a trivial edit must not buy 90 more days (CONTEXT: editing
+// never resets the clock). Renew is ACTIVE-only; reactivate is EXPIRED-only and also
+// flips status back to 'active'. Both are owner-scoped (getClaims identity + explicit
+// .eq("seller_id") + owner RLS) and collapse zero-rows-affected to not_found.
 
 export type UploadPhotoResult =
   | { ok: true; path: string }
@@ -317,4 +324,82 @@ export async function updateListing(
   }
 
   return { ok: true };
+}
+
+// 90 days from now, ISO — the clock renew/reactivate set. Computed per call.
+function ninetyDaysFromNow(): string {
+  return new Date(Date.now() + 90 * 864e5).toISOString();
+}
+
+export type RenewListingResult =
+  | { ok: true; expiresAt: string }
+  | { ok: false; error: "unauthenticated" | "invalid" | "not_found" };
+
+/**
+ * Renew an ACTIVE listing (LIST-09): push expires_at to now()+90d. Owner-scoped
+ * (getClaims identity, cookie-client owner RLS, explicit .eq("seller_id")) and
+ * scoped to status='active' — sold/expired rows do NOT renew here (expired uses
+ * reactivateListing). Zero rows affected (not the caller's, nonexistent, or not
+ * active) collapses to not_found — no existence leak (the updateListing rule).
+ * Returns the new expires_at so the UI can toast "active until <date>".
+ */
+export async function renewListing(id: number): Promise<RenewListingResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ expires_at: ninetyDaysFromNow() })
+    .eq("id", id)
+    .eq("seller_id", userId)
+    .eq("status", "active")
+    .select("id, expires_at");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+  return {
+    ok: true,
+    expiresAt: (data[0] as { expires_at: string }).expires_at,
+  };
+}
+
+export type ReactivateListingResult =
+  | { ok: true; expiresAt: string }
+  | { ok: false; error: "unauthenticated" | "invalid" | "not_found" };
+
+/**
+ * Reactivate an EXPIRED listing (LIST-09): flip status back to 'active' and reset
+ * expires_at to now()+90d in one owner-scoped update. Scoped to status='expired'
+ * so it only ever revives a lapsed listing. Reactivation is DIRECT — no
+ * re-validation against the current schema (CONTEXT: data + photos are intact, one
+ * click revives it; max no-friction). Zero rows affected → not_found.
+ */
+export async function reactivateListing(
+  id: number,
+): Promise<ReactivateListingResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ status: "active", expires_at: ninetyDaysFromNow() })
+    .eq("id", id)
+    .eq("seller_id", userId)
+    .eq("status", "expired")
+    .select("id, expires_at");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+  return {
+    ok: true,
+    expiresAt: (data[0] as { expires_at: string }).expires_at,
+  };
 }
