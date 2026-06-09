@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SELLER_TYPES } from "@/lib/seller/badge";
 
 // LIST-07 contact-preference contract — the single client+server source of truth
 // (the form validates with it for UX, updateContactPreference re-validates with
@@ -24,3 +25,22 @@ export const contactPreferenceSchema = z.object({
 });
 
 export type ContactPreferenceInput = z.infer<typeof contactPreferenceSchema>;
+
+// ACCT-07 seller-type contract. The 7 values come from lib/seller/badge.ts (the
+// single source of truth shared with Phase 7's feed/search card). Nullable
+// because clearing the badge (empty = no badge, CONTEXT lock) is valid.
+export const sellerTypeSchema = z.object({
+  sellerType: z.enum(SELLER_TYPES).nullable(),
+});
+
+export type SellerTypeInput = z.infer<typeof sellerTypeSchema>;
+
+// ACCT-08 public display-name contract. v1 validation is length/trim/non-empty
+// ONLY — no blocklist (abuse handled via report/admin in Phase 9/10). Reveal: a
+// non-empty trimmed 1-50 string. Revert: explicit null (restores the anonymous
+// handle — see resolvePublicName in lib/seller/badge.ts).
+export const displayNameSchema = z.object({
+  displayName: z.string().trim().min(1).max(50).nullable(),
+});
+
+export type DisplayNameInput = z.infer<typeof displayNameSchema>;
