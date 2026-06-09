@@ -28,7 +28,11 @@ export const PII_KEYS = [
   "postal_code",
 ] as const;
 
-/** The complete, allowed shape of a public profile row (no PII). */
+/**
+ * The complete, allowed shape of a public profile row (no PII).
+ * Extended for the shipped non-PII columns: contact_preference (0009),
+ * seller_type + display_name (0010). None is PII; all are owner-written.
+ */
 export const PUBLIC_PROFILE_KEYS = [
   "id",
   "username",
@@ -36,6 +40,9 @@ export const PUBLIC_PROFILE_KEYS = [
   "country",
   "member_since",
   "username_changed_at",
+  "contact_preference",
+  "seller_type",
+  "display_name",
 ] as const;
 
 /** Fresh anon client (no cookies, no session) — the worst-case public caller. */
