@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getMyListings } from "@/lib/listings/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Toaster } from "@/components/ui/sonner";
+import { RenewButton } from "@/components/listings/renew-button";
+import { cn } from "@/lib/utils";
 
 // Owner-scoped "My Listings" index — never cache one seller's list for another
 // (invariant 6). Mirrors profile/garage/page.tsx.
@@ -25,11 +28,26 @@ export default async function MyListingsPage() {
 
   const listings = await getMyListings();
 
+  // Discreet attention counter (CONTEXT): listings needing the seller's attention =
+  // expiring-soon OR already-expired. Reuses the data each MyListing already carries.
+  const attentionCount = listings.filter(
+    (l) => l.expiringSoon || l.status === "expired",
+  ).length;
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between gap-4">
         <div className="grid gap-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight">My Listings</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              My Listings
+            </h1>
+            {attentionCount > 0 && (
+              <Badge variant="destructive" className="font-normal">
+                {attentionCount} expiring
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm">
             Your parts for sale. Edit any one of them.
           </p>
@@ -61,48 +79,68 @@ export default async function MyListingsPage() {
         </div>
       ) : (
         <ul className="mt-8 grid gap-3">
-          {listings.map((listing) => (
-            <li
-              key={listing.id}
-              className="flex items-center gap-4 rounded-lg border p-3"
-            >
-              <div className="bg-muted size-16 shrink-0 overflow-hidden rounded-md">
-                {listing.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={listing.coverUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="text-muted-foreground grid h-full w-full place-items-center text-[10px]">
-                    No photo
-                  </div>
+          {listings.map((listing) => {
+            const isExpired = listing.status === "expired";
+            return (
+              <li
+                key={listing.id}
+                className={cn(
+                  "flex items-center gap-4 rounded-lg border p-3",
+                  isExpired && "opacity-60",
                 )}
-              </div>
+              >
+                <div className="bg-muted size-16 shrink-0 overflow-hidden rounded-md">
+                  {listing.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={listing.coverUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-muted-foreground grid h-full w-full place-items-center text-[10px]">
+                      No photo
+                    </div>
+                  )}
+                </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{listing.title}</p>
-                <Badge
-                  variant={
-                    listing.status === "active" ? "default" : "secondary"
-                  }
-                  className="mt-1 capitalize"
-                >
-                  {listing.status}
-                </Badge>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{listing.title}</p>
+                  <Badge
+                    variant={
+                      listing.status === "active"
+                        ? "default"
+                        : isExpired
+                          ? "destructive"
+                          : "secondary"
+                    }
+                    className="mt-1 capitalize"
+                  >
+                    {listing.status}
+                  </Badge>
+                </div>
 
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/sell/${listing.id}/edit`}>
-                  <Pencil className="size-4" />
-                  Edit
-                </Link>
-              </Button>
-            </li>
-          ))}
+                {/* Self-hides on healthy active rows; shows Renew (near-expiry) or
+                    Reactivate (expired). */}
+                <RenewButton
+                  listingId={listing.id}
+                  status={listing.status}
+                  expiresAt={listing.expiresAt}
+                />
+
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/sell/${listing.id}/edit`}>
+                    <Pencil className="size-4" />
+                    Edit
+                  </Link>
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       )}
+
+      <Toaster />
     </div>
   );
 }

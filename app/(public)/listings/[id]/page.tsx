@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 
+import { createClient } from "@/lib/supabase/server";
 import { getListing } from "@/lib/listings/queries";
 import { recordListingView } from "@/lib/actions/listing-view";
 import { ListingDetail } from "@/components/listings/listing-detail";
+import { Toaster } from "@/components/ui/sonner";
 
 // force-dynamic so recordListingView runs on every view — invariant #8, the view
 // event is non-reconstructible; mirrors the force-dynamic owner pages in this
@@ -41,9 +43,28 @@ export default async function ListingDetailPage({
   // Because the page is force-dynamic, this runs on every request.
   void recordListingView(listing.id);
 
+  // OWNER DETECTION (LIST-09): if the viewer is the seller, surface the owner-only
+  // Renew control. Compare the getClaims sub against the listing's seller_id via a
+  // tiny scoped read (getListing returns only PUBLIC seller fields, no seller_id).
+  // Anon viewers have no claims → isOwner stays false. getClaims, never getSession.
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  let isOwner = false;
+  if (userId) {
+    const { data: ownRow } = await supabase
+      .from("listings")
+      .select("id")
+      .eq("id", listing.id)
+      .eq("seller_id", userId)
+      .maybeSingle();
+    isOwner = ownRow != null;
+  }
+
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
-      <ListingDetail listing={listing} />
+      <ListingDetail listing={listing} isOwner={isOwner} />
+      {isOwner && <Toaster />}
     </main>
   );
 }

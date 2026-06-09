@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ListingDetail } from "@/lib/listings/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RenewButton } from "@/components/listings/renew-button";
 
 // Buyer-facing listing view. Server Component — it renders ONLY a ListingDetail,
 // which getListing already restricts to public columns + profiles_public (no PII,
@@ -37,7 +38,13 @@ function fitmentLabel(f: ListingDetail["fitment"][number]): string {
   return [f.makeName, f.modelName, f.configName].filter(Boolean).join(" ");
 }
 
-export function ListingDetail({ listing }: { listing: ListingDetail }) {
+export function ListingDetail({
+  listing,
+  isOwner = false,
+}: {
+  listing: ListingDetail;
+  isOwner?: boolean;
+}) {
   const cover = listing.photos[0];
   const rest = listing.photos.slice(1);
   const sellerLocation = [listing.seller.stateProvince, listing.seller.country]
@@ -102,6 +109,17 @@ export function ListingDetail({ listing }: { listing: ListingDetail }) {
             {usdFormatter.format(listing.askingPrice)}
           </p>
         </div>
+
+        {/* OWNER-ONLY lifecycle control (LIST-09): the seller viewing their own
+            listing sees Renew when it's near-expiry (RenewButton self-hides on a
+            healthy active listing). The buyer view never renders this. */}
+        {isOwner && (
+          <RenewButton
+            listingId={listing.id}
+            status={listing.status}
+            expiresAt={listing.expiresAt}
+          />
+        )}
 
         <dl className="grid gap-3 text-sm">
           {listing.partNumber && (
