@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Heart, MessageSquare } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getMyListings } from "@/lib/listings/queries";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/sonner";
 import { RenewButton } from "@/components/listings/renew-button";
+import { SoldToggle } from "./sold-toggle";
 import { cn } from "@/lib/utils";
 
 // Owner-scoped "My Listings" index — never cache one seller's list for another
@@ -106,19 +107,50 @@ export default async function MyListingsPage() {
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{listing.title}</p>
-                  <Badge
-                    variant={
-                      listing.status === "active"
-                        ? "default"
-                        : isExpired
-                          ? "destructive"
-                          : "secondary"
-                    }
-                    className="mt-1 capitalize"
-                  >
-                    {listing.status}
-                  </Badge>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant={
+                        listing.status === "active"
+                          ? "default"
+                          : isExpired
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="capitalize"
+                    >
+                      {listing.status === "sold" ? "Vendido" : listing.status}
+                    </Badge>
+
+                    {/* SOCL-02 seller-facing count — how MANY buyers saved it,
+                        never WHO. Quiet rows: shown only when > 0. */}
+                    {listing.saveCount > 0 && (
+                      <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                        <Heart className="size-3" />
+                        {listing.saveCount}{" "}
+                        {listing.saveCount === 1 ? "guardado" : "guardados"}
+                      </span>
+                    )}
+
+                    {/* SOCL-01 in-app indicator (LOCKED: not a notification
+                        system). Links to the listing page, where viewing as
+                        owner fires markCommentsSeen and clears the badge. */}
+                    {listing.newCommentCount > 0 && (
+                      <Link href={`/listings/${listing.id}`}>
+                        <Badge className="gap-1">
+                          <MessageSquare className="size-3" />
+                          {listing.newCommentCount}{" "}
+                          {listing.newCommentCount === 1
+                            ? "comentario nuevo"
+                            : "comentarios nuevos"}
+                        </Badge>
+                      </Link>
+                    )}
+                  </div>
                 </div>
+
+                {/* LIST-06: confirmed reversible sold/available toggle. Renders
+                    nothing for expired rows — RenewButton owns that path. */}
+                <SoldToggle listingId={listing.id} status={listing.status} />
 
                 {/* Self-hides on healthy active rows; shows Renew (near-expiry) or
                     Reactivate (expired). */}
