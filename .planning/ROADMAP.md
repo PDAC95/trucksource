@@ -198,7 +198,14 @@ Plans:
   1. A buyer can post a public comment on a listing, shown attributed to their username only
   2. A buyer can save (bookmark) a listing and view their list of saved listings
   3. A seller can mark their own listing as "Sold," which updates its public status
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 08-01-PLAN.md — Migration 0015_social.sql (comments + saves + deletion audit + save-count RPC + seen watermark, RLS in-migration) + live RLS/zero-PII gates
+- [ ] 08-02-PLAN.md — Comments backend: commentSchema, getListingComments (zero-PII thread reader), addComment/deleteComment/markCommentsSeen + unit tests
+- [ ] 08-03-PLAN.md — Saves + sold backend: toggleSave/getMySavedListings/getSavedIds, markSold/markAvailable, getMyListings save/comment counts, SaveButton
+- [ ] 08-04-PLAN.md — Listing-page surface: comment thread + composer UI, sold-renders-with-badge gate change, detail SaveButton + owner sold toggle
+- [ ] 08-05-PLAN.md — Feed save hearts (incl. infinite scroll), /saved page with sold/expired badges + nav, /sell/listings counts + sold toggle
+- [ ] 08-06-PLAN.md — Automated phase sweep + human-verify checkpoint of the live social flows
 
 ### Phase 9: Contact → Private Chat
 **Goal**: The trust spine — a buyer contacts a seller through a form that persists the submission and copies admin BEFORE any chat thread opens, then exchanges messages in a private in-site chat that never exposes seller PII, with reporting and abuse logging throughout.
