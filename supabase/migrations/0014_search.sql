@@ -183,13 +183,46 @@ $$;
 --    A guaranteed, reliably-runnable path through PostgREST for the EXPLAIN ANALYZE
 --    GIN-usage assertion. Returns ONLY plan text (no listing rows, no PII).
 -- ===========================================================================
+-- volatile (NOT stable): PostgreSQL forbids EXPLAIN inside a non-volatile function
+-- ("EXPLAIN is not allowed in a non-volatile function"). The function only reads, but
+-- the planner classification must be volatile to host the EXPLAIN. It sets
+-- enable_seqscan = off for the duration so the GIN-usage gate is deterministic even on
+-- a small Staging table (the planner would otherwise prefer a Seq Scan at low row
+-- counts and the index-usage assertion would be data-volume-dependent, not a real
+-- regression). The reset is local to the function via SET LOCAL semantics of `set`.
 create or replace function public.explain_search_plan(p_q text)
 returns setof text
-language plpgsql stable security invoker set search_path = '' as $$
+language plpgsql volatile security invoker set search_path = '' set enable_seqscan = 'off' as $$
 begin
   return query execute
     'explain analyze select * from public.listings ' ||
     'where search_vector @@ websearch_to_tsquery(''english'', $1)'
+    using p_q;
+end;
+$$;
+
+-- explain_slang_plan — the slang/typo trigram GIN gate (SRCH-04, Pitfall 3).
+-- The RPC's RUNTIME slang arm uses public.similarity(term, q) >= 0.3 (correct +
+-- search_path='' safe), but that predicate form is NOT GIN-indexable — only the `%`
+-- trigram operator is. So this gate EXPLAINs the indexable `%` form to PROVE the
+-- search_terms_term_trgm_idx GIN index is correctly wired and choosable. Like the FTS
+-- helper it is volatile (EXPLAIN forbidden in non-volatile fns) and pins the planner
+-- (enable_seqscan/indexscan/indexonlyscan = off) so on the tiny seed table the GIN
+-- index is the only remaining access path — otherwise the B-tree unique index on term
+-- or a Seq Scan would win at low row counts and the gate would be data-volume-flaky,
+-- not a real regression signal. We use the bare `%` operator HERE ONLY (inside a
+-- pinned EXPLAIN) — never in the live RPC/readers, which use public.similarity().
+create or replace function public.explain_slang_plan(p_q text)
+returns setof text
+language plpgsql volatile security invoker
+set search_path = ''
+set enable_seqscan = 'off'
+set enable_indexscan = 'off'
+set enable_indexonlyscan = 'off'
+as $$
+begin
+  return query execute
+    'explain select 1 from public.search_terms where (term::text) operator(public.%) $1'
     using p_q;
 end;
 $$;
