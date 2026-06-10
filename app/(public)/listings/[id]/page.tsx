@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getListing } from "@/lib/listings/queries";
 import { recordListingView } from "@/lib/actions/listing-view";
+import { getListingComments } from "@/lib/comments/queries";
+import { markCommentsSeen } from "@/lib/actions/comments";
+import { getSavedIds } from "@/lib/saves/queries";
 import { ListingDetail } from "@/components/listings/listing-detail";
+import { CommentSection } from "@/components/comments/comment-section";
+import { CommentComposer } from "@/components/comments/comment-composer";
 import { Toaster } from "@/components/ui/sonner";
 
 // force-dynamic so recordListingView runs on every view — invariant #8, the view
@@ -28,28 +33,34 @@ export default async function ListingDetailPage({
     notFound();
   }
 
-  // STATUS GATE (LIST-09, Pitfall 5): expired AND sold listings are invisible to
-  // buyers. getListing is status-agnostic (the owner edit path needs any status);
-  // the public page is where the buyer-facing exclusion lives. RLS makes listings
-  // public-read on ALL rows, so this app-layer filter — not RLS — hides dead
-  // inventory. notFound() before logging so a view is only recorded for a visible
-  // (active) listing.
-  if (listing.status !== "active") {
+  // STATUS GATE (LIST-06/LIST-09, Pitfall 1): SOLD listings stay publicly
+  // visible — they render with the prominent "Vendido" treatment so shared
+  // links and saved items never break (LOCKED decision). Everything else
+  // non-active (expired, etc.) still 404s for buyers. getListing is
+  // status-agnostic (the owner edit path needs any status); this app-layer
+  // gate — not RLS — is where the buyer-facing exclusion lives.
+  if (listing.status !== "active" && listing.status !== "sold") {
     notFound();
   }
 
-  // Fire-and-forget the view event AFTER the listing is found, BEFORE rendering.
-  // recordListingView swallows its own errors, so this can never fail the page.
-  // Because the page is force-dynamic, this runs on every request.
-  void recordListingView(listing.id);
+  const isSold = listing.status === "sold";
 
-  // OWNER DETECTION (LIST-09): if the viewer is the seller, surface the owner-only
-  // Renew control. Compare the getClaims sub against the listing's seller_id via a
-  // tiny scoped read (getListing returns only PUBLIC seller fields, no seller_id).
-  // Anon viewers have no claims → isOwner stays false. getClaims, never getSession.
+  // Fire-and-forget the view event ONLY for ACTIVE listings: a sold listing's
+  // views are not buyer-demand signal (Research Open Q1 — deliberate; revisit
+  // if sold-page traffic ever becomes interesting). recordListingView swallows
+  // its own errors, so this can never fail the page.
+  if (listing.status === "active") {
+    void recordListingView(listing.id);
+  }
+
+  // OWNER DETECTION: if the viewer is the seller, surface the owner-only
+  // lifecycle controls (Renew + the sold toggle). Compare the getClaims sub
+  // against the listing's seller_id via a tiny scoped read (getListing returns
+  // only PUBLIC seller fields, no seller_id). Anon viewers have no claims →
+  // isOwner stays false. getClaims, never the cookie-only session reader.
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
+  const userId = claims?.claims?.sub ?? null;
   let isOwner = false;
   if (userId) {
     const { data: ownRow } = await supabase
@@ -61,10 +72,57 @@ export default async function ListingDetailPage({
     isOwner = ownRow != null;
   }
 
+  // Social data — parallel reads, neither depends on the other: the comment
+  // thread (anon-readable) + the viewer's saved state (owner-RLS; empty Set
+  // for anon, so `saved` is simply false).
+  const [threads, savedIds] = await Promise.all([
+    getListingComments(listing.id),
+    getSavedIds([listing.id]),
+  ]);
+
+  // Owner viewing their own thread resets the unread-comments watermark that
+  // powers the /sell/listings badge. Fire-and-forget: a failure here must
+  // never affect the page (the badge just stays until the next visit).
+  if (isOwner && threads.length > 0) {
+    void markCommentsSeen(listing.id);
+  }
+
+  const isAuthenticated = userId != null;
+  // Comments close when the listing is not active (sold — LOCKED; the thread
+  // itself stays visible, only posting stops).
+  const commentsClosed = listing.status !== "active";
+
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
-      <ListingDetail listing={listing} isOwner={isOwner} />
-      {isOwner && <Toaster />}
+      <ListingDetail
+        listing={listing}
+        isOwner={isOwner}
+        isSold={isSold}
+        saved={savedIds.has(listing.id)}
+        isAuthenticated={isAuthenticated}
+      />
+
+      {/* COMMENTS (SOCL-01) — thread below the detail; composer only while the
+          listing is active (the section renders the closed notice when sold). */}
+      <div className="mt-10 grid max-w-2xl gap-4">
+        <CommentSection
+          listingId={listing.id}
+          threads={threads}
+          viewerId={userId}
+          isSeller={isOwner}
+          commentsClosed={commentsClosed}
+        />
+        {!commentsClosed && (
+          <CommentComposer
+            listingId={listing.id}
+            isAuthenticated={isAuthenticated}
+          />
+        )}
+      </div>
+
+      {/* Toasts for EVERY viewer now (comment/save/sold-toggle feedback), not
+          just owners. */}
+      <Toaster />
     </main>
   );
 }
