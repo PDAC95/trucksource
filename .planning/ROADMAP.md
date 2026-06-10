@@ -29,7 +29,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [x] **Phase 5.1: Stakeholder Trust & Lifecycle** (INSERTED) - Seller-type informational badge, opt-in public display name (default anonymous), 90-day frictionless listing expiry/renewal, soft same-seller duplicate warning (from stakeholder check.md, 2026-06-08). LIST-08 (min 3 photos) handled separately as a Phase 5 gap. (completed 2026-06-09)
 - [ ] **Phase 6: Fitment Intelligence** - Rules-based suggestion of applicable trucks/configs/categories; seller-confirmed, never auto-applied; garage pre-fill
 - [ ] **Phase 7: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, "fits my truck" personalization, public profile, event logging
-- [ ] **Phase 8: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold
+- [x] **Phase 8: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold (completed 2026-06-10, 6/6 plans; live comments/saves/sold flows user-approved at UAT; UI copy translated to English during UAT)
 - [ ] **Phase 9: Contact → Private Chat** - Form-first contact (persist + admin copy before thread opens), private in-site chat, report/abuse logging
 - [ ] **Phase 10: Admin Operations & Analytics** - Service-role-isolated ops console (users/listings/reports/messages/categories/fitment) + analytics dashboard
 
@@ -204,8 +204,8 @@ Plans:
 - [x] 08-02-PLAN.md — Comments backend: commentSchema, getListingComments (zero-PII thread reader), addComment/deleteComment/markCommentsSeen + unit tests
 - [x] 08-03-PLAN.md — Saves + sold backend: toggleSave/getMySavedListings/getSavedIds, markSold/markAvailable, getMyListings save/comment counts, SaveButton
 - [x] 08-04-PLAN.md — Listing-page surface: comment thread + composer UI, sold-renders-with-badge gate change, detail SaveButton + owner sold toggle
-- [ ] 08-05-PLAN.md — Feed save hearts (incl. infinite scroll), /saved page with sold/expired badges + nav, /sell/listings counts + sold toggle
-- [ ] 08-06-PLAN.md — Automated phase sweep + human-verify checkpoint of the live social flows
+- [x] 08-05-PLAN.md — Feed save hearts (incl. infinite scroll), /saved page with sold/expired badges + nav, /sell/listings counts + sold toggle
+- [x] 08-06-PLAN.md — Automated phase sweep + human-verify checkpoint of the live social flows (user-approved 2026-06-10; UAT i18n sweep `0a4356c`)
 
 ### Phase 9: Contact → Private Chat
 **Goal**: The trust spine — a buyer contacts a seller through a form that persists the submission and copies admin BEFORE any chat thread opens, then exchanges messages in a private in-site chat that never exposes seller PII, with reporting and abuse logging throughout.
