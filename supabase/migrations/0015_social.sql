@@ -56,13 +56,18 @@ create policy "comments public-read" on public.listing_comments
 -- be top-level AND on the same listing (depth-1 + no cross-listing graft,
 -- Pitfall 3). The depth-1 subquery on listing_comments routes through the
 -- table's own SELECT policy (using (true)) — no recursion.
+--
+-- IMPORTANT: inside the depth-1 EXISTS the NEW row's columns MUST be qualified
+-- as listing_comments.* — an unqualified `parent_id`/`listing_id` binds to the
+-- subquery table `p` (innermost scope wins), turning the check into
+-- `p.id = p.parent_id`, which is never true and rejects every legitimate reply.
 create policy "comments author-insert" on public.listing_comments
   for insert to authenticated
   with check (
     (select auth.uid()) = author_id
     and exists (
       select 1 from public.listings l
-      where l.id = listing_id
+      where l.id = listing_comments.listing_id
         and l.status = 'active'
         and (l.expires_at is null or l.expires_at > now())
     )
@@ -70,9 +75,11 @@ create policy "comments author-insert" on public.listing_comments
       parent_id is null
       or exists (
         select 1 from public.listing_comments p
-        where p.id = parent_id
-          and p.listing_id = listing_id   -- reply stays on the same listing
-          and p.parent_id is null         -- depth-1: parent must be top-level
+        where p.id = listing_comments.parent_id
+          -- reply stays on the same listing:
+          and p.listing_id = listing_comments.listing_id
+          -- depth-1: parent must be top-level:
+          and p.parent_id is null
       )
     )
   );
