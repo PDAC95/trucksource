@@ -52,7 +52,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LIST-03**: Uploaded photos have all metadata (including EXIF GPS) stripped server-side before they are stored or displayed
 - [x] **LIST-04**: Seller can select a shipping option: Shipping Available / Local Pickup Only / Shipping Assistance Requested
 - [x] **LIST-05**: Seller can edit their own listings
-- [ ] **LIST-06**: Seller can mark their own listing as "Sold"
+- [x] **LIST-06**: Seller can mark their own listing as "Sold"
 - [x] **LIST-07**: Seller can select a contact preference per account: Email Only / Email + Phone (optional display) / Marketplace Messaging Only
 - [ ] **LIST-08**: A listing requires a minimum of 3 photos to publish (stakeholder check.md, 2026-06-08) — Phase 5 gap closure
 - [x] **LIST-09**: A listing expires 90 days after listing/last renewal; expiry is frictionless — the seller is notified near expiry and renews with one click (another 90 days); an unrenewed listing becomes `expired` (hidden from search, NOT deleted; data + photos intact; reactivable in one click) (stakeholder check.md, 2026-06-08)
@@ -193,7 +193,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRCH-05 | Phase 7 | Complete |
 | SOCL-01 | Phase 8 | Complete |
 | SOCL-02 | Phase 8 | Complete |
-| LIST-06 | Phase 8 | Pending |
+| LIST-06 | Phase 8 | Complete |
 | MSG-01 | Phase 9 | Pending |
 | MSG-02 | Phase 9 | Pending |
 | MSG-03 | Phase 9 | Pending |
