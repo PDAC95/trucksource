@@ -33,6 +33,11 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL ?? "",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+      // TEST-ONLY: lets integration suites create confirmed user fixtures and
+      // verify default-deny audit rows (Staging has email-confirm ON, so anon
+      // signUp users cannot password-sign-in). RLS gates themselves are always
+      // asserted via anon/authenticated clients — never the service role.
+      SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY ?? "",
     },
   },
 });
