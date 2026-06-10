@@ -55,14 +55,14 @@ export function SaveButton({
       const res = await toggleSave(listingId);
       if (!res.ok) {
         setSaved(!next); // revert
-        toast.error("No se pudo guardar");
+        toast.error("Couldn't save");
         return;
       }
       setSaved(res.saved); // reconcile with the server's truth
     });
   }
 
-  const label = saved ? "Guardado" : "Guardar";
+  const label = saved ? "Saved" : "Save";
 
   return (
     <div className="relative">
@@ -88,15 +88,13 @@ export function SaveButton({
 
       {!isAuthenticated && showInvite && (
         <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-md border bg-popover p-2 text-xs text-popover-foreground shadow-md">
-          <p className="mb-1 text-muted-foreground">
-            Inicia sesión para guardar.
-          </p>
+          <p className="mb-1 text-muted-foreground">Sign in to save.</p>
           <Link
             href="/login"
             className="font-medium text-primary underline-offset-2 hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
-            Iniciar sesión
+            Sign in
           </Link>
         </div>
       )}

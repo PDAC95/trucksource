@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { XIcon } from "lucide-react";
 
 // Removable chips for every active filter (q + each facet + fits-my-truck), plus the
-// LOCKED "X resultados" count beside them. Each chip's "x" removes ONLY that filter by
+// LOCKED "X results" count beside them. Each chip's "x" removes ONLY that filter by
 // dropping its param(s) from the current URL and router.replace-ing — all-state-in-URL,
 // so removal is just a URL edit. When a parent facet is removed we also drop its
 // dependents (removing Make clears model+config; removing Model clears config) so the
@@ -43,7 +43,7 @@ export function ActiveFilterChips({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-sm font-medium text-muted-foreground">
-        {total} {total === 1 ? "resultado" : "resultados"}
+        {total} {total === 1 ? "result" : "results"}
       </span>
 
       {chips.map((chip) => (
@@ -56,7 +56,7 @@ export function ActiveFilterChips({
           <button
             type="button"
             onClick={() => remove(chip.keys)}
-            aria-label={`Quitar filtro ${chip.label}`}
+            aria-label={`Remove filter ${chip.label}`}
             className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full hover:bg-foreground/10"
           >
             <XIcon className="size-3" />

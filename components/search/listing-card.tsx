@@ -6,7 +6,7 @@ import { ImageIcon, MapPin } from "lucide-react";
 import { SaveButton } from "@/components/search/save-button";
 import type { SearchCard } from "@/lib/search/queries";
 
-// LOCKED card content: cover photo, title + price (or "Precio a consultar" when
+// LOCKED card content: cover photo, title + price (or "Ask for price" when
 // price null), condition badge + State/Province, a Make+Model fitment chip, and a
 // clickable username → /u/[username]. The card body links to the EXISTING plural
 // /listings/[id] detail route. PII-free by construction — SearchCard carries only
@@ -20,12 +20,12 @@ import type { SearchCard } from "@/lib/search/queries";
 //   - saveState   → renders the SaveButton heart overlay top-right over the photo
 //                   (a SIBLING of the body Link; SaveButton also preventDefaults
 //                   so the card link never fires on a heart click).
-//   - statusBadge → a prominent lifecycle badge over the photo ("Vendido" /
-//                   "Expirado") for the /saved grid; pointer-events-none so the
+//   - statusBadge → a prominent lifecycle badge over the photo ("Sold" /
+//                   "Expired") for the /saved grid; pointer-events-none so the
 //                   card stays clickable underneath.
 
 function formatPrice(price: number | null): string {
-  if (price === null) return "Precio a consultar";
+  if (price === null) return "Ask for price";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",

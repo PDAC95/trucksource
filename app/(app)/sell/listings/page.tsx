@@ -118,7 +118,7 @@ export default async function MyListingsPage() {
                       }
                       className="capitalize"
                     >
-                      {listing.status === "sold" ? "Vendido" : listing.status}
+                      {listing.status === "sold" ? "Sold" : listing.status}
                     </Badge>
 
                     {/* SOCL-02 seller-facing count — how MANY buyers saved it,
@@ -127,7 +127,7 @@ export default async function MyListingsPage() {
                       <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
                         <Heart className="size-3" />
                         {listing.saveCount}{" "}
-                        {listing.saveCount === 1 ? "guardado" : "guardados"}
+                        {listing.saveCount === 1 ? "save" : "saves"}
                       </span>
                     )}
 
@@ -140,8 +140,8 @@ export default async function MyListingsPage() {
                           <MessageSquare className="size-3" />
                           {listing.newCommentCount}{" "}
                           {listing.newCommentCount === 1
-                            ? "comentario nuevo"
-                            : "comentarios nuevos"}
+                            ? "new comment"
+                            : "new comments"}
                         </Badge>
                       </Link>
                     )}

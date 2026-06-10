@@ -51,7 +51,7 @@ type AuthorRow = {
  *   - parents (parent_id === null) sorted created_at DESC (newest first, LOCKED)
  *   - replies grouped under their parent sorted created_at ASC (LOCKED)
  *   - orphan replies (parent deleted mid-read) are dropped
- * Authors with a missing profiles_public row fall back to "usuario" — never crash.
+ * Authors with a missing profiles_public row fall back to "user" — never crash.
  * Returns [] on any error.
  */
 export async function getListingComments(
@@ -95,7 +95,7 @@ export async function getListingComments(
       // back to a neutral handle; the thread never crashes on attribution.
       authorName: author
         ? resolvePublicName(author.display_name, author.username)
-        : "usuario",
+        : "user",
       authorUsername: author?.username ?? "",
     };
   };

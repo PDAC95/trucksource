@@ -110,14 +110,14 @@ export function SearchBar() {
             onKeyDown={(e) => {
               if (e.key === "Escape") setOpen(false);
             }}
-            placeholder="Busca una parte, modelo o término…"
-            aria-label="Buscar"
+            placeholder="Search a part, model, or term…"
+            aria-label="Search"
             autoComplete="off"
             className="pl-8"
           />
         </div>
         <Button type="submit" variant="default">
-          Buscar
+          Search
         </Button>
       </form>
 
@@ -128,9 +128,7 @@ export function SearchBar() {
         >
           {terms.length > 0 && (
             <div className="px-1 py-0.5">
-              <p className="px-2 py-1 text-xs text-muted-foreground">
-                Términos
-              </p>
+              <p className="px-2 py-1 text-xs text-muted-foreground">Terms</p>
               {terms.map((term) => (
                 <button
                   key={`term-${term}`}
@@ -151,7 +149,7 @@ export function SearchBar() {
           {titles.length > 0 && (
             <div className="px-1 py-0.5">
               <p className="px-2 py-1 text-xs text-muted-foreground">
-                Publicaciones
+                Listings
               </p>
               {titles.map((title, i) => (
                 <button

@@ -55,22 +55,22 @@ function commentErrorMessage(
 ): string {
   switch (error) {
     case "rate_limited":
-      return "Vas muy rápido, espera un momento";
+      return "You're going too fast — wait a moment";
     case "comments_closed":
-      return "Los comentarios están cerrados";
+      return "Comments are closed";
     case "unauthenticated":
-      return "Inicia sesión para comentar";
+      return "Sign in to comment";
     case "not_found":
-      return "Este anuncio ya no existe";
+      return "This listing no longer exists";
     default:
-      return "No se pudo publicar el comentario";
+      return "Couldn't post the comment";
   }
 }
 
 /**
  * The comment form. Top-level on the listing page (no parentId) and inline
  * under a parent comment in reply mode (parentId set — depth-1; the section
- * only offers Responder on top-level comments).
+ * only offers Reply on top-level comments).
  *
  * Anon viewers get a login invite instead of a textarea — posting requires an
  * account, reading never does.
@@ -104,9 +104,9 @@ export function CommentComposer({
           href="/login"
           className="text-primary font-medium underline-offset-2 hover:underline"
         >
-          Inicia sesión
+          Sign in
         </Link>{" "}
-        para comentar.
+        to comment.
       </div>
     );
   }
@@ -132,23 +132,21 @@ export function CommentComposer({
     <form
       onSubmit={form.handleSubmit(onSubmit)}
       className="grid gap-2"
-      aria-label={parentId ? "Responder comentario" : "Escribir comentario"}
+      aria-label={parentId ? "Reply to comment" : "Write a comment"}
     >
       <Textarea
         {...form.register("body")}
         maxLength={COMMENT_MAX_LENGTH}
         rows={parentId ? 2 : 3}
-        placeholder={
-          parentId ? "Escribe una respuesta…" : "Pregunta sobre esta parte…"
-        }
+        placeholder={parentId ? "Write a reply…" : "Ask about this part…"}
         aria-invalid={bodyError ? true : undefined}
       />
       <div className="flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-xs">
           {bodyError
-            ? "Escribe un comentario de 1 a 1000 caracteres."
+            ? "Write a comment of 1 to 1000 characters."
             : remaining <= REMAINING_HINT_THRESHOLD
-              ? `${remaining} caracteres restantes`
+              ? `${remaining} characters left`
               : null}
         </p>
         <div className="flex items-center gap-2">
@@ -160,7 +158,7 @@ export function CommentComposer({
               onClick={onDone}
               disabled={form.formState.isSubmitting}
             >
-              Cancelar
+              Cancel
             </Button>
           )}
           <Button
@@ -169,10 +167,10 @@ export function CommentComposer({
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting
-              ? "Publicando…"
+              ? "Posting…"
               : parentId
-                ? "Responder"
-                : "Comentar"}
+                ? "Reply"
+                : "Comment"}
           </Button>
         </div>
       </div>
@@ -200,7 +198,7 @@ export function CommentDeleteButton({
     startTransition(async () => {
       const res = await deleteComment(commentId);
       if (!res.ok) {
-        toast.error("No se pudo eliminar el comentario");
+        toast.error("Couldn't delete the comment");
         return;
       }
       router.refresh();
@@ -215,7 +213,7 @@ export function CommentDeleteButton({
           variant="ghost"
           size="icon-sm"
           className="text-muted-foreground hover:text-destructive"
-          aria-label="Eliminar comentario"
+          aria-label="Delete comment"
           disabled={pending}
         >
           <Trash2 />
@@ -223,16 +221,16 @@ export function CommentDeleteButton({
       </AlertDialogTrigger>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
-          <AlertDialogTitle>¿Eliminar comentario?</AlertDialogTitle>
+          <AlertDialogTitle>Delete comment?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción no se puede deshacer.
-            {isParent && " Sus respuestas también se eliminarán."}
+            This action cannot be undone.
+            {isParent && " Its replies will be deleted too."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={onConfirm}>
-            Eliminar
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -241,7 +239,7 @@ export function CommentDeleteButton({
 }
 
 /**
- * "Responder" affordance — TOP-LEVEL comments only (depth-1 is the locked
+ * "Reply" affordance — TOP-LEVEL comments only (depth-1 is the locked
  * structure; replies never offer it). Reveals an inline CommentComposer bound
  * to the parent; posting or cancelling collapses it.
  */
@@ -265,7 +263,7 @@ export function CommentReplyToggle({
         className="text-muted-foreground h-7 px-2 text-xs"
         onClick={() => setOpen(true)}
       >
-        Responder
+        Reply
       </Button>
     );
   }

@@ -21,9 +21,9 @@ import { markSold, markAvailable } from "@/lib/actions/listings";
 
 // LIST-06 owner control — the reversible sold toggle on the listing detail
 // page, alongside RenewButton. Status-driven:
-//   - active → "Marcar como vendido"  (confirmed: leaves search/feed, the page
-//     stays visible with the Vendido badge — the LOCKED sold treatment)
-//   - sold   → "Marcar como disponible" (lighter confirmation; restores the
+//   - active → "Mark as sold"  (confirmed: leaves search/feed, the page
+//     stays visible with the Sold badge — the LOCKED sold treatment)
+//   - sold   → "Mark as available" (lighter confirmation; restores the
 //     listing with its ORIGINAL expiry — markAvailable never touches the clock)
 //   - anything else (expired) → renders nothing; reactivation is RenewButton's
 //     job (reactivateListing is the clock writer, not markAvailable).
@@ -51,18 +51,16 @@ export function SoldToggle({
         : await markSold(listingId);
       if (result.ok) {
         toast.success(
-          isSold
-            ? "Anuncio disponible de nuevo"
-            : "Anuncio marcado como vendido",
+          isSold ? "Listing available again" : "Listing marked as sold",
         );
         router.refresh();
         return;
       }
       if (result.error === "unauthenticated") {
-        toast.error("Tu sesión expiró — inicia sesión de nuevo.");
+        toast.error("Your session expired — sign in again.");
       } else {
         // not_found / invalid: raced status flip or not the caller's listing.
-        toast.error("No se pudo actualizar");
+        toast.error("Couldn't update");
       }
     });
   }
@@ -77,27 +75,27 @@ export function SoldToggle({
             <CheckCircle2 className="size-4" />
           )}
           {pending
-            ? "Actualizando…"
+            ? "Updating…"
             : isSold
-              ? "Marcar como disponible"
-              : "Marcar como vendido"}
+              ? "Mark as available"
+              : "Mark as sold"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent size="sm">
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {isSold ? "¿Marcar como disponible?" : "¿Marcar como vendido?"}
+            {isSold ? "Mark as available?" : "Mark as sold?"}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isSold
-              ? "Volverá a aparecer en la búsqueda y el feed con su vigencia original."
-              : "Saldrá de la búsqueda y el feed, pero la página seguirá visible con la etiqueta Vendido."}
+              ? "It will reappear in search and the feed with its original expiry."
+              : "It will leave search and the feed, but the page stays visible with a Sold badge."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={run}>
-            {isSold ? "Marcar como disponible" : "Marcar como vendido"}
+            {isSold ? "Mark as available" : "Mark as sold"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

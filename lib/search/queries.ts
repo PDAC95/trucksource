@@ -6,7 +6,7 @@
 //     seller name) — zero PII, no N+1.
 //   - expandSlang(raw): resolves a slang/typo term via the match_search_term RPC
 //     (public.similarity, NEVER the bare % operator) to a canonical term + taxonomy
-//     target, powering the "Mostrando resultados para …" transparency banner.
+//     target, powering the "Showing results for …" transparency banner.
 //   - autocomplete(prefix): term suggestions via autocomplete_terms RPC + title
 //     suggestions via search_listings. No bare % / LIKE / ILIKE.
 //
@@ -53,7 +53,7 @@ type SearchListingRow = {
  * The feed / results reader. Calls the search_listings RPC, then batch-hydrates each
  * row into a SearchCard. The `total` is read from rows[0].total_count — the single
  * deterministic strategy (one query, no re-call, no cards.length approximation) that
- * backs the LOCKED "X resultados" count.
+ * backs the LOCKED "X results" count.
  */
 export async function searchListings(
   query: SearchQuery,
@@ -78,7 +78,7 @@ export async function searchListings(
   if (rows.length === 0) return { cards: [], total: 0 };
 
   // The window grand total rides on every row — read it once (rows[0]). 07-01 guarantees
-  // it is identical across the filtered set; this is the "X resultados" source of truth.
+  // it is identical across the filtered set; this is the "X results" source of truth.
   const total = Number(rows[0].total_count ?? 0);
 
   const ids = rows.map((r) => r.id);
@@ -202,7 +202,7 @@ export type SlangExpansion = {
 
 /**
  * Resolve a raw search term to its canonical slang term + taxonomy target, for the
- * transparency banner ("Mostrando resultados para … (buscaste: …)"). Goes through the
+ * transparency banner ("Showing results for … (you searched: …)"). Goes through the
  * match_search_term RPC (public.similarity, search_terms_term_trgm_idx-backed) — NEVER
  * the bare `%` operator (unresolvable under the RPC's search_path=''). Pure read, no
  * side effects; the UI decides whether to show the banner.

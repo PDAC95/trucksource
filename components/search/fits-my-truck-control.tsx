@@ -21,7 +21,7 @@ import type { GarageTruck } from "@/lib/garage/queries";
 //   - "has"   → a truck selector. Choosing a truck sets `fits` (modelId) and, when the
 //               truck was saved at config granularity, `fitsConfig` (configId) in the
 //               URL. It surfaces as a removable "Fits: …" chip and ANDs with the keyword
-//               + facets (LOCKED). Clearing returns to "Todos".
+//               + facets (LOCKED). Clearing returns to "All trucks".
 //
 // All-state-in-URL: the control reads/writes only the `fits`/`fitsConfig` params.
 
@@ -58,10 +58,10 @@ export function FitsMyTruckControl({ state }: { state: FitsState }) {
     return (
       <Wrapper>
         <p className="text-xs text-muted-foreground">
-          Inicia sesión y agrega tu camión para filtrar por fitment.
+          Sign in and add your truck to filter by fitment.
         </p>
         <Button asChild variant="default" size="sm" className="w-fit">
-          <Link href="/login">Iniciar sesión</Link>
+          <Link href="/login">Sign in</Link>
         </Button>
       </Wrapper>
     );
@@ -71,10 +71,10 @@ export function FitsMyTruckControl({ state }: { state: FitsState }) {
     return (
       <Wrapper>
         <p className="text-xs text-muted-foreground">
-          Aún no tienes camiones. Agrega uno a tu garage para filtrar.
+          No trucks yet. Add one to your garage to filter.
         </p>
         <Button asChild variant="default" size="sm" className="w-fit">
-          <Link href="/profile/garage">Agregar camión</Link>
+          <Link href="/profile/garage">Add a truck</Link>
         </Button>
       </Wrapper>
     );
@@ -119,10 +119,10 @@ export function FitsMyTruckControl({ state }: { state: FitsState }) {
         onValueChange={onSelect}
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Elige tu camión" />
+          <SelectValue placeholder="Pick your truck" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={NONE}>Todos los camiones</SelectItem>
+          <SelectItem value={NONE}>All trucks</SelectItem>
           {state.trucks.map((t) => (
             <SelectItem key={t.id} value={String(t.id)}>
               {t.nickname ? `${t.nickname} — ${truckLabel(t)}` : truckLabel(t)}
@@ -132,7 +132,7 @@ export function FitsMyTruckControl({ state }: { state: FitsState }) {
       </Select>
       {current !== NONE && (
         <p className="text-xs text-muted-foreground">
-          Filtrando por las partes que caben en tu camión.
+          Showing parts that fit your truck.
         </p>
       )}
     </Wrapper>

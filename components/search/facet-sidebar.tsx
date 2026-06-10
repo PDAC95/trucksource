@@ -33,7 +33,7 @@ import type { PartCategoryOption } from "@/lib/listings/cascade";
 // (model, config) pair. Changing a parent CLEARS its dependent children (new Make wipes
 // model+config; new Model wipes config) so the URL never holds a stale combination.
 //
-// Desktop: rendered inline as a sidebar. Mobile: a "Filtros" button opens it in a Sheet
+// Desktop: rendered inline as a sidebar. Mobile: a "Filters" button opens it in a Sheet
 // drawer. The same <FacetControls> body serves both.
 
 type Conditions = { id: number; name: string }[];
@@ -105,7 +105,7 @@ function FacetControls({
       {/* Make → Model → Config cascade */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-muted-foreground">
-          Marca
+          Make
         </label>
         <Select
           value={makeId ?? NONE}
@@ -119,10 +119,10 @@ function FacetControls({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Todas las marcas" />
+            <SelectValue placeholder="All makes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NONE}>Todas las marcas</SelectItem>
+            <SelectItem value={NONE}>All makes</SelectItem>
             {makes.map((m) => (
               <SelectItem key={m.id} value={String(m.id)}>
                 {m.name}
@@ -134,7 +134,7 @@ function FacetControls({
 
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-muted-foreground">
-          Modelo
+          Model
         </label>
         <Select
           value={modelId ?? NONE}
@@ -148,12 +148,10 @@ function FacetControls({
           }
         >
           <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder={makeId ? "Todos los modelos" : "Elige una marca"}
-            />
+            <SelectValue placeholder={makeId ? "All models" : "Pick a make"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NONE}>Todos los modelos</SelectItem>
+            <SelectItem value={NONE}>All models</SelectItem>
             {models.map((m) => (
               <SelectItem key={m.id} value={String(m.id)}>
                 {m.name}
@@ -165,7 +163,7 @@ function FacetControls({
 
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-muted-foreground">
-          Configuración
+          Configuration
         </label>
         <Select
           value={configId ?? NONE}
@@ -174,13 +172,11 @@ function FacetControls({
         >
           <SelectTrigger className="w-full">
             <SelectValue
-              placeholder={
-                modelId ? "Todas las configuraciones" : "Elige un modelo"
-              }
+              placeholder={modelId ? "All configurations" : "Pick a model"}
             />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NONE}>Todas las configuraciones</SelectItem>
+            <SelectItem value={NONE}>All configurations</SelectItem>
             {configs.map((c) => (
               <SelectItem key={c.id} value={String(c.id)}>
                 {c.name}
@@ -193,17 +189,17 @@ function FacetControls({
       {/* Part Category */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-muted-foreground">
-          Categoría
+          Category
         </label>
         <Select
           value={categoryId ?? NONE}
           onValueChange={(v) => apply((p) => setOrDelete(p, "category", v))}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Todas las categorías" />
+            <SelectValue placeholder="All categories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NONE}>Todas las categorías</SelectItem>
+            <SelectItem value={NONE}>All categories</SelectItem>
             {partCategories.map((c) => (
               <SelectItem key={c.id} value={String(c.id)}>
                 {c.parentId === null ? c.name : `  ${c.name}`}
@@ -216,17 +212,17 @@ function FacetControls({
       {/* Condition */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-muted-foreground">
-          Condición
+          Condition
         </label>
         <Select
           value={conditionId ?? NONE}
           onValueChange={(v) => apply((p) => setOrDelete(p, "condition", v))}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Cualquier condición" />
+            <SelectValue placeholder="Any condition" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={NONE}>Cualquier condición</SelectItem>
+            <SelectItem value={NONE}>Any condition</SelectItem>
             {conditions.map((c) => (
               <SelectItem key={c.id} value={String(c.id)}>
                 {c.name}
@@ -248,7 +244,7 @@ export function FacetSidebar(props: {
     <>
       {/* Desktop sidebar */}
       <aside className="hidden lg:block">
-        <h2 className="mb-4 text-sm font-semibold">Filtros</h2>
+        <h2 className="mb-4 text-sm font-semibold">Filters</h2>
         <FacetControls {...props} />
       </aside>
 
@@ -258,12 +254,12 @@ export function FacetSidebar(props: {
           <SheetTrigger asChild>
             <Button variant="outline">
               <SlidersHorizontal className="size-4" />
-              Filtros
+              Filters
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-80 overflow-y-auto">
             <SheetHeader>
-              <SheetTitle>Filtros</SheetTitle>
+              <SheetTitle>Filters</SheetTitle>
             </SheetHeader>
             <FacetControls {...props} />
           </SheetContent>

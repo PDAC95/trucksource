@@ -48,7 +48,7 @@ export default async function FeedSearchPage({
   const { cards, total } = await searchListings(query);
 
   // Slang transparency: only when the query carries a keyword. expandSlang resolves the
-  // canonical term for the "Mostrando resultados para …" banner (never silently swaps).
+  // canonical term for the "Showing results for …" banner (never silently swaps).
   // The `exact` escape hatch (from the banner) suppresses expansion entirely.
   const isExact = first(sp.exact) === "1";
   const slang = query.q && !isExact ? await expandSlang(query.q) : null;
@@ -117,7 +117,7 @@ export default async function FeedSearchPage({
     <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
       <div className="mb-6 flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Encuentra tu parte
+          Find your part
         </h1>
         <SearchBar />
       </div>
@@ -180,35 +180,35 @@ async function buildChips(
   }
 
   if (query.makeId !== null) {
-    const name = refs.makes.find((m) => m.id === query.makeId)?.name ?? "Marca";
+    const name = refs.makes.find((m) => m.id === query.makeId)?.name ?? "Make";
     // Removing Make clears its dependent Model + Config.
     chips.push({ keys: ["make", "model", "config"], label: name });
   }
 
   if (query.modelId !== null && query.makeId !== null) {
     const models = await getModels(query.makeId);
-    const name = models.find((m) => m.id === query.modelId)?.name ?? "Modelo";
+    const name = models.find((m) => m.id === query.modelId)?.name ?? "Model";
     chips.push({ keys: ["model", "config"], label: name });
   }
 
   if (query.configId !== null && query.modelId !== null) {
     const configs = await getConfigs(query.modelId);
     const name =
-      configs.find((c) => c.id === query.configId)?.name ?? "Configuración";
+      configs.find((c) => c.id === query.configId)?.name ?? "Configuration";
     chips.push({ keys: ["config"], label: name });
   }
 
   if (query.categoryId !== null) {
     const name =
       refs.partCategories.find((c) => c.id === query.categoryId)?.name ??
-      "Categoría";
+      "Category";
     chips.push({ keys: ["category"], label: name });
   }
 
   if (query.conditionId !== null) {
     const name =
       refs.conditions.find((c) => c.id === query.conditionId)?.name ??
-      "Condición";
+      "Condition";
     chips.push({ keys: ["condition"], label: name });
   }
 

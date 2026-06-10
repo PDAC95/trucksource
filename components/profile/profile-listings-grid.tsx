@@ -21,14 +21,14 @@ const usdFormatter = new Intl.NumberFormat("en-US", {
 
 function priceLabel(price: number | null): string {
   return price === null || price === 0
-    ? "Precio a consultar"
+    ? "Ask for price"
     : usdFormatter.format(price);
 }
 
 export function ProfileListingsGrid({ cards }: { cards: SearchCard[] }) {
   return (
     <ul
-      aria-label="Listings activos"
+      aria-label="Active listings"
       className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
     >
       {cards.map((card) => (

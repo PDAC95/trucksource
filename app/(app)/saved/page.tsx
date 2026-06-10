@@ -13,7 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 // (app) layout already redirects anon (defense in depth, same precedent).
 export const dynamic = "force-dynamic";
 
-// LOCKED: sold/expired saves REMAIN visible with a "Vendido"/"Expirado" badge —
+// LOCKED: sold/expired saves REMAIN visible with a "Sold"/"Expired" badge —
 // they are never silently dropped (getMySavedListings hydrates ANY status and
 // derives the effective status). Manual removal = tapping the heart, which
 // unsaves via toggleSave and revalidates "/saved".
@@ -30,16 +30,16 @@ export default async function SavedPage() {
     <div className="mx-auto w-full max-w-7xl">
       <div className="grid gap-1.5">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Guardados</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Saved</h1>
           {saved.length > 0 && (
             <span className="text-muted-foreground text-sm">
               {saved.length}{" "}
-              {saved.length === 1 ? "anuncio guardado" : "anuncios guardados"}
+              {saved.length === 1 ? "saved listing" : "saved listings"}
             </span>
           )}
         </div>
         <p className="text-muted-foreground text-sm">
-          Los anuncios que marcaste con el corazón.
+          The listings you hearted.
         </p>
       </div>
 
@@ -47,13 +47,13 @@ export default async function SavedPage() {
         <div className="mt-10 grid place-items-center gap-4 rounded-lg border border-dashed py-16 text-center">
           <Heart className="text-muted-foreground size-8" />
           <div className="grid gap-1.5">
-            <p className="font-medium">No tienes anuncios guardados</p>
+            <p className="font-medium">No saved listings</p>
             <p className="text-muted-foreground text-sm">
-              Toca el corazón en cualquier anuncio para guardarlo aquí.
+              Tap the heart on any listing to save it here.
             </p>
           </div>
           <Button asChild>
-            <Link href="/">Explorar anuncios</Link>
+            <Link href="/">Browse listings</Link>
           </Button>
         </div>
       ) : (
@@ -65,9 +65,9 @@ export default async function SavedPage() {
                 saveState={{ initiallySaved: true, isAuthenticated: true }}
                 statusBadge={
                   card.status === "sold"
-                    ? "Vendido"
+                    ? "Sold"
                     : card.status === "expired"
-                      ? "Expirado"
+                      ? "Expired"
                       : undefined
                 }
               />

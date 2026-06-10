@@ -14,8 +14,8 @@ import { useTransition } from "react";
 type Sort = "recent" | "price";
 
 const OPTIONS: { value: Sort; label: string }[] = [
-  { value: "recent", label: "Más recientes" },
-  { value: "price", label: "Precio: menor a mayor" },
+  { value: "recent", label: "Most recent" },
+  { value: "price", label: "Price: low to high" },
 ];
 
 export function ProfileSort({ current }: { current: Sort }) {
@@ -38,7 +38,7 @@ export function ProfileSort({ current }: { current: Sort }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <label htmlFor="profile-sort" className="text-muted-foreground">
-        Ordenar
+        Sort
       </label>
       <select
         id="profile-sort"

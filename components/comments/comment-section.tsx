@@ -24,7 +24,7 @@ import {
 
 // Short, locale-stable date for attribution lines (server-rendered only — no
 // hydration mismatch risk in an RSC).
-const dateFormatter = new Intl.DateTimeFormat("es", {
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "2-digit",
   month: "short",
   year: "numeric",
@@ -111,14 +111,14 @@ export function CommentSection({
   const canReply = !commentsClosed;
 
   return (
-    <section aria-label="Comentarios" className="grid gap-4">
+    <section aria-label="Comments" className="grid gap-4">
       <h2 className="text-lg font-semibold tracking-tight">
-        Comentarios{total > 0 ? ` (${total})` : ""}
+        Comments{total > 0 ? ` (${total})` : ""}
       </h2>
 
       {commentsClosed && (
         <div className="bg-muted/50 text-muted-foreground rounded-lg border p-4 text-sm">
-          Los comentarios están cerrados — este anuncio fue vendido.
+          Comments are closed — this listing was sold.
         </div>
       )}
 
@@ -126,7 +126,7 @@ export function CommentSection({
         !commentsClosed && (
           <div className="text-muted-foreground flex items-center gap-2 rounded-lg border border-dashed p-6 text-sm">
             <MessageSquare className="size-4 shrink-0" />
-            <p>Aún no hay comentarios — sé el primero en preguntar.</p>
+            <p>No comments yet — be the first to ask.</p>
           </div>
         )
       ) : (

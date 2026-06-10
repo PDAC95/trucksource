@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 
 // Transparency banner (LOCKED: never silently swap the query). Two modes:
-//  - "slang": the query was expanded/corrected — show "Mostrando resultados para
-//    '<canonical>' (buscaste: '<raw>')" with a path back to the EXACT raw term.
-//  - "fuzzy": the trigram fallback supplied near matches — a softer "Resultados
-//    similares a '<raw>'" note.
+//  - "slang": the query was expanded/corrected — show "Showing results for
+//    '<canonical>' (you searched: '<raw>')" with a path back to the EXACT raw term.
+//  - "fuzzy": the trigram fallback supplied near matches — a softer "Results
+//    similar to '<raw>'" note.
 // The "exact term" escape hatch router.replace-es with `&exact=1` + the raw q, which
 // the reader uses to bypass slang expansion (so the user can force the literal search).
 //
@@ -40,15 +40,15 @@ export function SlangBanner({
       <Info className="size-4 shrink-0 text-muted-foreground" />
       {mode === "slang" && canonical ? (
         <span>
-          Mostrando resultados para{" "}
+          Showing results for{" "}
           <span className="font-medium">&ldquo;{canonical}&rdquo;</span>{" "}
           <span className="text-muted-foreground">
-            (buscaste: &ldquo;{raw}&rdquo;)
+            (you searched: &ldquo;{raw}&rdquo;)
           </span>
         </span>
       ) : (
         <span>
-          Resultados similares a{" "}
+          Results similar to{" "}
           <span className="font-medium">&ldquo;{raw}&rdquo;</span>
         </span>
       )}
@@ -58,7 +58,7 @@ export function SlangBanner({
         className="h-auto px-0"
         onClick={searchExact}
       >
-        Buscar el término exacto
+        Search the exact term
       </Button>
     </div>
   );

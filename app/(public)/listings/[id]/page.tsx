@@ -34,7 +34,7 @@ export default async function ListingDetailPage({
   }
 
   // STATUS GATE (LIST-06/LIST-09, Pitfall 1): SOLD listings stay publicly
-  // visible — they render with the prominent "Vendido" treatment so shared
+  // visible — they render with the prominent "Sold" treatment so shared
   // links and saved items never break (LOCKED decision). Everything else
   // non-active (expired, etc.) still 404s for buyers. getListing is
   // status-agnostic (the owner edit path needs any status); this app-layer

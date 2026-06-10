@@ -298,7 +298,7 @@ export function TruckCascade({
               <FormLabel>Nickname (optional)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="e.g. Mi 379 rojo"
+                  placeholder="e.g. My red 379"
                   maxLength={40}
                   {...field}
                   value={field.value ?? ""}

@@ -44,7 +44,7 @@ export default async function AppLayout({
           <Button asChild variant="ghost" size="sm" className="gap-2">
             <Link href="/saved">
               <Heart className="size-4" />
-              <span className="hidden sm:inline">Guardados</span>
+              <span className="hidden sm:inline">Saved</span>
             </Link>
           </Button>
           <UserMenu username={username} />

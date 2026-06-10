@@ -18,7 +18,7 @@
 //   - SRCH-04 (slang):   match_search_term() typo-matches a seeded slang term via
 //                        public.similarity() (NOT the bare % operator).
 //   - total_count:       every returned row carries the identical window grand total =
-//                        the full unfiltered match count (the "X resultados" contract).
+//                        the full unfiltered match count (the "X results" contract).
 //   - SRCH-05 (events):  anon INSERT into search_events succeeds; anon SELECT returns
 //                        no rows (insert-only RLS → service-role-only read).
 //

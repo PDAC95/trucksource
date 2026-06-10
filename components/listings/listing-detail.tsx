@@ -74,12 +74,12 @@ export function ListingDetail({
               className="object-cover"
             />
             {/* SOLD overlay (LIST-06): the state must be unmissable on the
-                gallery itself — a subtle tint + a centered Vendido tag. The
+                gallery itself — a subtle tint + a centered Sold tag. The
                 photos stay visible underneath (historical context). */}
             {isSold && (
               <div className="bg-background/50 absolute inset-0 z-10 grid place-items-center">
                 <span className="bg-destructive text-white rounded-md px-4 py-1.5 text-lg font-semibold shadow-md">
-                  Vendido
+                  Sold
                 </span>
               </div>
             )}
@@ -117,7 +117,7 @@ export function ListingDetail({
             {/* Prominent SOLD badge (LIST-06): sold listings render publicly
                 with this label instead of 404ing (LOCKED). Price stays visible
                 below — historical context for buyers landing on a shared link. */}
-            {isSold && <Badge variant="destructive">Vendido</Badge>}
+            {isSold && <Badge variant="destructive">Sold</Badge>}
             <Badge variant="secondary">{listing.conditionName}</Badge>
             {listing.isBarnyard && <Badge>The Barnyard</Badge>}
             {!isSold && listing.status !== "active" && (
