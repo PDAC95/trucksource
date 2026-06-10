@@ -81,8 +81,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Social Layer
 
-- [ ] **SOCL-01**: Buyer can post a public comment on a listing, attributed to their username only
-- [ ] **SOCL-02**: Buyer can save (bookmark) a listing and view their saved listings
+- [x] **SOCL-01**: Buyer can post a public comment on a listing, attributed to their username only
+- [x] **SOCL-02**: Buyer can save (bookmark) a listing and view their saved listings
 
 ### Contact & Messaging
 
@@ -191,8 +191,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRCH-03 | Phase 7 | Complete |
 | SRCH-04 | Phase 7 | Complete |
 | SRCH-05 | Phase 7 | Complete |
-| SOCL-01 | Phase 8 | Pending |
-| SOCL-02 | Phase 8 | Pending |
+| SOCL-01 | Phase 8 | Complete |
+| SOCL-02 | Phase 8 | Complete |
 | LIST-06 | Phase 8 | Pending |
 | MSG-01 | Phase 9 | Pending |
 | MSG-02 | Phase 9 | Pending |
