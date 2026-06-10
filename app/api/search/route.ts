@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { parseSearchParams } from "@/lib/search/params";
 import { searchListings } from "@/lib/search/queries";
+import { getSavedIds } from "@/lib/saves/queries";
 
 // Paginated search read for the client-side infinite-scroll appender. The feed grid
 // fetches `?<same params>&page=N` to append the next page WITHOUT a full navigation
@@ -21,5 +22,10 @@ export async function GET(request: Request) {
   const query = parseSearchParams(sp);
   const { cards, total } = await searchListings(query);
 
-  return NextResponse.json({ cards, total, page: query.page });
+  // SOCL-02: per-page saved state for the infinite-scroll hearts. The route runs
+  // with the request cookies → owner RLS, so getSavedIds returns only the CALLER's
+  // saves (and a cheap empty Set for anon). Arrays for JSON serialization.
+  const savedIds = Array.from(await getSavedIds(cards.map((c) => c.id)));
+
+  return NextResponse.json({ cards, total, page: query.page, savedIds });
 }

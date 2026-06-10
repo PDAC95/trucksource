@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ImageIcon, MapPin } from "lucide-react";
+import { SaveButton } from "@/components/search/save-button";
 import type { SearchCard } from "@/lib/search/queries";
 
 // LOCKED card content: cover photo, title + price (or "Precio a consultar" when
@@ -13,6 +14,15 @@ import type { SearchCard } from "@/lib/search/queries";
 //
 // Server component: no interactivity beyond links. The username link is a sibling
 // of the body link (not nested) so the anchor nesting stays valid.
+//
+// ADDITIVE props (08-05, both optional — omitting them renders the card exactly
+// as before, so the 07-04 profile grid and any other consumer stay untouched):
+//   - saveState   → renders the SaveButton heart overlay top-right over the photo
+//                   (a SIBLING of the body Link; SaveButton also preventDefaults
+//                   so the card link never fires on a heart click).
+//   - statusBadge → a prominent lifecycle badge over the photo ("Vendido" /
+//                   "Expirado") for the /saved grid; pointer-events-none so the
+//                   card stays clickable underneath.
 
 function formatPrice(price: number | null): string {
   if (price === null) return "Precio a consultar";
@@ -23,9 +33,43 @@ function formatPrice(price: number | null): string {
   }).format(price);
 }
 
-export function ListingCard({ card }: { card: SearchCard }) {
+export function ListingCard({
+  card,
+  saveState,
+  statusBadge,
+}: {
+  card: SearchCard;
+  saveState?: { initiallySaved: boolean; isAuthenticated: boolean };
+  statusBadge?: string;
+}) {
   return (
     <Card className="group/card relative flex flex-col gap-0 overflow-hidden p-0 transition-shadow hover:shadow-md">
+      {/* Save heart — sibling of the body Link (valid markup, no nested anchors);
+          SaveButton stops propagation so the card never navigates on a heart tap. */}
+      {saveState && (
+        <div className="absolute top-2 right-2 z-20">
+          <SaveButton
+            listingId={card.id}
+            initiallySaved={saveState.initiallySaved}
+            isAuthenticated={saveState.isAuthenticated}
+            size="sm"
+          />
+        </div>
+      )}
+
+      {/* Lifecycle overlay for the /saved grid: sold/expired saves REMAIN visible
+          with a prominent badge (LOCKED) — matches the photo area (aspect-4/3). */}
+      {statusBadge && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex aspect-4/3 items-center justify-center bg-background/50">
+          <Badge
+            variant="secondary"
+            className="text-sm font-semibold shadow-sm"
+          >
+            {statusBadge}
+          </Badge>
+        </div>
+      )}
+
       <Link
         href={`/listings/${card.id}`}
         className="flex flex-col outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

@@ -6,6 +6,7 @@ import {
 } from "@/lib/search/params";
 import { searchListings, expandSlang } from "@/lib/search/queries";
 import { recordSearchEvent } from "@/lib/search/events";
+import { getSavedIds } from "@/lib/saves/queries";
 import { getConditions, getPartCategories } from "@/lib/listings/cascade";
 import { getModels, getConfigs } from "@/lib/garage/cascade";
 import { listMyTrucks } from "@/lib/garage/queries";
@@ -24,6 +25,7 @@ import {
 import { SlangBanner } from "@/components/search/slang-banner";
 import { FeedGrid } from "@/components/search/feed-grid";
 import { EmptyResults } from "@/components/search/empty-results";
+import { Toaster } from "@/components/ui/sonner";
 
 // The anon-open marketplace feed/search — the differentiator's payoff. LOCKED: the feed
 // and search are the SAME screen, fully open to anonymous visitors (no login gate). An
@@ -80,14 +82,22 @@ export default async function FeedSearchPage({
 
   // --- Fits-my-truck three-state resolution (getClaims, never getSession) ---
   const { data: claims } = await supabase.auth.getClaims();
+  const isAuthenticated = !!claims?.claims;
   let fitsState: FitsState;
-  if (!claims?.claims) {
+  if (!isAuthenticated) {
     fitsState = { variant: "anon" };
   } else {
     const trucks = await listMyTrucks();
     fitsState =
       trucks.length === 0 ? { variant: "empty" } : { variant: "has", trucks };
   }
+
+  // SOCL-02: initial heart state for the first page of cards — one batched
+  // owner-RLS read; anon viewers skip it (hearts render the login invite). Passed
+  // as an ARRAY (Sets don't serialize into client components).
+  const savedIds = isAuthenticated
+    ? Array.from(await getSavedIds(cards.map((c) => c.id)))
+    : [];
 
   // --- Resolve active-filter chip labels (page has the names; chips own URL removal) ---
   const chips = await buildChips(query, {
@@ -132,10 +142,18 @@ export default async function FeedSearchPage({
           {cards.length === 0 ? (
             <EmptyResults />
           ) : (
-            <FeedGrid cards={cards} total={total} />
+            <FeedGrid
+              cards={cards}
+              total={total}
+              initialSavedIds={savedIds}
+              isAuthenticated={isAuthenticated}
+            />
           )}
         </div>
       </div>
+
+      {/* SaveButton reports toggle failures via sonner — needs a mounted Toaster. */}
+      <Toaster />
     </main>
   );
 }

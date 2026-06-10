@@ -22,9 +22,17 @@ const PAGE_SIZE = 24;
 export function FeedGrid({
   cards: initialCards,
   total,
+  initialSavedIds = [],
+  isAuthenticated = false,
 }: {
   cards: SearchCard[];
   total: number;
+  // Saved state plumbing (08-05): the SERVER resolves which of the first page's
+  // ids the viewer has saved (arrays, not Sets — Sets don't serialize across the
+  // RSC boundary); each /api/search page response carries its own savedIds which
+  // we merge so hearts stay correct across infinite scroll.
+  initialSavedIds?: number[];
+  isAuthenticated?: boolean;
 }) {
   const searchParams = useSearchParams();
   // Reset to the server-provided first page whenever the query (searchParams) changes.
@@ -35,6 +43,7 @@ export function FeedGrid({
   // when queryKey changes we drop appended state synchronously (no effect, no lint
   // set-state-in-effect violation).
   const [appended, setAppended] = React.useState<SearchCard[]>([]);
+  const [appendedSavedIds, setAppendedSavedIds] = React.useState<number[]>([]);
   const [page, setPage] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [explicitDone, setExplicitDone] = React.useState(false);
@@ -47,6 +56,7 @@ export function FeedGrid({
   if (lastKey !== queryKey) {
     setLastKey(queryKey);
     setAppended([]);
+    setAppendedSavedIds([]);
     setPage(0);
     setExplicitDone(false);
   }
@@ -54,6 +64,11 @@ export function FeedGrid({
   const cards = React.useMemo(
     () => [...initialCards, ...appended],
     [initialCards, appended],
+  );
+  // Derived Set (useMemo, never written during render — strict react-hooks gate).
+  const savedSet = React.useMemo(
+    () => new Set([...initialSavedIds, ...appendedSavedIds]),
+    [initialSavedIds, appendedSavedIds],
   );
   const done = explicitDone || cards.length >= total;
 
@@ -69,8 +84,15 @@ export function FeedGrid({
         setExplicitDone(true);
         return;
       }
-      const data = (await res.json()) as { cards: SearchCard[] };
+      const data = (await res.json()) as {
+        cards: SearchCard[];
+        savedIds?: number[];
+      };
       setAppended((prev) => [...prev, ...data.cards]);
+      const pageSavedIds = data.savedIds ?? [];
+      if (pageSavedIds.length > 0) {
+        setAppendedSavedIds((prev) => [...prev, ...pageSavedIds]);
+      }
       setPage(nextPage);
       if (data.cards.length < PAGE_SIZE) setExplicitDone(true);
     } catch {
@@ -98,7 +120,13 @@ export function FeedGrid({
       <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {cards.map((card) => (
           <li key={card.id}>
-            <ListingCard card={card} />
+            <ListingCard
+              card={card}
+              saveState={{
+                initiallySaved: savedSet.has(card.id),
+                isAuthenticated,
+              }}
+            />
           </li>
         ))}
       </ul>
