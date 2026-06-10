@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/user-menu";
 
 // Personalized — never cache one user's shell for another (invariant 6).
@@ -36,7 +38,17 @@ export default async function AppLayout({
         <Link href="/" className="font-semibold tracking-tight">
           Take-Off Parts
         </Link>
-        <UserMenu username={username} />
+        <div className="flex items-center gap-1">
+          {/* SOCL-02: the saved-listings entry point — matches the UserMenu
+              trigger style (ghost/sm) for the smallest consistent change. */}
+          <Button asChild variant="ghost" size="sm" className="gap-2">
+            <Link href="/saved">
+              <Heart className="size-4" />
+              <span className="hidden sm:inline">Guardados</span>
+            </Link>
+          </Button>
+          <UserMenu username={username} />
+        </div>
       </header>
       <main className="flex-1 px-4 py-6 sm:px-6">{children}</main>
     </div>
