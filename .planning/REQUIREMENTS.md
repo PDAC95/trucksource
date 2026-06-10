@@ -73,11 +73,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Search, Feed & Discovery
 
-- [ ] **SRCH-01**: Buyer can browse a feed of active listings
-- [ ] **SRCH-02**: Buyer can search parts by keyword (part title, part number)
-- [ ] **SRCH-03**: Buyer can filter/search by Make, Model, Configuration, Part Category, Material, Condition, and Special Filters
-- [ ] **SRCH-04**: Buyer can find parts using trucker slang / Common Search Terms (typo- and synonym-tolerant)
-- [ ] **SRCH-05**: Search and listing-view events are logged so analytics can report most-searched and most-viewed items
+- [x] **SRCH-01**: Buyer can browse a feed of active listings
+- [x] **SRCH-02**: Buyer can search parts by keyword (part title, part number)
+- [x] **SRCH-03**: Buyer can filter/search by Make, Model, Configuration, Part Category, Material, Condition, and Special Filters
+- [x] **SRCH-04**: Buyer can find parts using trucker slang / Common Search Terms (typo- and synonym-tolerant)
+- [x] **SRCH-05**: Search and listing-view events are logged so analytics can report most-searched and most-viewed items
 
 ### Social Layer
 
@@ -186,11 +186,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FINT-01 | Phase 6 | Complete |
 | FINT-02 | Phase 6 | Complete |
 | FINT-03 | Phase 6 | Complete |
-| SRCH-01 | Phase 7 | Pending |
-| SRCH-02 | Phase 7 | Pending |
-| SRCH-03 | Phase 7 | Pending |
-| SRCH-04 | Phase 7 | Pending |
-| SRCH-05 | Phase 7 | Pending |
+| SRCH-01 | Phase 7 | Complete |
+| SRCH-02 | Phase 7 | Complete |
+| SRCH-03 | Phase 7 | Complete |
+| SRCH-04 | Phase 7 | Complete |
+| SRCH-05 | Phase 7 | Complete |
 | SOCL-01 | Phase 8 | Pending |
 | SOCL-02 | Phase 8 | Pending |
 | LIST-06 | Phase 8 | Pending |
