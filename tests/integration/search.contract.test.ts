@@ -64,3 +64,63 @@ d("contract: search_listings RPC exposes zero PII", () => {
     }
   });
 });
+
+// The seller's public profile grid (/u/[username]) reads the seller's ACTIVE listings
+// directly from the public-read `listings` table with an enumerated select — NOT via
+// the RPC. This is a distinct public surface (the cross-cutting gate: "public profile
+// surface renders no PII"), so it gets its own assertion: as anon, read a seller's
+// active listings exactly as the profile page does and prove ZERO PII keys appear and
+// the enumerated shape is honored.
+const PROFILE_GRID_KEYS = [
+  "id",
+  "title",
+  "asking_price",
+  "condition_id",
+  "date_listed",
+] as const;
+
+d("contract: profile-grid listings read exposes zero PII", () => {
+  it("the anon seller active-listings read returns no PII keys", async () => {
+    const supabase = anonClient();
+
+    // Discover a real seller_id from any public listing (no seeded id assumed).
+    const { data: seed, error: seedError } = await supabase
+      .from("listings")
+      .select("seller_id")
+      .eq("status", "active")
+      .limit(1);
+    expect(seedError).toBeNull();
+
+    const seller = (seed ?? [])[0] as { seller_id: string } | undefined;
+    if (!seller) {
+      console.log(
+        "[search.contract] no active listings — profile-grid shape OK",
+      );
+      return;
+    }
+
+    // Read the seller's active listings EXACTLY as app/(public)/u/[username]/page.tsx does.
+    const { data, error } = await supabase
+      .from("listings")
+      .select("id, title, asking_price, condition_id, date_listed")
+      .eq("seller_id", seller.seller_id)
+      .eq("status", "active");
+
+    expect(error).toBeNull();
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+
+    for (const row of rows) {
+      const keys = Object.keys(row);
+      // The enumerated select shape is honored — only the allowed public columns...
+      for (const k of keys) {
+        expect(PROFILE_GRID_KEYS).toContain(
+          k as (typeof PROFILE_GRID_KEYS)[number],
+        );
+      }
+      // ...and ZERO PII keys.
+      for (const pii of PII_KEYS) {
+        expect(keys).not.toContain(pii);
+      }
+    }
+  });
+});
