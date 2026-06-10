@@ -184,10 +184,10 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   4. Search and listing-view events are logged so analytics can later report most-searched and most-viewed items
 **Plans**: 4 plans
 Plans:
-- [ ] 07-01-PLAN.md — Search DB foundation: 0014_search.sql (tsvector + GIN + search_events + search_listings RPC) + EXPLAIN-ANALYZE/no-PII integration gate
-- [ ] 07-02-PLAN.md — lib/search readers: params (URL↔SearchQuery), queries (searchListings/expandSlang/autocomplete), recordSearchEvent
-- [ ] 07-03-PLAN.md — Same-screen feed/search UI: cards, cascading facets, slang banner, fits-my-truck, infinite scroll (human-verify)
-- [ ] 07-04-PLAN.md — Public profile active-listings grid + sort + no-PII contract
+- [x] 07-01-PLAN.md — Search DB foundation: 0014_search.sql (tsvector + GIN + search_events + search_listings RPC) + EXPLAIN-ANALYZE/no-PII integration gate
+- [x] 07-02-PLAN.md — lib/search readers: params (URL↔SearchQuery), queries (searchListings/expandSlang/autocomplete), recordSearchEvent
+- [x] 07-03-PLAN.md — Same-screen feed/search UI: cards, cascading facets, slang banner, fits-my-truck, infinite scroll (human-verify)
+- [x] 07-04-PLAN.md — Public profile active-listings grid + sort + no-PII contract
 
 ### Phase 8: Social Layer
 **Goal**: The 30% social experience comes alive — buyers can publicly comment on listings (attributed to username only), save listings to view later, and sellers can mark their listings as sold.
@@ -238,8 +238,8 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 4. My Garage | 3/3 | Complete | 2026-06-04 |
 | 5. Listings, Photos & EXIF-Safe Storage | 5/5 | Complete (LIST-08 min-3-photos gap pending) | 2026-06-08 |
 | 5.1 Stakeholder Trust & Lifecycle (INSERTED) | 5/5 | Complete   | 2026-06-09 |
-| 6. Fitment Intelligence | 0/TBD | Not started | - |
-| 7. Search, Feed & Public Profile | 0/TBD | Not started | - |
+| 6. Fitment Intelligence | 4/4 | Complete | 2026-06-09 |
+| 7. Search, Feed & Public Profile | 4/4 | Complete | 2026-06-10 |
 | 8. Social Layer | 0/TBD | Not started | - |
 | 9. Contact → Private Chat | 0/TBD | Not started | - |
 | 10. Admin Operations & Analytics | 0/TBD | Not started | - |
