@@ -5,6 +5,8 @@ import type { ListingDetail } from "@/lib/listings/queries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RenewButton } from "@/components/listings/renew-button";
+import { SoldToggle } from "@/components/listings/sold-toggle";
+import { SaveButton } from "@/components/search/save-button";
 
 // Buyer-facing listing view. Server Component — it renders ONLY a ListingDetail,
 // which getListing already restricts to public columns + profiles_public (no PII,
@@ -41,9 +43,15 @@ function fitmentLabel(f: ListingDetail["fitment"][number]): string {
 export function ListingDetail({
   listing,
   isOwner = false,
+  isSold = false,
+  saved = false,
+  isAuthenticated = false,
 }: {
   listing: ListingDetail;
   isOwner?: boolean;
+  isSold?: boolean;
+  saved?: boolean;
+  isAuthenticated?: boolean;
 }) {
   const cover = listing.photos[0];
   const rest = listing.photos.slice(1);
@@ -65,6 +73,16 @@ export function ListingDetail({
               sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"
             />
+            {/* SOLD overlay (LIST-06): the state must be unmissable on the
+                gallery itself — a subtle tint + a centered Vendido tag. The
+                photos stay visible underneath (historical context). */}
+            {isSold && (
+              <div className="bg-background/50 absolute inset-0 z-10 grid place-items-center">
+                <span className="bg-destructive text-white rounded-md px-4 py-1.5 text-lg font-semibold shadow-md">
+                  Vendido
+                </span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-muted text-muted-foreground grid aspect-square place-items-center rounded-lg text-sm">
@@ -96,29 +114,48 @@ export function ListingDetail({
       <div className="grid content-start gap-5">
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
+            {/* Prominent SOLD badge (LIST-06): sold listings render publicly
+                with this label instead of 404ing (LOCKED). Price stays visible
+                below — historical context for buyers landing on a shared link. */}
+            {isSold && <Badge variant="destructive">Vendido</Badge>}
             <Badge variant="secondary">{listing.conditionName}</Badge>
             {listing.isBarnyard && <Badge>The Barnyard</Badge>}
-            {listing.status !== "active" && (
+            {!isSold && listing.status !== "active" && (
               <Badge variant="outline">{listing.status}</Badge>
             )}
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {listing.title}
-          </h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {listing.title}
+            </h1>
+            {/* Save heart (SOCL-02) — non-owner viewers only. Saving a SOLD
+                listing is allowed: saves don't break on sold (LOCKED). */}
+            {!isOwner && (
+              <SaveButton
+                listingId={listing.id}
+                initiallySaved={saved}
+                isAuthenticated={isAuthenticated}
+              />
+            )}
+          </div>
           <p className="text-3xl font-bold">
             {usdFormatter.format(listing.askingPrice)}
           </p>
         </div>
 
-        {/* OWNER-ONLY lifecycle control (LIST-09): the seller viewing their own
-            listing sees Renew when it's near-expiry (RenewButton self-hides on a
-            healthy active listing). The buyer view never renders this. */}
+        {/* OWNER-ONLY lifecycle controls: Renew (LIST-09 — self-hides on a
+            healthy active listing) + the reversible sold toggle (LIST-06 —
+            self-hides on expired; reactivation belongs to RenewButton). The
+            buyer view never renders either. */}
         {isOwner && (
-          <RenewButton
-            listingId={listing.id}
-            status={listing.status}
-            expiresAt={listing.expiresAt}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <RenewButton
+              listingId={listing.id}
+              status={listing.status}
+              expiresAt={listing.expiresAt}
+            />
+            <SoldToggle listingId={listing.id} status={listing.status} />
+          </div>
         )}
 
         <dl className="grid gap-3 text-sm">
