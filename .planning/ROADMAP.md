@@ -182,7 +182,12 @@ Event logging for analytics (search + listing-view events) is instrumented when 
   2. A buyer can search by keyword (part title, part number) and filter by Make, Model, Configuration, Part Category, Material, Condition, and Special Filters
   3. A buyer can find parts using trucker slang / Common Search Terms, with typo- and synonym-tolerant matching
   4. Search and listing-view events are logged so analytics can later report most-searched and most-viewed items
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 07-01-PLAN.md — Search DB foundation: 0014_search.sql (tsvector + GIN + search_events + search_listings RPC) + EXPLAIN-ANALYZE/no-PII integration gate
+- [ ] 07-02-PLAN.md — lib/search readers: params (URL↔SearchQuery), queries (searchListings/expandSlang/autocomplete), recordSearchEvent
+- [ ] 07-03-PLAN.md — Same-screen feed/search UI: cards, cascading facets, slang banner, fits-my-truck, infinite scroll (human-verify)
+- [ ] 07-04-PLAN.md — Public profile active-listings grid + sort + no-PII contract
 
 ### Phase 8: Social Layer
 **Goal**: The 30% social experience comes alive — buyers can publicly comment on listings (attributed to username only), save listings to view later, and sellers can mark their listings as sold.
