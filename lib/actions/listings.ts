@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { listingSchema } from "@/lib/listings/schema";
 import { stripAndReencode } from "@/lib/images/strip";
@@ -440,4 +441,82 @@ export async function reactivateListing(
     ok: true,
     expiresAt: (data[0] as { expires_at: string }).expires_at,
   };
+}
+
+export type MarkSoldResult =
+  | { ok: true }
+  | { ok: false; error: "unauthenticated" | "invalid" | "not_found" };
+
+// Paths whose cached HTML shows the listing's status (Pitfall 8). `/` and the
+// listing page are force-dynamic and self-heal, but revalidate the listing path
+// anyway for safety; `/saved` shows the buyer-side sold/expired badge.
+function revalidateAfterStatusFlip(id: number): void {
+  revalidatePath(`/listings/${id}`);
+  revalidatePath("/sell/listings");
+  revalidatePath("/saved");
+}
+
+/**
+ * Mark an ACTIVE listing sold (LIST-06). Owner-scoped (getClaims identity,
+ * cookie-client owner RLS, explicit .eq("seller_id")) and scoped to
+ * status='active' — zero rows affected (not the caller's, nonexistent, or not
+ * active) collapses to not_found, no existence leak (the renewListing rule).
+ *
+ * NEVER touches expires_at: renewListing/reactivateListing remain the ONLY
+ * expires_at writers (the 5.1 lifecycle invariant) — marking sold must not buy
+ * or burn clock time; markAvailable restores the listing with its original
+ * expiry intact. Feed/search removal is free: search filters status='active'.
+ */
+export async function markSold(id: number): Promise<MarkSoldResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ status: "sold" })
+    .eq("id", id)
+    .eq("seller_id", userId)
+    .eq("status", "active")
+    .select("id");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+
+  revalidateAfterStatusFlip(id);
+  return { ok: true };
+}
+
+/**
+ * Flip a SOLD listing back to active (LIST-06 — "the deal fell through").
+ * Sold→active ONLY: an EXPIRED listing reactivates via the EXISTING
+ * reactivateListing (which resets the 90-day clock); this one deliberately
+ * does NOT touch expires_at — if the clock lapsed while the listing sat sold,
+ * the pg_cron flip will expire it on schedule, exactly as if it had never been
+ * marked sold. Zero rows affected → not_found.
+ */
+export async function markAvailable(id: number): Promise<MarkSoldResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  if (!isValidId(id)) return { ok: false, error: "invalid" };
+
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ status: "active" })
+    .eq("id", id)
+    .eq("seller_id", userId)
+    .eq("status", "sold")
+    .select("id");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+
+  revalidateAfterStatusFlip(id);
+  return { ok: true };
 }

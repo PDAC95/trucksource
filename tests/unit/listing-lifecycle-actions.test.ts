@@ -54,10 +54,16 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+// markSold/markAvailable revalidate the listing/saved/sell paths after the flip;
+// outside a Next request context revalidatePath would throw, so stub it.
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+
 import {
   renewListing,
   reactivateListing,
   updateListing,
+  markSold,
+  markAvailable,
 } from "@/lib/actions/listings";
 
 const UID = "11111111-1111-1111-1111-111111111111";
@@ -137,6 +143,88 @@ describe("reactivateListing — expired-only, flips to active", () => {
     const res = await reactivateListing(1);
 
     expect(res).toEqual({ ok: false, error: "not_found" });
+  });
+});
+
+describe("markSold — active-only, owner-scoped, never touches expires_at", () => {
+  it("unauthenticated -> error, never updates", async () => {
+    getClaims.mockResolvedValue({ data: { claims: null } });
+
+    const res = await markSold(1);
+
+    expect(res).toEqual({ ok: false, error: "unauthenticated" });
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("invalid id -> invalid, never updates", async () => {
+    const res = await markSold(-3);
+
+    expect(res).toEqual({ ok: false, error: "invalid" });
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("zero rows affected -> not_found (not mine / nonexistent / not active)", async () => {
+    selectResult = { data: [], error: null };
+
+    const res = await markSold(1);
+
+    expect(res).toEqual({ ok: false, error: "not_found" });
+  });
+
+  it("flips active->sold: payload is exactly {status:'sold'}, scoped to status='active'", async () => {
+    const res = await markSold(1);
+
+    expect(res).toEqual({ ok: true });
+    // exactly one update, carrying ONLY status — the 90-day clock must not move
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]).toEqual({ status: "sold" });
+    expect(Object.keys(updateCalls[0])).toEqual(["status"]);
+    expect(updateCalls[0]).not.toHaveProperty("expires_at");
+    // owner + ACTIVE-only scoping (a sold/expired row never re-sells here)
+    expect(eqHas("seller_id", UID)).toBe(true);
+    expect(eqHas("status", "active")).toBe(true);
+    expect(eqHas("status", "sold")).toBe(false);
+  });
+});
+
+describe("markAvailable — sold-only, flips back to active, never touches expires_at", () => {
+  it("unauthenticated -> error, never updates", async () => {
+    getClaims.mockResolvedValue({ data: { claims: null } });
+
+    const res = await markAvailable(1);
+
+    expect(res).toEqual({ ok: false, error: "unauthenticated" });
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("invalid id -> invalid, never updates", async () => {
+    const res = await markAvailable(0);
+
+    expect(res).toEqual({ ok: false, error: "invalid" });
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("zero rows affected -> not_found", async () => {
+    selectResult = { data: [], error: null };
+
+    const res = await markAvailable(1);
+
+    expect(res).toEqual({ ok: false, error: "not_found" });
+  });
+
+  it("flips sold->active: payload is exactly {status:'active'}, scoped to status='sold'", async () => {
+    const res = await markAvailable(1);
+
+    expect(res).toEqual({ ok: true });
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]).toEqual({ status: "active" });
+    expect(Object.keys(updateCalls[0])).toEqual(["status"]);
+    // an expired listing reactivates via reactivateListing, NOT this — so the
+    // precondition is sold-only and expires_at is untouched
+    expect(updateCalls[0]).not.toHaveProperty("expires_at");
+    expect(eqHas("seller_id", UID)).toBe(true);
+    expect(eqHas("status", "sold")).toBe(true);
+    expect(eqHas("status", "expired")).toBe(false);
   });
 });
 
