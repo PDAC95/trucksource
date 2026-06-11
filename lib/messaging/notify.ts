@@ -11,6 +11,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // the verified takeoffparts.com sender before launch).
 const FROM = "Take-Off Parts <onboarding@resend.dev>";
 
+// User-supplied values (usernames, listing titles, message snippets) are
+// interpolated into email HTML — escape them to prevent HTML injection.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function sendEmail(payload: {
   to: string;
   subject: string;
@@ -205,9 +216,9 @@ export async function sendNewMessageEmail(input: {
         `View message: ${input.threadUrl}`,
       ].join("\n"),
       html: [
-        `<p><strong>${input.senderUsername}</strong> sent you a message about &ldquo;${input.listingTitle}&rdquo;:</p>`,
-        `<blockquote>${snippet}</blockquote>`,
-        `<p><a href="${input.threadUrl}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px;">View message</a></p>`,
+        `<p><strong>${escapeHtml(input.senderUsername)}</strong> sent you a message about &ldquo;${escapeHtml(input.listingTitle)}&rdquo;:</p>`,
+        `<blockquote>${escapeHtml(snippet)}</blockquote>`,
+        `<p><a href="${escapeHtml(input.threadUrl)}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;text-decoration:none;border-radius:6px;">View message</a></p>`,
       ].join("\n"),
     });
 
