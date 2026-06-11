@@ -49,6 +49,9 @@ export const THREAD_SELECT_COLUMNS = [
   "buyer_hidden_at",
   "seller_last_read_at",
   "seller_hidden_at",
+  // Moderation freeze timestamp (0019, ADMO-04) — a non-PII flag the thread
+  // view renders the closed-composer state from.
+  "frozen_at",
 ] as const;
 
 /** The exact listings columns the thread card hydration selects. */

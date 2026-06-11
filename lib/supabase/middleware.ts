@@ -2,6 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // Expose the pathname to server layouts via a request header: the (app)
+  // layout's suspension gate needs it to allow read-only /messages access for
+  // suspended users (ADMO-01). Mutating request.headers here propagates
+  // through every NextResponse.next({ request }) below.
+  request.headers.set("x-pathname", request.nextUrl.pathname);
+
   let supabaseResponse = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

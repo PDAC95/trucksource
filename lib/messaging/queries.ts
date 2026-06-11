@@ -67,6 +67,8 @@ export type ThreadView = {
   viewerLastReadAt: string | null;
   /** Handle to the immutable contact record (seller's initial-contact context). */
   contactLogId: number;
+  /** Moderation freeze (ADMO-04): when set, BOTH sides see a closed composer. */
+  frozenAt: string | null;
 };
 
 // The enumerated message_threads row every reader works from. NON-PII: ids,
@@ -82,11 +84,13 @@ type ThreadRow = {
   seller_last_read_at: string | null;
   buyer_hidden_at: string | null;
   seller_hidden_at: string | null;
+  frozen_at: string | null;
 };
 
 const THREAD_COLUMNS =
   "id, listing_id, buyer_id, seller_id, contact_log_id, last_message_at, " +
-  "buyer_last_read_at, buyer_hidden_at, seller_last_read_at, seller_hidden_at";
+  "buyer_last_read_at, buyer_hidden_at, seller_last_read_at, seller_hidden_at, " +
+  "frozen_at";
 
 type ListingCardRow = {
   id: number;
@@ -310,6 +314,7 @@ export async function getThreadForViewer(
     viewerLastReadAt:
       viewerRole === "buyer" ? t.buyer_last_read_at : t.seller_last_read_at,
     contactLogId: t.contact_log_id,
+    frozenAt: t.frozen_at,
   };
 }
 

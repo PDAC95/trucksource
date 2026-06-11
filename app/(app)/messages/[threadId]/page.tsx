@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getOwnRestriction } from "@/lib/account/restrictions";
 import { getThreadForViewer, getThreadMessages } from "@/lib/messaging/queries";
 import { markThreadRead } from "@/lib/actions/messages";
 import { ThreadHeader } from "@/components/messaging/thread-header";
@@ -38,8 +39,9 @@ export default async function ThreadPage({
   if (!thread) notFound();
 
   // Initial messages + viewer→counterparty block state (owner-RLS read of
-  // user_blocks — only the viewer's own block rows are visible).
-  const [messages, { data: blockRow }] = await Promise.all([
+  // user_blocks — only the viewer's own block rows are visible) + the viewer's
+  // own restriction (read-only composer while suspended, ADMO-01).
+  const [messages, { data: blockRow }, restriction] = await Promise.all([
     getThreadMessages(threadId),
     supabase
       .from("user_blocks")
@@ -47,8 +49,24 @@ export default async function ThreadPage({
       .eq("blocker_id", viewerId)
       .eq("blocked_id", thread.counterpartyId)
       .maybeSingle(),
+    getOwnRestriction(),
   ]);
   const isBlocked = blockRow !== null;
+
+  // Composer state precedence (all three are UX mirrors of RLS arms in the
+  // 0019 messages INSERT policy — sending is structurally blocked either way):
+  // moderation freeze (both sides) > viewer restriction > viewer block.
+  const sendDisabled = thread.frozenAt
+    ? { reason: "This conversation has been closed by moderation." }
+    : restriction
+      ? {
+          reason: "You can't send messages while your account is suspended.",
+        }
+      : isBlocked
+        ? {
+            reason: `You blocked ${thread.counterpartyName}. Unblock them to send messages.`,
+          }
+        : undefined;
 
   // Stamp the viewer-side read watermark on open: clears the unread badge AND
   // re-arms the new-message email throttle (notify.ts sends again only after a
@@ -78,13 +96,7 @@ export default async function ThreadPage({
         viewerId={viewerId}
         initialMessages={messages}
         names={names}
-        sendDisabled={
-          isBlocked
-            ? {
-                reason: `You blocked ${thread.counterpartyName}. Unblock them to send messages.`,
-              }
-            : undefined
-        }
+        sendDisabled={sendDisabled}
       />
       <Toaster />
     </div>
