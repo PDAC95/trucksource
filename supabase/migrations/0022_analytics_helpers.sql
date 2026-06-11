@@ -1,5 +1,10 @@
--- 0020_analytics_helpers.sql — ADMA-02/03/04 read-side helpers for the /admin
+-- 0022_analytics_helpers.sql — ADMA-02/03/04 read-side helpers for the /admin
 -- analytics dashboard (plan 10-06).
+--
+-- RENAMED from 0020_analytics_helpers.sql at phase verification (10-10): the
+-- prefix collided with 0020_active_listing_count_hidden.sql (parallel wave 2).
+-- File rename ONLY — already applied to Staging via `db query --linked -f`,
+-- chronologically BEFORE 0021_report_queue_rpc.sql.
 --
 -- WHY SQL functions at all: PostgREST cannot express these shapes —
 --   - group-by on a jsonb facet key (facets->>'makeId') joined to a name table

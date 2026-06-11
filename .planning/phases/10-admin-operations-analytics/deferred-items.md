@@ -5,6 +5,8 @@ boundary); resolve at phase verification or in a dedicated follow-up.
 
 ## [10-04] FTS GIN gate broken by the 0019 listings RLS policy (Pitfall 3 regression)
 
+**RESOLVED in 10-10 Task 1:** migration `0023_search_security_definer.sql` (applied to Staging via `db query --linked -f`) converts `search_listings` + `explain_search_plan` to SECURITY DEFINER with `status = 'active' and hidden_at is null` baked into the RPC body (the 0020 `active_listing_count` pattern). The EXPLAIN gate keeps the original 0014 FTS-only query shape (adding the status predicates made the pinned planner prefer a btree path on the tiny Staging table). `search.test.ts` 11/11 green.
+
 - **Found during:** 10-04 Task 3 (`npx vitest run tests/integration`).
 - **Failing test:** `tests/integration/search.test.ts` → "FTS path uses listings_search_vector_idx, never Seq Scan on listings".
 - **Symptom:** `explain_search_plan('bumper')` as anon now returns `Seq Scan on listings` even with `enable_seqscan=off` (cost=1e10 — no index path was ever generated).
@@ -13,6 +15,8 @@ boundary); resolve at phase verification or in a dedicated follow-up.
 - **Suggested fix direction:** convert `search_listings` (and the EXPLAIN gate) to security definer with explicit `hidden_at is null and status = 'active'` predicates in the body (the same pattern 0020 used for `active_listing_count`), keeping RLS as the boundary for direct table reads. Harmless at launch volume; must land before search-scale matters.
 
 ## [10-06] Duplicate migration prefix: two 0020_* files
+
+**RESOLVED in 10-10 Task 1:** `0020_analytics_helpers.sql` renamed (git mv, file rename only — already applied to Staging) to `0022_analytics_helpers.sql` with a header note; `0021_report_queue_rpc.sql` already occupied 0021.
 
 - **Found during:** 10-06 final docs commit (parallel lint-staged sweep pulled 10-04's in-flight files in).
 - **Files:** `supabase/migrations/0020_analytics_helpers.sql` (10-06) and `supabase/migrations/0020_active_listing_count_hidden.sql` (10-04).
