@@ -257,7 +257,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 6. Fitment Intelligence | 4/4 | Complete | 2026-06-09 |
 | 7. Search, Feed & Public Profile | 4/4 | Complete | 2026-06-10 |
 | 8. Social Layer | 6/6 | Complete | 2026-06-10 |
-| 9. Contact → Private Chat | 4/7 | In Progress | - |
+| 9. Contact → Private Chat | 6/7 | In Progress|  |
 | 10. Admin Operations & Analytics | 0/TBD | Not started | - |
 
 ---

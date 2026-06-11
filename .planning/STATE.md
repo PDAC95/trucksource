@@ -3,6 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
+last_updated: "2026-06-11T13:54:49.732Z"
+progress:
+  total_phases: 10
+  completed_phases: 9
+  total_plans: 47
+  completed_plans: 46
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
 last_updated: "2026-06-11T13:41:32.781Z"
 progress:
   total_phases: 10
@@ -304,6 +317,8 @@ Progress: **Phase 9 IN PROGRESS (3/7)** — 09-01 (messaging schema root + zod c
 | Phase 09 P03 | ~9 min | 3 tasks | 4 files |
 | Phase 09 P04 | 10min | 2 tasks | 5 files |
 | Phase 09 P02 | 12m | 3 tasks | 6 files |
+| Phase 09 P05 | 10m | 2 tasks | 6 files |
+| Phase 09 P06 | ~8 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -400,6 +415,8 @@ Recent decisions affecting current work:
 - [Phase 09]: ReportMenu is deliberately dumb/reusable (targetType/targetId pass-through) and shows for anon viewers with a /login route on the Report item instead of hiding the affordance
 - [Phase 09]: admin_emailed_at stamped inside notify.ts via admin client; contact_log stays client-immutable (no UPDATE policy)
 - [Phase 09]: Chat block enforcement is RLS-only (messages INSERT policy); blockUser/unblockUser idempotent
+- [Phase 09]: Inactive-listing check precedes the anon check: sold/expired listings show no new-contact CTA for anyone; only existing threads survive status changes
+- [Phase 09]: Login honors validated same-site ?next= (rejects // and /\ open-redirect prefixes) to round-trip the listing contact CTA
 
 ### Pending Todos
 

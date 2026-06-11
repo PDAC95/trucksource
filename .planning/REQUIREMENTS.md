@@ -86,7 +86,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Contact & Messaging
 
-- [ ] **MSG-01**: Each listing has a "Contact Seller About This Part" action
+- [x] **MSG-01**: Each listing has a "Contact Seller About This Part" action
 - [x] **MSG-02**: Buyer completes a contact form (Name, Email, Phone optional, Message) before any thread opens
 - [x] **MSG-03**: The contact form submission is persisted to the database, and a copy is sent to marketplace administration, before the chat opens
 - [x] **MSG-04**: Every buyer→seller communication is logged for abuse monitoring and dispute resolution
@@ -194,7 +194,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SOCL-01 | Phase 8 | Complete |
 | SOCL-02 | Phase 8 | Complete |
 | LIST-06 | Phase 8 | Complete |
-| MSG-01 | Phase 9 | Pending |
+| MSG-01 | Phase 9 | Complete |
 | MSG-02 | Phase 9 | Complete |
 | MSG-03 | Phase 9 | Complete |
 | MSG-04 | Phase 9 | Complete |
