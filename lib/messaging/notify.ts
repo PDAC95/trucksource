@@ -49,9 +49,11 @@ async function sendEmail(payload: {
 
 /**
  * Admin copy of a new contact-form submission (MSG-02 locked decision: the
- * admin copy carries FULL context BY DESIGN — buyer PII included). Returns
- * true on send success so submitContact can stamp contact_log.admin_emailed_at;
- * the contact_log ROW remains the copy of record either way.
+ * admin copy carries FULL context BY DESIGN — buyer PII included). On send
+ * success this stamps contact_log.admin_emailed_at HERE via the admin client —
+ * contact_log is deliberately client-immutable (no UPDATE policy, MSG-04), so
+ * the stamp cannot live in the action. The contact_log ROW remains the copy
+ * of record either way.
  */
 export async function sendAdminContactCopy(contact: {
   contactLogId: number;
@@ -72,7 +74,7 @@ export async function sendAdminContactCopy(contact: {
     );
     return false;
   }
-  return sendEmail({
+  const sent = await sendEmail({
     to,
     subject: `[Take-Off Parts] New contact #${contact.contactLogId} on listing #${contact.listingId}`,
     text: [
@@ -92,6 +94,21 @@ export async function sendAdminContactCopy(contact: {
       `Submitted at: ${contact.createdAt}`,
     ].join("\n"),
   });
+
+  if (sent) {
+    try {
+      const admin = createAdminClient();
+      await admin
+        .from("contact_log")
+        .update({ admin_emailed_at: new Date().toISOString() })
+        .eq("id", contact.contactLogId);
+    } catch (err) {
+      // Best-effort stamp: the email already went out; a missing stamp only
+      // means the row reads as "not emailed" — never throws into the action.
+      console.error("[notify] admin_emailed_at stamp failed:", err);
+    }
+  }
+  return sent;
 }
 
 /**
