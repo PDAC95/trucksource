@@ -5,6 +5,7 @@ import {
   contactPreferenceSchema,
   sellerTypeSchema,
   displayNameSchema,
+  messageEmailSchema,
 } from "@/lib/account/schema";
 import { resolvePublicName } from "@/lib/seller/badge";
 
@@ -12,8 +13,11 @@ import { resolvePublicName } from "@/lib/seller/badge";
 // contact preference), NOT on the listing form — the listing form only displays it.
 // ACCT-07 (seller type) and ACCT-08 (public display name) live here too — both are
 // NON-PII fields on profiles_public, written through the SAME owner-RLS boundary.
-// NO path in this module ever reads profiles_private: display_name is owner-typed
-// free text, NOT auto-populated from the legal private name (Pitfall 1).
+// NO path in this module ever reads profiles_private PII: display_name is
+// owner-typed free text, NOT auto-populated from the legal private name
+// (Pitfall 1). The ONE profiles_private touch here is updateMessageEmailOptOut
+// — an owner-RLS WRITE of the non-PII boolean message_email_opt_out flag; it
+// never reads or returns email/phone/name.
 //
 // IDENTITY: the caller is derived via getClaims() — never the cookie-only session
 // reader (which trusts unverified cookie data). The write goes through the
@@ -135,4 +139,43 @@ export async function updateDisplayName(
     ok: true,
     publicName: resolvePublicName(row.display_name, row.username),
   };
+}
+
+export type UpdateMessageEmailOptOutResult =
+  | { ok: true }
+  | { ok: false; error: "unauthenticated" | "invalid" | "not_found" };
+
+/**
+ * Set the caller's new-message email notification preference (MSG email
+ * opt-out). `enabled: true` (the default) writes message_email_opt_out =
+ * false. Order mirrors updateContactPreference:
+ *   1. getClaims identity (else unauthenticated)
+ *   2. messageEmailSchema re-validation (the trust boundary)
+ *   3. owner-scoped update of profiles_private.message_email_opt_out
+ *      (zero rows affected => not_found, no existence leak)
+ * The owner-only RLS policy on profiles_private (`(select auth.uid()) = id`)
+ * IS the authorization boundary — cookie-bound client, NO service-role. Only
+ * the boolean flag is written; no PII column is read or returned.
+ */
+export async function updateMessageEmailOptOut(
+  input: unknown,
+): Promise<UpdateMessageEmailOptOutResult> {
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) return { ok: false, error: "unauthenticated" };
+
+  const parsed = messageEmailSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const { enabled } = parsed.data;
+
+  const { data, error } = await supabase
+    .from("profiles_private")
+    .update({ message_email_opt_out: !enabled })
+    .eq("id", userId)
+    .select("id");
+
+  if (error) return { ok: false, error: "invalid" };
+  if (!data || data.length === 0) return { ok: false, error: "not_found" };
+  return { ok: true };
 }

@@ -8,6 +8,7 @@ import type { SellerType } from "@/lib/seller/badge";
 import { ContactPreferenceForm } from "./contact-preference-form";
 import { SellerTypeForm } from "@/components/account/seller-type-form";
 import { DisplayNameForm } from "@/components/account/display-name-form";
+import { MessageEmailForm } from "@/components/account/message-email-form";
 
 // Owner-scoped, per-user settings — never cache one user's account data for
 // another (invariant 6). The (app) layout already gates auth and is force-dynamic;
@@ -26,11 +27,21 @@ export default async function AccountPage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles_public")
-    .select("username, contact_preference, seller_type, display_name")
-    .eq("id", userId)
-    .maybeSingle();
+  // The viewer's OWN rows only. profiles_private is the owner-only table
+  // (`(select auth.uid()) = id` RLS); we read JUST the non-PII opt-out flag —
+  // never email/phone/name (invariant 1 posture preserved).
+  const [{ data: profile }, { data: priv }] = await Promise.all([
+    supabase
+      .from("profiles_public")
+      .select("username, contact_preference, seller_type, display_name")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("profiles_private")
+      .select("message_email_opt_out")
+      .eq("id", userId)
+      .maybeSingle(),
+  ]);
 
   // Default to the most-private option if the row/column read is ever absent.
   const current = (profile?.contact_preference ??
@@ -38,6 +49,8 @@ export default async function AccountPage() {
   const sellerType = (profile?.seller_type ?? null) as SellerType | null;
   const displayName = (profile?.display_name ?? null) as string | null;
   const username = profile?.username ?? "";
+  // Column default is false (= emails ON); absent row reads as the default.
+  const messageEmailEnabled = !(priv?.message_email_opt_out ?? false);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -54,6 +67,7 @@ export default async function AccountPage() {
         <DisplayNameForm current={{ displayName, username }} />
         <SellerTypeForm current={sellerType} />
         <ContactPreferenceForm current={current} />
+        <MessageEmailForm current={messageEmailEnabled} />
       </div>
 
       <Toaster />

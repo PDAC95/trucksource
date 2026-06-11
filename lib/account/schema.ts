@@ -44,3 +44,13 @@ export const displayNameSchema = z.object({
 });
 
 export type DisplayNameInput = z.infer<typeof displayNameSchema>;
+
+// MSG (new-message email notifications) preference contract. `enabled: true`
+// means "email me about new messages" (the DEFAULT) and maps to
+// profiles_private.message_email_opt_out = false — the column stores the
+// OPT-OUT, the UI exposes the positive toggle.
+export const messageEmailSchema = z.object({
+  enabled: z.boolean(),
+});
+
+export type MessageEmailInput = z.infer<typeof messageEmailSchema>;

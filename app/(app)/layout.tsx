@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/layout/user-menu";
+import { MessagesBadge } from "@/components/messaging/messages-badge";
 
 // Personalized — never cache one user's shell for another (invariant 6).
 export const dynamic = "force-dynamic";
@@ -39,6 +40,9 @@ export default async function AppLayout({
           Take-Off Parts
         </Link>
         <div className="flex items-center gap-1">
+          {/* MSG-05: the Messages entry point with the live unread count.
+              Layout is force-dynamic, so the count refreshes on navigation. */}
+          <MessagesBadge userId={data.claims.sub as string} />
           {/* SOCL-02: the saved-listings entry point — matches the UserMenu
               trigger style (ghost/sm) for the smallest consistent change. */}
           <Button asChild variant="ghost" size="sm" className="gap-2">
