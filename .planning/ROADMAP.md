@@ -237,7 +237,19 @@ Plans:
   1. An admin can view and manage users and listings, manage part categories, and manage the full fitment library (makes, models, configs, terms, categories, materials, conditions, filters)
   2. An admin can view and act on abuse reports through a queue with enforcement actions, and can monitor messages/contact logs
   3. Analytics shows registered/active users, active and most-viewed listings, most-searched makes and models, messages sent, and monthly growth
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Migration 0019 (enforcement/audit/queue/freeze/is_active schema + policy updates) + grant-admin script
+- [ ] 10-02-PLAN.md — Admin shell: requireAdmin() gate, logAdminAction() audit writer, gated sidebar layout, CI service-role bundle scan
+- [ ] 10-03-PLAN.md — Users management + full enforcement ladder (warn/suspend/ban/reactivate/rename, audited + emailed) + suspension UX (blocked page, lazy expiry, read-only chat)
+- [ ] 10-04-PLAN.md — Listings moderation: filterable index, hide/restore, photo removal, draft bulk-publish + hidden/draft RLS regression test
+- [ ] 10-05-PLAN.md — Fitment Library: generic 8-level taxonomy CRUD + slang editor + is_active picker filtering
+- [ ] 10-06-PLAN.md — Analytics dashboard: live service-role aggregates, KPI cards, trend charts, rankings, 7/30/90/all presets
+- [ ] 10-07-PLAN.md — Message monitoring: metadata threads list, report-justified audited content view, thread freeze, contact-log table
+- [ ] 10-08-PLAN.md — Reports queue: grouped per target with counters, Pending→Resolved/Dismissed + notes, enforcement wiring
+- [ ] 10-09-PLAN.md — CSV bulk import: Papa Parse + zod rows, real-seller ownership, photo URLs through the EXIF gate, results report
+- [ ] 10-10-PLAN.md — Automated gate sweep + stakeholder UAT checkpoint (closes Phase 10 and v1)
 
 ## Progress
 
@@ -258,7 +270,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 7. Search, Feed & Public Profile | 4/4 | Complete | 2026-06-10 |
 | 8. Social Layer | 6/6 | Complete | 2026-06-10 |
 | 9. Contact → Private Chat | 7/7 | Complete | 2026-06-11 |
-| 10. Admin Operations & Analytics | 0/TBD | Not started | - |
+| 10. Admin Operations & Analytics | 0/10 | Planned | - |
 
 ---
 *Roadmap created: 2026-06-01*
