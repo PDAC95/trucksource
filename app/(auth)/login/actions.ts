@@ -31,6 +31,18 @@ export async function login(
     return { error: "Invalid email or password." };
   }
 
-  // Land on the (app) home/feed.
-  redirect("/");
+  // Post-login destination: honor ?next= for in-site round-trips (e.g. the
+  // listing-page contact CTA sends anon buyers here and back). ONLY a
+  // same-site path is accepted — must start with a single "/" (a "//" or
+  // "/\" prefix is a protocol-relative open redirect). Anything else falls
+  // back to the (app) home/feed.
+  const next = formData.get("next");
+  const safeNext =
+    typeof next === "string" &&
+    next.startsWith("/") &&
+    !next.startsWith("//") &&
+    !next.startsWith("/\\")
+      ? next
+      : "/";
+  redirect(safeNext);
 }

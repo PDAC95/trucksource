@@ -48,6 +48,11 @@ export default function LoginPage() {
     const fd = new FormData();
     fd.set("email", values.email);
     fd.set("password", values.password);
+    // Forward ?next= (in-site return path, e.g. the listing contact CTA).
+    // Read from the URL at submit time to avoid a Suspense boundary for
+    // useSearchParams; the server action validates it before redirecting.
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next) fd.set("next", next);
     React.startTransition(() => formAction(fd));
   };
 
