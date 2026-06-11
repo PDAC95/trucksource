@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-11T17:45:26.963Z"
+last_updated: "2026-06-11T17:48:15.085Z"
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 57
-  completed_plans: 51
+  completed_plans: 52
 ---
 
 ---
@@ -247,9 +247,10 @@ Phase: **10 of 11 (Admin Operations & Analytics) — IN PROGRESS (1/10)**
 Plan: **10-01 (Wave 1, admin operations schema) DONE.** Migration 0019 applied to Staging via `npx supabase db query --linked -f` (db push remains unsafe — remote history only records 0001-0003): user_restrictions (self-read RLS, lazy expiry semantics — restricted = banned OR suspended_until > now()), admin_audit_log (RLS with ZERO policies — default-deny both directions, service-role only), report queue columns (status/resolved_by/resolved_at/admin_note + (status, created_at desc) index), listing moderation ('draft' status + hidden_at/hidden_reason + REPLACED public-read policy `(hidden_at is null and status <> 'draft') or seller_id = auth.uid()`), message_threads.frozen_at/frozen_by, messages INSERT policy recreated with the full 0018 body PLUS not-restricted and not-frozen arms (SELECT policy untouched — WALRUS realtime hot path), is_active on all 8 taxonomy tables, search_events/listing_view_events created_at indexes, and admin_user_activity_stats() security-definer RPC (execute revoked from public/anon/authenticated; service-role only). 15/15 live behavioral checks passed against Staging. scripts/grant-admin.mjs (+ npm run grant:admin, --revoke flag) flagged pdmckinster@gmail.com as admin — raw_app_meta_data verified; the account must sign out/in before the role claim appears in the JWT.
 Plan 10-07 (Wave 2, ADMO-04 message/contact-log monitoring) DONE: /admin/messages ships the metadata-only threads tab (participants/listing/count/last-activity + Frozen/Reported badges — zero bodies in any list query) and the filterable contact-log tab (buyer/seller/listing/date-range/message ilike — full text correct, contact_log IS the admin copy of record). /admin/messages/threads/[id] enforces the audit-the-auditor order: requireAdmin → getThreadContentJustification (the ONE unlock rule — a report on a MESSAGE in the thread; listing reports never unlock, Pitfall 8) → logAdminAction('thread_content_access', {report_id}) BEFORE any body fetch (throws = no transcript) → read-only transcript with the "Access justified by report #N — logged" banner; unreported threads get the locked notice with metadata only. freezeThread (reason required, audited) / unfreezeThread flip frozen_at/frozen_by via service role — the 0019 messages INSERT arm is the actual send-block.
 Plan 10-06 (Wave 2, ADMA-01..04 analytics dashboard) DONE: /admin placeholder replaced with the live dashboard — KPI cards (registered, active-30d MAU, active listings, messages-in-range, monthly growth %), a 12-month Recharts users/listings AreaChart, and most-viewed-listings / most-searched-makes / most-searched-models (modelId ∪ fitsModelId facets) / top-normalized-terms rankings, all re-scoped by ?range=7d|30d|90d|all link-button presets (force-dynamic, Suspense keyed on range). Migration 0020 (applied via `db query --linked -f`) adds 5 INVOKER SQL helpers with execute revoked from anon/authenticated (service-role-only, 0019 posture) for the PostgREST-inexpressible shapes (jsonb facet group-by, UNION demand, zero-filled month series). All aggregation server-side in lib/admin/analytics.ts; client chart components receive only label/value arrays. Build clean, /admin dynamic, no service-role key in .next/static. NOTE: Task-2 files were swept into 10-07's commit 553dec5 by the known parallel lint-staged race — content verified on disk.
+Plan 10-04 (Wave 2, ADMO-02 listing moderation) DONE: /admin/listings index (status incl. Draft / hidden-only / title-or-seller search filters, 50/page) + /admin/listings/[id] detail with READ-ONLY seller content (zero inputs — locked moderate-only). Actions (requireAdmin + zod + service role + throwing audit + revalidate): hideListing (hidden_at + hidden_reason='moderation', only un-hidden rows), restoreListing (moderation hides ONLY — suspension/ban hides untouchable from here), removeListingPhoto (Storage object then row, audited with {listingId, path}; no auto-unpublish below 3 photos; cover promotion is positional), bulkPublishDrafts (one statement: active + date_listed + expires_at=now()+90d; one bulk_publish audit row) — the draft view IS the locked one-click CSV bulk-publish surface. Migration 0020_active_listing_count_hidden (applied via db query --linked) closes the Pitfall-2 drift: the DEFINER count RPC now excludes hidden rows in-body. tests/integration/admin-moderation.test.ts proves hidden/draft rows vanish from search RPC + direct anon reads + count RPC while staying owner-visible (3/3 green). DEFERRED (deferred-items.md): the pre-existing 0019-induced FTS GIN gate failure in search.test.ts (non-leakproof @@ cannot use the GIN index under the new RLS qual — fix = definer-ize search_listings at phase verification) + duplicate 0020_ migration prefix with 10-06.
 Previous plan: **09-07 (inbox + global badge + trust-spine UAT) DONE — Phase 9 closed.**
 Status: **Phase 10 IN PROGRESS (1/10 plans) — every remaining Phase-10 plan (admin gate/console, enforcement, reports queue, message monitoring, taxonomy CRUD, analytics, CSV import) builds on the 0019 substrate.**
-Last activity: 2026-06-11 — Plan 10-01 COMPLETE (3 tasks; migration 0019 live on Staging; admin account flagged).
+Last activity: 2026-06-11 — Plan 10-04 COMPLETE (3 tasks; listing moderation live; migration 0020 on Staging).
 
 Progress: **Phases 1–9 (+5.1) COMPLETE; Phase 10: 1/10 plans — 48/57 plans executed overall.**
 
@@ -326,6 +327,7 @@ Progress: **Phases 1–9 (+5.1) COMPLETE; Phase 10: 1/10 plans — 48/57 plans e
 | Phase 10 P01 | ~14min | 3 tasks | 3 files |
 | Phase 10 P07 | ~10 min | 3 tasks | 5 files |
 | Phase 10 P06 | ~25 min | 3 tasks | 8 files |
+| Phase 10-admin-operations-analytics P04 | ~20 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -438,6 +440,8 @@ Recent decisions affecting current work:
 - [Phase 10]: admin_user_activity_stats definer RPC: execute revoked from public/anon/authenticated — service-role only
 - [Phase 10]: ADMO-04 content unlock rule lives in one function (getThreadContentJustification); listing reports never unlock chat content; audit row writes before any body fetch
 - [Phase 10]: Analytics helpers are invoker SQL functions with execute revoked from anon/authenticated (service-role-only); model demand = modelId UNION fitsModelId facets
+- [Phase 10-admin-operations-analytics]: Listing moderation is structural: console only flips hidden_at/hidden_reason; 0019 RLS does the public exclusion; restore scoped to hidden_reason='moderation' so enforcement hides are untouchable from the listing console
+- [Phase 10-admin-operations-analytics]: Migration 0020: active_listing_count (SECURITY DEFINER) now excludes hidden rows in-body — definer RPCs must repeat the RLS visibility predicate (Pitfall 2)
 
 ### Pending Todos
 
