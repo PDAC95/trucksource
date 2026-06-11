@@ -21,6 +21,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+      # Cross-cutting gate: the service-role key name must NEVER appear in
+      # client chunks. grep exits 1 when nothing matches => step passes.
+      - name: service-role key never in client bundle
+        run: "! grep -r \"SUPABASE_SERVICE_ROLE_KEY\" .next/static"
 
   e2e:
     runs-on: ubuntu-latest
