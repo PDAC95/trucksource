@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-11T17:30:30.147Z"
+last_updated: "2026-06-11T17:46:00.000Z"
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 57
-  completed_plans: 49
+  completed_plans: 51
 ---
 
 ---
@@ -245,6 +245,7 @@ See: .planning/PROJECT.md (updated 2026-06-01)
 
 Phase: **10 of 11 (Admin Operations & Analytics) — IN PROGRESS (1/10)**
 Plan: **10-01 (Wave 1, admin operations schema) DONE.** Migration 0019 applied to Staging via `npx supabase db query --linked -f` (db push remains unsafe — remote history only records 0001-0003): user_restrictions (self-read RLS, lazy expiry semantics — restricted = banned OR suspended_until > now()), admin_audit_log (RLS with ZERO policies — default-deny both directions, service-role only), report queue columns (status/resolved_by/resolved_at/admin_note + (status, created_at desc) index), listing moderation ('draft' status + hidden_at/hidden_reason + REPLACED public-read policy `(hidden_at is null and status <> 'draft') or seller_id = auth.uid()`), message_threads.frozen_at/frozen_by, messages INSERT policy recreated with the full 0018 body PLUS not-restricted and not-frozen arms (SELECT policy untouched — WALRUS realtime hot path), is_active on all 8 taxonomy tables, search_events/listing_view_events created_at indexes, and admin_user_activity_stats() security-definer RPC (execute revoked from public/anon/authenticated; service-role only). 15/15 live behavioral checks passed against Staging. scripts/grant-admin.mjs (+ npm run grant:admin, --revoke flag) flagged pdmckinster@gmail.com as admin — raw_app_meta_data verified; the account must sign out/in before the role claim appears in the JWT.
+Plan 10-07 (Wave 2, ADMO-04 message/contact-log monitoring) DONE: /admin/messages ships the metadata-only threads tab (participants/listing/count/last-activity + Frozen/Reported badges — zero bodies in any list query) and the filterable contact-log tab (buyer/seller/listing/date-range/message ilike — full text correct, contact_log IS the admin copy of record). /admin/messages/threads/[id] enforces the audit-the-auditor order: requireAdmin → getThreadContentJustification (the ONE unlock rule — a report on a MESSAGE in the thread; listing reports never unlock, Pitfall 8) → logAdminAction('thread_content_access', {report_id}) BEFORE any body fetch (throws = no transcript) → read-only transcript with the "Access justified by report #N — logged" banner; unreported threads get the locked notice with metadata only. freezeThread (reason required, audited) / unfreezeThread flip frozen_at/frozen_by via service role — the 0019 messages INSERT arm is the actual send-block.
 Previous plan: **09-07 (inbox + global badge + trust-spine UAT) DONE — Phase 9 closed.**
 Status: **Phase 10 IN PROGRESS (1/10 plans) — every remaining Phase-10 plan (admin gate/console, enforcement, reports queue, message monitoring, taxonomy CRUD, analytics, CSV import) builds on the 0019 substrate.**
 Last activity: 2026-06-11 — Plan 10-01 COMPLETE (3 tasks; migration 0019 live on Staging; admin account flagged).
@@ -322,6 +323,7 @@ Progress: **Phases 1–9 (+5.1) COMPLETE; Phase 10: 1/10 plans — 48/57 plans e
 | Phase 09 P07 | build + live UAT (2026-06-11) | 3 tasks (2 auto + checkpoint) | 12 files |
 | Phase 10 P02 | ~8 min | 3 tasks | 6 files |
 | Phase 10 P01 | ~14min | 3 tasks | 3 files |
+| Phase 10 P07 | ~10 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -432,6 +434,7 @@ Recent decisions affecting current work:
 - [Phase 10]: 0019 applied via supabase db query --linked -f (db push unsafe: remote history only records 0001-0003)
 - [Phase 10]: Restriction/freeze enforcement lives ONLY in the messages INSERT policy; SELECT policy untouched (realtime WALRUS hot path)
 - [Phase 10]: admin_user_activity_stats definer RPC: execute revoked from public/anon/authenticated — service-role only
+- [Phase 10]: ADMO-04 content unlock rule lives in one function (getThreadContentJustification); listing reports never unlock chat content; audit row writes before any body fetch
 
 ### Pending Todos
 

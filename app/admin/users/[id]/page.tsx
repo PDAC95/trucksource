@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { getAdminUserDetailWithPII } from "@/lib/admin/queries";
+import { EnforcementActions } from "@/components/admin/enforcement-dialogs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Toaster } from "@/components/ui/sonner";
 
 // Admin user detail (ADMO-01) — the ONE surface that shows PII, fed by the
 // loudly-named getAdminUserDetailWithPII. The admin layout gates rendering;
@@ -157,8 +159,20 @@ export default async function AdminUserDetailPage({
         </Card>
       )}
 
-      {/* Enforcement actions (warn / suspend / ban / reactivate / rename) are
-          mounted here by Task 2 (components/admin/enforcement-dialogs.tsx). */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Enforcement</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EnforcementActions
+            userId={user.id}
+            username={user.username}
+            restriction={
+              user.restriction ? { state: user.restriction.state } : null
+            }
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -199,6 +213,8 @@ export default async function AdminUserDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <Toaster />
     </div>
   );
 }
