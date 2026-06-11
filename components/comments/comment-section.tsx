@@ -6,6 +6,7 @@ import {
   CommentDeleteButton,
   CommentReplyToggle,
 } from "@/components/comments/comment-composer";
+import { ReportMenu } from "@/components/messaging/report-menu";
 
 // The server-rendered comment thread (SOCL-01). Renders the threads EXACTLY as
 // the reader bucketed them — parents newest-first, replies oldest-first under
@@ -55,6 +56,9 @@ function Comment({
   // mirroring (not re-implementing) the RLS delete policy, which is what
   // actually authorizes the delete server-side.
   const canDelete = viewerId === comment.authorId || isSeller;
+  // Report (MSG-07) shows on every comment that isn't the viewer's own — you
+  // don't report yourself. Anon viewers still see it (login-invite inside).
+  const canReport = viewerId !== comment.authorId;
 
   return (
     <div className="grid gap-1">
@@ -74,6 +78,15 @@ function Comment({
         </span>
         {canDelete && (
           <CommentDeleteButton commentId={comment.id} isParent={isParent} />
+        )}
+        {canReport && (
+          <div className="ml-auto">
+            <ReportMenu
+              targetType="comment"
+              targetId={comment.id}
+              isAuthenticated={isAuthenticated}
+            />
+          </div>
         )}
       </div>
       {/* Plain text, whitespace-preserving. NO HTML rendering of user input. */}
