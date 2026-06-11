@@ -217,7 +217,16 @@ Plans:
   2. On submission, the contact is persisted to the database and a copy is sent to marketplace administration before the private chat opens, and every buyer→seller communication is logged for abuse monitoring and dispute resolution
   3. After submitting, a private in-site chat thread opens and buyer and seller can exchange messages without the seller's PII being exposed
   4. A user can report a listing, comment, or message for abuse
-**Plans**: TBD
+**Plans**: 7 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Migration 0016 (contact_log/threads/messages/blocks/reports, RLS, realtime publication) + zod schemas + server-only notify module
+- [ ] 09-02-PLAN.md — submitContact invariant-#5 spine + message/thread actions + zero-PII readers (+ guard-order unit tests)
+- [ ] 09-03-PLAN.md — Reporting vertical slice: submitReport action + reusable ReportMenu + comment mount
+- [ ] 09-04-PLAN.md — Live Staging integration tests: participant-only RLS, append-only log, block enforcement, zero-PII contract
+- [ ] 09-05-PLAN.md — Contact Seller CTA + pre-filled modal form on the listing page (+ listing ReportMenu)
+- [ ] 09-06-PLAN.md — Thread page + realtime ThreadView (optimistic composer, block, per-message report)
+- [ ] 09-07-PLAN.md — Inbox split view + global unread badge + email opt-out toggle + end-to-end UAT checkpoint
 
 ### Phase 10: Admin Operations & Analytics
 **Goal**: Operators can run and measure the marketplace — managing users, listings, reports (with enforcement), messages, categories, and the fitment library through a service-role-isolated console, and seeing analytics including most-searched makes/models. This also provides the bulk-onboarding tooling that mitigates two-sided cold start.
