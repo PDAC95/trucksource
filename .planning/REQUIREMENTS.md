@@ -105,10 +105,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Admin — Analytics
 
-- [ ] **ADMA-01**: Admin analytics shows registered users and active users
-- [ ] **ADMA-02**: Admin analytics shows active listings and most-viewed listings
-- [ ] **ADMA-03**: Admin analytics shows most-searched makes and most-searched models
-- [ ] **ADMA-04**: Admin analytics shows messages sent and monthly growth
+- [x] **ADMA-01**: Admin analytics shows registered users and active users
+- [x] **ADMA-02**: Admin analytics shows active listings and most-viewed listings
+- [x] **ADMA-03**: Admin analytics shows most-searched makes and most-searched models
+- [x] **ADMA-04**: Admin analytics shows messages sent and monthly growth
 
 ## v2 Requirements
 
@@ -207,10 +207,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMO-04 | Phase 10 | Complete |
 | ADMO-05 | Phase 10 | Complete |
 | ADMO-06 | Phase 10 | Complete |
-| ADMA-01 | Phase 10 | Pending |
-| ADMA-02 | Phase 10 | Pending |
-| ADMA-03 | Phase 10 | Pending |
-| ADMA-04 | Phase 10 | Pending |
+| ADMA-01 | Phase 10 | Complete |
+| ADMA-02 | Phase 10 | Complete |
+| ADMA-03 | Phase 10 | Complete |
+| ADMA-04 | Phase 10 | Complete |
 
 **Coverage:**
 - v1 requirements: 67 total (58 original + 4 GARAGE added 2026-06-01 + 5 stakeholder additions 2026-06-08)
