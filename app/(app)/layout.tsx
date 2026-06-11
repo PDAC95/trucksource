@@ -1,10 +1,6 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import { UserMenu } from "@/components/layout/user-menu";
-import { MessagesBadge } from "@/components/messaging/messages-badge";
+import { SiteHeader } from "@/components/layout/site-header";
 
 // Personalized — never cache one user's shell for another (invariant 6).
 export const dynamic = "force-dynamic";
@@ -24,36 +20,9 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Public, non-PII handle for the header menu.
-  const { data: profile } = await supabase
-    .from("profiles_public")
-    .select("username")
-    .eq("id", data.claims.sub)
-    .maybeSingle();
-
-  const username = profile?.username ?? "Account";
-
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="flex h-14 items-center justify-between border-b px-4 sm:px-6">
-        <Link href="/" className="font-semibold tracking-tight">
-          Take-Off Parts
-        </Link>
-        <div className="flex items-center gap-1">
-          {/* MSG-05: the Messages entry point with the live unread count.
-              Layout is force-dynamic, so the count refreshes on navigation. */}
-          <MessagesBadge userId={data.claims.sub as string} />
-          {/* SOCL-02: the saved-listings entry point — matches the UserMenu
-              trigger style (ghost/sm) for the smallest consistent change. */}
-          <Button asChild variant="ghost" size="sm" className="gap-2">
-            <Link href="/saved">
-              <Heart className="size-4" />
-              <span className="hidden sm:inline">Saved</span>
-            </Link>
-          </Button>
-          <UserMenu username={username} />
-        </div>
-      </header>
+      <SiteHeader />
       <main className="flex-1 px-4 py-6 sm:px-6">{children}</main>
     </div>
   );

@@ -79,34 +79,48 @@ export function ThreadView({
   // a convenience, NOT security. Cleanup via removeChannel (Pitfall 7).
   React.useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`thread:${threadId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `thread_id=eq.${threadId}`,
-        },
-        (payload) => {
-          const incoming = payload.new as MessageRow;
-          appendMessage(incoming);
-          // Keep the unread badge + email throttle honest: a message that
-          // arrives while the thread is OPEN is read (best-effort).
-          if (incoming.sender_id !== viewerId) {
-            void markThreadRead(threadId);
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    void (async () => {
+      // CRITICAL: push the user's JWT onto the realtime socket BEFORE
+      // subscribing. Without this the channel joins as `anon` and the
+      // messages SELECT policy silently denies delivery (UAT bug: messages
+      // only appeared after a manual reload).
+      await supabase.realtime.setAuth();
+      if (cancelled) return;
+
+      channel = supabase
+        .channel(`thread:${threadId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `thread_id=eq.${threadId}`,
+          },
+          (payload) => {
+            const incoming = payload.new as MessageRow;
+            appendMessage(incoming);
+            // Keep the unread badge + email throttle honest: a message that
+            // arrives while the thread is OPEN is read (best-effort).
+            if (incoming.sender_id !== viewerId) {
+              void markThreadRead(threadId);
+            }
+          },
+        )
+        .subscribe((status) => {
+          // Messages persist — a full refresh re-fetches and heals any gap.
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            router.refresh();
           }
-        },
-      )
-      .subscribe((status) => {
-        // Messages persist — a full refresh re-fetches and heals any gap.
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          router.refresh();
-        }
-      });
+        });
+    })();
+
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [threadId, viewerId, appendMessage, router]);
 
