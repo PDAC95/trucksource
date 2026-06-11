@@ -3,10 +3,11 @@ import Link from "next/link";
 
 import type { ListingDetail } from "@/lib/listings/queries";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { RenewButton } from "@/components/listings/renew-button";
 import { SoldToggle } from "@/components/listings/sold-toggle";
 import { SaveButton } from "@/components/search/save-button";
+import { ContactSellerButton } from "@/components/messaging/contact-seller-button";
+import { ReportMenu } from "@/components/messaging/report-menu";
 
 // Buyer-facing listing view. Server Component — it renders ONLY a ListingDetail,
 // which getListing already restricts to public columns + profiles_public (no PII,
@@ -15,8 +16,10 @@ import { SaveButton } from "@/components/search/save-button";
 // name, telephone, email, street address) reach this component because they never
 // reach ListingDetail.
 //
-// Contact: a placeholder "Contact seller" affordance only — the real contact flow
-// is Phase 9 (contact persists before chat opens). Wiring it is out of scope here.
+// Contact (MSG-01/02): the ContactSellerButton in the seller card is the ONLY
+// door into chat — its modal form feeds submitContact, which persists the
+// contact + admin copy BEFORE the thread opens (invariant #5). The prefill it
+// receives is the VIEWER'S OWN PII from the server page, never the seller's.
 
 const usdFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -46,12 +49,18 @@ export function ListingDetail({
   isSold = false,
   saved = false,
   isAuthenticated = false,
+  listingActive = false,
+  existingThreadId = null,
+  prefill = null,
 }: {
   listing: ListingDetail;
   isOwner?: boolean;
   isSold?: boolean;
   saved?: boolean;
   isAuthenticated?: boolean;
+  listingActive?: boolean;
+  existingThreadId?: number | null;
+  prefill?: { name: string; email: string; phone?: string } | null;
 }) {
   const cover = listing.photos[0];
   const rest = listing.photos.slice(1);
@@ -131,11 +140,20 @@ export function ListingDetail({
             {/* Save heart (SOCL-02) — non-owner viewers only. Saving a SOLD
                 listing is allowed: saves don't break on sold (LOCKED). */}
             {!isOwner && (
-              <SaveButton
-                listingId={listing.id}
-                initiallySaved={saved}
-                isAuthenticated={isAuthenticated}
-              />
+              <div className="flex items-center gap-1">
+                <SaveButton
+                  listingId={listing.id}
+                  initiallySaved={saved}
+                  isAuthenticated={isAuthenticated}
+                />
+                {/* Report kebab (MSG-07) — listing-level report, hidden for
+                    the owner (you don't report your own listing). */}
+                <ReportMenu
+                  targetType="listing"
+                  targetId={listing.id}
+                  isAuthenticated={isAuthenticated}
+                />
+              </div>
             )}
           </div>
           <p className="text-3xl font-bold">
@@ -243,10 +261,18 @@ export function ListingDetail({
           {sellerLocation && (
             <p className="text-muted-foreground text-sm">{sellerLocation}</p>
           )}
-          {/* Placeholder only — the contact→chat flow arrives in Phase 9. */}
-          <Button className="mt-2 w-fit" disabled>
-            Contact seller
-          </Button>
+          {/* The MSG-01 contact entry point — the contact form is the ONLY
+              door into chat (invariant #5). Renders per viewer state: owner /
+              existing thread / inactive / anon / buyer. */}
+          <ContactSellerButton
+            listingId={listing.id}
+            listingTitle={listing.title}
+            isOwner={isOwner}
+            isAuthenticated={isAuthenticated}
+            listingActive={listingActive}
+            existingThreadId={existingThreadId}
+            prefill={prefill}
+          />
         </div>
       </div>
     </article>

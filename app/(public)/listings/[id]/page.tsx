@@ -6,6 +6,7 @@ import { recordListingView } from "@/lib/actions/listing-view";
 import { getListingComments } from "@/lib/comments/queries";
 import { markCommentsSeen } from "@/lib/actions/comments";
 import { getSavedIds } from "@/lib/saves/queries";
+import { getExistingThreadId } from "@/lib/messaging/queries";
 import { ListingDetail } from "@/components/listings/listing-detail";
 import { CommentSection } from "@/components/comments/comment-section";
 import { CommentComposer } from "@/components/comments/comment-composer";
@@ -88,6 +89,39 @@ export default async function ListingDetailPage({
   }
 
   const isAuthenticated = userId != null;
+
+  // CONTACT CTA DATA (MSG-01/02) — only for an authenticated NON-owner:
+  //  - prefill: the VIEWER'S OWN profiles_private row via the cookie client
+  //    (owner RLS, enumerated columns). This is the buyer's own PII flowing
+  //    into the buyer's own form props — nothing about the SELLER beyond the
+  //    public fields already on the page. Missing fields → empty strings (the
+  //    form stays editable).
+  //  - existingThreadId: drives the "View conversation" state (re-contact
+  //    resolves to the existing thread, never a second form).
+  let prefill: { name: string; email: string; phone?: string } | null = null;
+  let existingThreadId: number | null = null;
+  if (userId && !isOwner) {
+    const [{ data: privateRow }, threadId] = await Promise.all([
+      supabase
+        .from("profiles_private")
+        .select("first_name, last_name, email, phone")
+        .eq("id", userId)
+        .maybeSingle(),
+      getExistingThreadId(listing.id, userId),
+    ]);
+    const p = (privateRow ?? null) as {
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      phone: string | null;
+    } | null;
+    prefill = {
+      name: [p?.first_name, p?.last_name].filter(Boolean).join(" "),
+      email: p?.email ?? "",
+      phone: p?.phone ?? undefined,
+    };
+    existingThreadId = threadId;
+  }
   // Comments close when the listing is not active (sold — LOCKED; the thread
   // itself stays visible, only posting stops).
   const commentsClosed = listing.status !== "active";
@@ -100,6 +134,9 @@ export default async function ListingDetailPage({
         isSold={isSold}
         saved={savedIds.has(listing.id)}
         isAuthenticated={isAuthenticated}
+        listingActive={listing.status === "active"}
+        existingThreadId={existingThreadId}
+        prefill={prefill}
       />
 
       {/* COMMENTS (SOCL-01) — thread below the detail; composer only while the
