@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-11T16:42:12.684Z"
+last_updated: "2026-06-11T17:28:30.999Z"
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 10
-  total_plans: 47
-  completed_plans: 47
+  total_plans: 57
+  completed_plans: 48
 ---
 
 ---
@@ -320,6 +320,7 @@ Progress: **Phases 1–9 (+5.1) COMPLETE — 47/47 plans executed. Phase 10 (Adm
 | Phase 09 P05 | 10m | 2 tasks | 6 files |
 | Phase 09 P06 | ~8 min | 2 tasks | 3 files |
 | Phase 09 P07 | build + live UAT (2026-06-11) | 3 tasks (2 auto + checkpoint) | 12 files |
+| Phase 10 P02 | ~8 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -425,6 +426,8 @@ Recent decisions affecting current work:
 - [Phase 09-07]: Inbox desktop split is pure CSS + ?thread= query param (list always rendered, pane hidden lg:flex) — no Next parallel routes; invalid/foreign thread ids render the empty pane (no existence leak)
 - [Phase 09-07]: Messages badge updates on navigation only — no realtime subscription for the badge (locked research recommendation held through UAT)
 - [Post-v1, stakeholder]: dedicated professional UI/UX redesign phase requested after the v1 phases — recorded as a future milestone item, NOT a Phase 9 gap
+- [Phase 10]: Admin gate = requireAdmin() on app_metadata.role via getClaims(); non-admins get 404 (console not advertised)
+- [Phase 10]: logAdminAction() throws on insert failure — unaudited admin actions cannot silently succeed
 
 ### Pending Todos
 

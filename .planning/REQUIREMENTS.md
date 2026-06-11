@@ -96,7 +96,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Admin — Operations
 
-- [ ] **ADMO-01**: Admin can view and manage users
+- [x] **ADMO-01**: Admin can view and manage users
 - [ ] **ADMO-02**: Admin can view and manage listings
 - [ ] **ADMO-03**: Admin can view and act on reports (abuse queue with enforcement actions)
 - [ ] **ADMO-04**: Admin can monitor messages/contact logs
@@ -201,7 +201,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MSG-05 | Phase 9 | Complete |
 | MSG-06 | Phase 9 | Complete |
 | MSG-07 | Phase 9 | Complete |
-| ADMO-01 | Phase 10 | Pending |
+| ADMO-01 | Phase 10 | Complete |
 | ADMO-02 | Phase 10 | Pending |
 | ADMO-03 | Phase 10 | Pending |
 | ADMO-04 | Phase 10 | Pending |
