@@ -222,7 +222,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Migration 0016 (contact_log/threads/messages/blocks/reports, RLS, realtime publication) + zod schemas + server-only notify module (completed 2026-06-11)
 - [ ] 09-02-PLAN.md — submitContact invariant-#5 spine + message/thread actions + zero-PII readers (+ guard-order unit tests)
-- [ ] 09-03-PLAN.md — Reporting vertical slice: submitReport action + reusable ReportMenu + comment mount
+- [x] 09-03-PLAN.md — Reporting vertical slice: submitReport action + reusable ReportMenu + comment mount (completed 2026-06-11)
 - [ ] 09-04-PLAN.md — Live Staging integration tests: participant-only RLS, append-only log, block enforcement, zero-PII contract
 - [ ] 09-05-PLAN.md — Contact Seller CTA + pre-filled modal form on the listing page (+ listing ReportMenu)
 - [ ] 09-06-PLAN.md — Thread page + realtime ThreadView (optimistic composer, block, per-message report)
@@ -257,7 +257,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 6. Fitment Intelligence | 4/4 | Complete | 2026-06-09 |
 | 7. Search, Feed & Public Profile | 4/4 | Complete | 2026-06-10 |
 | 8. Social Layer | 6/6 | Complete | 2026-06-10 |
-| 9. Contact → Private Chat | 1/7 | In Progress | - |
+| 9. Contact → Private Chat | 4/7 | In Progress | - |
 | 10. Admin Operations & Analytics | 0/TBD | Not started | - |
 
 ---

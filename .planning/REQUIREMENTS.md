@@ -87,12 +87,12 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Contact & Messaging
 
 - [ ] **MSG-01**: Each listing has a "Contact Seller About This Part" action
-- [ ] **MSG-02**: Buyer completes a contact form (Name, Email, Phone optional, Message) before any thread opens
+- [x] **MSG-02**: Buyer completes a contact form (Name, Email, Phone optional, Message) before any thread opens
 - [x] **MSG-03**: The contact form submission is persisted to the database, and a copy is sent to marketplace administration, before the chat opens
 - [x] **MSG-04**: Every buyer→seller communication is logged for abuse monitoring and dispute resolution
-- [ ] **MSG-05**: After the contact form is submitted, a private in-site chat thread opens between buyer and seller
+- [x] **MSG-05**: After the contact form is submitted, a private in-site chat thread opens between buyer and seller
 - [x] **MSG-06**: Buyer and seller can exchange messages in the in-site chat without exposing seller PII
-- [ ] **MSG-07**: User can report a listing, comment, or message for abuse
+- [x] **MSG-07**: User can report a listing, comment, or message for abuse
 
 ### Admin — Operations
 
@@ -195,12 +195,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SOCL-02 | Phase 8 | Complete |
 | LIST-06 | Phase 8 | Complete |
 | MSG-01 | Phase 9 | Pending |
-| MSG-02 | Phase 9 | Pending |
+| MSG-02 | Phase 9 | Complete |
 | MSG-03 | Phase 9 | Complete |
 | MSG-04 | Phase 9 | Complete |
-| MSG-05 | Phase 9 | Pending |
+| MSG-05 | Phase 9 | Complete |
 | MSG-06 | Phase 9 | Complete |
-| MSG-07 | Phase 9 | Pending |
+| MSG-07 | Phase 9 | Complete |
 | ADMO-01 | Phase 10 | Pending |
 | ADMO-02 | Phase 10 | Pending |
 | ADMO-03 | Phase 10 | Pending |
