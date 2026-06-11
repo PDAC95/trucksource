@@ -97,11 +97,11 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Admin — Operations
 
 - [x] **ADMO-01**: Admin can view and manage users
-- [ ] **ADMO-02**: Admin can view and manage listings
-- [ ] **ADMO-03**: Admin can view and act on reports (abuse queue with enforcement actions)
-- [ ] **ADMO-04**: Admin can monitor messages/contact logs
-- [ ] **ADMO-05**: Admin can manage part categories
-- [ ] **ADMO-06**: Admin can manage the fitment library (makes, models, configs, terms, categories, materials, conditions, filters)
+- [x] **ADMO-02**: Admin can view and manage listings
+- [x] **ADMO-03**: Admin can view and act on reports (abuse queue with enforcement actions)
+- [x] **ADMO-04**: Admin can monitor messages/contact logs
+- [x] **ADMO-05**: Admin can manage part categories
+- [x] **ADMO-06**: Admin can manage the fitment library (makes, models, configs, terms, categories, materials, conditions, filters)
 
 ### Admin — Analytics
 
@@ -202,11 +202,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MSG-06 | Phase 9 | Complete |
 | MSG-07 | Phase 9 | Complete |
 | ADMO-01 | Phase 10 | Complete |
-| ADMO-02 | Phase 10 | Pending |
-| ADMO-03 | Phase 10 | Pending |
-| ADMO-04 | Phase 10 | Pending |
-| ADMO-05 | Phase 10 | Pending |
-| ADMO-06 | Phase 10 | Pending |
+| ADMO-02 | Phase 10 | Complete |
+| ADMO-03 | Phase 10 | Complete |
+| ADMO-04 | Phase 10 | Complete |
+| ADMO-05 | Phase 10 | Complete |
+| ADMO-06 | Phase 10 | Complete |
 | ADMA-01 | Phase 10 | Pending |
 | ADMA-02 | Phase 10 | Pending |
 | ADMA-03 | Phase 10 | Pending |

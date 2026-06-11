@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-11T17:28:30.999Z"
+last_updated: "2026-06-11T17:30:30.147Z"
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 57
-  completed_plans: 48
+  completed_plans: 49
 ---
 
 ---
@@ -243,13 +243,13 @@ See: .planning/PROJECT.md (updated 2026-06-01)
 
 ## Current Position
 
-Phase: **9 of 11 (Contact → Private Chat) — COMPLETE (7/7)**
-Plan: **09-07 (Wave 4, inbox + global badge + trust-spine UAT) DONE — human checkpoint APPROVED, PHASE 9 CLOSED.** Shipped the inbox at /messages (desktop split via ?thread=, mobile thread pages, Hide conversation), the always-visible Messages unread badge via a new shared auth-aware components/layout/site-header.tsx (mounted in (app) AND (public) layouts, both force-dynamic — anon gets Sign in/Register), and the "Email me about new messages" opt-out toggle (profiles_private.message_email_opt_out, owner RLS). The live two-browser UAT walked the whole trust spine: contact form -> contact_log row + admin email -> private thread -> realtime delivery both directions WITHOUT refresh (UAT fix: await supabase.realtime.setAuth() before subscribe — the anon socket was silently RLS-filtered) -> username-only chat identity -> third-account 404 -> block/unblock -> report listing/comment/message with duplicate rejected -> Sold badge with messaging intact. MSG-01…MSG-07 all complete.
-Previous plan: **09-06 (realtime thread view: participant-only /messages/[threadId] + ThreadHeader + postgres_changes ThreadView) DONE.**
-Status: **Phase 9 COMPLETE (7/7 plans) — next: /gsd:plan-phase 10 (Admin Ops & Analytics).** Stakeholder request recorded (not a phase gap): a dedicated professional UI/UX redesign phase after v1.
-Last activity: 2026-06-11 — Plan 09-07 COMPLETE (3 tasks incl. approved human-verify checkpoint) — Phase 9 closed.
+Phase: **10 of 11 (Admin Operations & Analytics) — IN PROGRESS (1/10)**
+Plan: **10-01 (Wave 1, admin operations schema) DONE.** Migration 0019 applied to Staging via `npx supabase db query --linked -f` (db push remains unsafe — remote history only records 0001-0003): user_restrictions (self-read RLS, lazy expiry semantics — restricted = banned OR suspended_until > now()), admin_audit_log (RLS with ZERO policies — default-deny both directions, service-role only), report queue columns (status/resolved_by/resolved_at/admin_note + (status, created_at desc) index), listing moderation ('draft' status + hidden_at/hidden_reason + REPLACED public-read policy `(hidden_at is null and status <> 'draft') or seller_id = auth.uid()`), message_threads.frozen_at/frozen_by, messages INSERT policy recreated with the full 0018 body PLUS not-restricted and not-frozen arms (SELECT policy untouched — WALRUS realtime hot path), is_active on all 8 taxonomy tables, search_events/listing_view_events created_at indexes, and admin_user_activity_stats() security-definer RPC (execute revoked from public/anon/authenticated; service-role only). 15/15 live behavioral checks passed against Staging. scripts/grant-admin.mjs (+ npm run grant:admin, --revoke flag) flagged pdmckinster@gmail.com as admin — raw_app_meta_data verified; the account must sign out/in before the role claim appears in the JWT.
+Previous plan: **09-07 (inbox + global badge + trust-spine UAT) DONE — Phase 9 closed.**
+Status: **Phase 10 IN PROGRESS (1/10 plans) — every remaining Phase-10 plan (admin gate/console, enforcement, reports queue, message monitoring, taxonomy CRUD, analytics, CSV import) builds on the 0019 substrate.**
+Last activity: 2026-06-11 — Plan 10-01 COMPLETE (3 tasks; migration 0019 live on Staging; admin account flagged).
 
-Progress: **Phases 1–9 (+5.1) COMPLETE — 47/47 plans executed. Phase 10 (Admin Ops/Analytics) is the only remaining phase.**
+Progress: **Phases 1–9 (+5.1) COMPLETE; Phase 10: 1/10 plans — 48/57 plans executed overall.**
 
 ## Performance Metrics
 
@@ -321,6 +321,7 @@ Progress: **Phases 1–9 (+5.1) COMPLETE — 47/47 plans executed. Phase 10 (Adm
 | Phase 09 P06 | ~8 min | 2 tasks | 3 files |
 | Phase 09 P07 | build + live UAT (2026-06-11) | 3 tasks (2 auto + checkpoint) | 12 files |
 | Phase 10 P02 | ~8 min | 3 tasks | 6 files |
+| Phase 10 P01 | ~14min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -428,6 +429,9 @@ Recent decisions affecting current work:
 - [Post-v1, stakeholder]: dedicated professional UI/UX redesign phase requested after the v1 phases — recorded as a future milestone item, NOT a Phase 9 gap
 - [Phase 10]: Admin gate = requireAdmin() on app_metadata.role via getClaims(); non-admins get 404 (console not advertised)
 - [Phase 10]: logAdminAction() throws on insert failure — unaudited admin actions cannot silently succeed
+- [Phase 10]: 0019 applied via supabase db query --linked -f (db push unsafe: remote history only records 0001-0003)
+- [Phase 10]: Restriction/freeze enforcement lives ONLY in the messages INSERT policy; SELECT policy untouched (realtime WALRUS hot path)
+- [Phase 10]: admin_user_activity_stats definer RPC: execute revoked from public/anon/authenticated — service-role only
 
 ### Pending Todos
 
