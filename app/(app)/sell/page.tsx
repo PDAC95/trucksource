@@ -28,6 +28,8 @@ export default async function SellPage() {
   const { data: makesData } = await supabase
     .from("makes")
     .select("id, name")
+    // ADMO-05: deactivated makes are hidden from NEW-listing pickers only.
+    .eq("is_active", true)
     .order("name");
   const makes = (makesData ?? []) as CascadeOption[];
 

@@ -123,6 +123,31 @@ function isValidId(id: unknown): id is number {
   return typeof id === "number" && Number.isInteger(id) && id > 0;
 }
 
+// ADMO-05: deactivated taxonomy values can't be ADDED to a listing. Existing
+// listings KEEP them (the edit path diffs against current rows and validates
+// only additions). Fail-closed: a read error rejects, matching the combo
+// re-check posture. Returns true when any id is missing or inactive.
+async function anyInactive(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table:
+    | "models"
+    | "configurations"
+    | "conditions"
+    | "part_categories"
+    | "search_terms",
+  ids: number[],
+): Promise<boolean> {
+  const unique = Array.from(new Set(ids));
+  if (unique.length === 0) return false;
+  const { data, error } = await supabase
+    .from(table)
+    .select("id")
+    .in("id", unique)
+    .eq("is_active", true);
+  if (error || !data) return true;
+  return data.length < unique.length;
+}
+
 export type CreateListingResult =
   | { ok: true; id: number }
   | {
@@ -179,6 +204,27 @@ export async function createListing(
       if (!combo) return { ok: false, error: "invalid_combo" };
     }
   }
+
+  // 4b) ADMO-05 — a NEW listing can't use deactivated taxonomy values at all.
+  if (
+    (await anyInactive(
+      supabase,
+      "models",
+      v.fitment.map((f) => f.modelId),
+    )) ||
+    (await anyInactive(
+      supabase,
+      "configurations",
+      v.fitment.flatMap((f) => (f.configId != null ? [f.configId] : [])),
+    ))
+  )
+    return { ok: false, error: "invalid_combo" };
+  if (
+    (await anyInactive(supabase, "conditions", [v.conditionId])) ||
+    (await anyInactive(supabase, "part_categories", v.categoryIds)) ||
+    (await anyInactive(supabase, "search_terms", v.searchTermIds))
+  )
+    return { ok: false, error: "invalid" };
 
   // 5) INSERT the listing — seller_id explicit (RLS with-check also enforces it).
   // status / date_listed default in the DB (v1 publishes 'active').
@@ -301,6 +347,84 @@ export async function updateListing(
       if (!combo) return { ok: false, error: "invalid_combo" };
     }
   }
+
+  // ADMO-05 — edits may RETAIN existing inactive values but can't ADD new
+  // ones. Diff against the listing's current rows and validate only the
+  // additions (only block ADDING an inactive value; a retained one is fine).
+  const [currentListing, currentFit, currentCats, currentTerms] =
+    await Promise.all([
+      supabase
+        .from("listings")
+        .select("condition_id")
+        .eq("id", id)
+        .eq("seller_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("listing_fitment")
+        .select("model_id, config_id")
+        .eq("listing_id", id),
+      supabase
+        .from("listing_categories")
+        .select("category_id")
+        .eq("listing_id", id),
+      supabase
+        .from("listing_search_terms")
+        .select("term_id")
+        .eq("listing_id", id),
+    ]);
+
+  const keptModelIds = new Set(
+    ((currentFit.data ?? []) as { model_id: number }[]).map((r) => r.model_id),
+  );
+  const keptConfigIds = new Set(
+    ((currentFit.data ?? []) as { config_id: number | null }[]).flatMap((r) =>
+      r.config_id != null ? [r.config_id] : [],
+    ),
+  );
+  if (
+    (await anyInactive(
+      supabase,
+      "models",
+      v.fitment.map((f) => f.modelId).filter((m) => !keptModelIds.has(m)),
+    )) ||
+    (await anyInactive(
+      supabase,
+      "configurations",
+      v.fitment.flatMap((f) =>
+        f.configId != null && !keptConfigIds.has(f.configId)
+          ? [f.configId]
+          : [],
+      ),
+    ))
+  )
+    return { ok: false, error: "invalid_combo" };
+
+  const keptConditionId = (
+    currentListing.data as { condition_id: number } | null
+  )?.condition_id;
+  const keptCatIds = new Set(
+    ((currentCats.data ?? []) as { category_id: number }[]).map(
+      (r) => r.category_id,
+    ),
+  );
+  const keptTermIds = new Set(
+    ((currentTerms.data ?? []) as { term_id: number }[]).map((r) => r.term_id),
+  );
+  if (
+    (keptConditionId !== v.conditionId &&
+      (await anyInactive(supabase, "conditions", [v.conditionId]))) ||
+    (await anyInactive(
+      supabase,
+      "part_categories",
+      v.categoryIds.filter((c) => !keptCatIds.has(c)),
+    )) ||
+    (await anyInactive(
+      supabase,
+      "search_terms",
+      v.searchTermIds.filter((t) => !keptTermIds.has(t)),
+    ))
+  )
+    return { ok: false, error: "invalid" };
 
   // Owner-scoped update; RLS restricts the row to the owner, the explicit seller_id
   // eq is belt-and-suspenders. Zero rows => not_found (non-owner or nonexistent).

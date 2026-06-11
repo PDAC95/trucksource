@@ -79,9 +79,9 @@ type RuleTagRow = {
   implies_category_id: number | null;
   implies_search_term_id: number | null;
   implies_special_filter_id: number | null;
-  search_terms: { term: string } | null;
-  special_filters: { name: string } | null;
-  part_categories: { name: string } | null;
+  search_terms: { term: string; is_active: boolean } | null;
+  special_filters: { name: string; is_active: boolean } | null;
+  part_categories: { name: string; is_active: boolean } | null;
 };
 
 async function garageExpansionTags(
@@ -97,9 +97,9 @@ async function garageExpansionTags(
     .from("fitment_rules")
     .select(
       "trigger_model_id, trigger_config_id, implies_category_id, implies_search_term_id, implies_special_filter_id, " +
-        "search_terms:implies_search_term_id ( term ), " +
-        "special_filters:implies_special_filter_id ( name ), " +
-        "part_categories:implies_category_id ( name )",
+        "search_terms:implies_search_term_id ( term, is_active ), " +
+        "special_filters:implies_special_filter_id ( name, is_active ), " +
+        "part_categories:implies_category_id ( name, is_active )",
     )
     .in("trigger_model_id", modelIds)
     .gte("confidence", MIN_SUGGESTION_CONFIDENCE);
@@ -133,15 +133,18 @@ async function garageExpansionTags(
 
 // Resolve whichever flat IMPLIES arm is set on a rule into a SuggestedTag. Returns
 // null when the rule implies a model/config (not a flat tag) — out of scope here.
+// ADMO-05: deactivated taxonomy values never surface as NEW-listing suggestions
+// (existing listings keep them; search/read surfaces don't filter).
 function ruleToFlatTag(r: {
   implies_category_id: number | null;
   implies_search_term_id: number | null;
   implies_special_filter_id: number | null;
-  search_terms: { term: string } | null;
-  special_filters: { name: string } | null;
-  part_categories: { name: string } | null;
+  search_terms: { term: string; is_active: boolean } | null;
+  special_filters: { name: string; is_active: boolean } | null;
+  part_categories: { name: string; is_active: boolean } | null;
 }): SuggestedTag | null {
   if (r.implies_search_term_id != null) {
+    if (r.search_terms?.is_active === false) return null;
     return {
       kind: "search_term",
       id: r.implies_search_term_id,
@@ -149,6 +152,7 @@ function ruleToFlatTag(r: {
     };
   }
   if (r.implies_special_filter_id != null) {
+    if (r.special_filters?.is_active === false) return null;
     return {
       kind: "special_filter",
       id: r.implies_special_filter_id,
@@ -156,6 +160,7 @@ function ruleToFlatTag(r: {
     };
   }
   if (r.implies_category_id != null) {
+    if (r.part_categories?.is_active === false) return null;
     return {
       kind: "category",
       id: r.implies_category_id,
@@ -178,11 +183,15 @@ type RuleCategoryRow = {
   implies_category_id: number | null;
   implies_search_term_id: number | null;
   implies_special_filter_id: number | null;
-  models: { name: string; makes: { name: string } | null } | null;
-  configurations: { name: string } | null;
-  search_terms: { term: string } | null;
-  special_filters: { name: string } | null;
-  implied_categories: { name: string } | null;
+  models: {
+    name: string;
+    is_active: boolean;
+    makes: { name: string } | null;
+  } | null;
+  configurations: { name: string; is_active: boolean } | null;
+  search_terms: { term: string; is_active: boolean } | null;
+  special_filters: { name: string; is_active: boolean } | null;
+  implied_categories: { name: string; is_active: boolean } | null;
   trigger: { name: string } | null;
 };
 
@@ -194,11 +203,11 @@ async function categorySuggestions(
     .from("fitment_rules")
     .select(
       "implies_model_id, implies_config_id, implies_category_id, implies_search_term_id, implies_special_filter_id, " +
-        "models:implies_model_id ( name, makes:make_id ( name ) ), " +
-        "configurations:implies_config_id ( name ), " +
-        "search_terms:implies_search_term_id ( term ), " +
-        "special_filters:implies_special_filter_id ( name ), " +
-        "implied_categories:implies_category_id ( name ), " +
+        "models:implies_model_id ( name, is_active, makes:make_id ( name ) ), " +
+        "configurations:implies_config_id ( name, is_active ), " +
+        "search_terms:implies_search_term_id ( term, is_active ), " +
+        "special_filters:implies_special_filter_id ( name, is_active ), " +
+        "implied_categories:implies_category_id ( name, is_active ), " +
         "trigger:trigger_category_id ( name )",
     )
     .eq("trigger_category_id", partCategoryId)
@@ -216,8 +225,14 @@ async function categorySuggestions(
   for (const r of rows) {
     if (r.trigger?.name && !label) label = `Common for ${r.trigger.name}`;
 
-    // Fitment arm: implies a model (with optional config).
+    // Fitment arm: implies a model (with optional config). ADMO-05: skip the
+    // suggestion when the implied model (or its config) has been deactivated.
     if (r.implies_model_id != null && r.models?.name) {
+      if (
+        r.models.is_active === false ||
+        (r.implies_config_id != null && r.configurations?.is_active === false)
+      )
+        continue;
       const fitKey = r.implies_model_id * 1e6 + (r.implies_config_id ?? 0);
       if (!seenFit.has(fitKey)) {
         seenFit.add(fitKey);

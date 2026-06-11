@@ -31,6 +31,8 @@ export default async function GaragePage() {
   const { data: makesData } = await supabase
     .from("makes")
     .select("id, name")
+    // ADMO-05: deactivated makes are hidden from the garage truck picker.
+    .eq("is_active", true)
     .order("name");
   const makes = (makesData ?? []) as CascadeOption[];
 

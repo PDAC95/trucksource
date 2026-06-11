@@ -35,7 +35,11 @@ function makeFrom() {
     eqCalls.push([col, val]);
     return chain;
   });
-  chain.select = vi.fn(() => Promise.resolve(selectResult));
+  // .select() stays chainable so the 10-05 ADMO-05 reads
+  // (.select().eq()… / .select().in().eq()) keep composing; awaiting the
+  // chain (PostgREST builders are thenable) resolves selectResult.
+  chain.select = vi.fn(ret);
+  chain.in = vi.fn(ret);
   chain.delete = vi.fn(ret);
   chain.insert = vi.fn(ret);
   chain.maybeSingle = vi.fn(async () => ({
@@ -44,6 +48,8 @@ function makeFrom() {
   }));
   chain.single = vi.fn(async () => ({ data: { id: 1 }, error: null }));
   chain.order = vi.fn(ret);
+  chain.then = (resolve: (v: unknown) => unknown) =>
+    Promise.resolve(selectResult).then(resolve);
   return chain;
 }
 

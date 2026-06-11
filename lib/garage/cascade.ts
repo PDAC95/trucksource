@@ -26,6 +26,9 @@ export async function getModels(makeId: number): Promise<CascadeOption[]> {
     .from("models")
     .select("id, name")
     .eq("make_id", makeId)
+    // ADMO-05: deactivated values are hidden from NEW-value pickers only —
+    // existing listings/trucks keep them (search/read surfaces don't filter).
+    .eq("is_active", true)
     .order("name");
   if (error || !data) return [];
   return data as CascadeOption[];
@@ -50,6 +53,8 @@ export async function getConfigs(modelId: number): Promise<CascadeOption[]> {
     .from("configurations")
     .select("id, name, model_configurations!inner(model_id)")
     .eq("model_configurations.model_id", modelId)
+    // ADMO-05: picker-only inactive filter (see getModels).
+    .eq("is_active", true)
     .order("name");
   if (error || !data) return [];
   return (data as unknown as ConfigRow[]).map((c) => ({

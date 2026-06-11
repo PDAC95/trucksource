@@ -22,6 +22,9 @@ export async function getConditions(): Promise<ConditionOption[]> {
   const { data, error } = await supabase
     .from("conditions")
     .select("id, name")
+    // ADMO-05: deactivated values are hidden from NEW-listing pickers only —
+    // existing listings keep them (search/read surfaces don't filter).
+    .eq("is_active", true)
     .order("sort_order")
     .order("name");
   if (error || !data) return [];
@@ -46,6 +49,8 @@ export async function getPartCategories(): Promise<PartCategoryOption[]> {
   const { data, error } = await supabase
     .from("part_categories")
     .select("id, name, parent_id")
+    // ADMO-05: picker-only inactive filter (see getConditions).
+    .eq("is_active", true)
     .order("parent_id", { nullsFirst: true })
     .order("name");
   if (error || !data) return [];

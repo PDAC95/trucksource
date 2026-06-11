@@ -162,6 +162,9 @@ export default async function EditListingPage({
   const { data: makesData } = await supabase
     .from("makes")
     .select("id, name")
+    // ADMO-05: deactivated makes can't be newly picked; an existing fitment
+    // that already uses one stays on the listing untouched.
+    .eq("is_active", true)
     .order("name");
   const makes = (makesData ?? []) as CascadeOption[];
 
