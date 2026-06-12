@@ -243,7 +243,12 @@ describe("editing never renews — updateListing omits expires_at", () => {
       shippingOption: "local_pickup",
       isBarnyard: true,
       fitment: [],
-      photoPaths: [`${UID}/staging/abc.webp`],
+      // LIST-08: 3-photo minimum so the schema gate passes.
+      photoPaths: [
+        `${UID}/staging/abc.webp`,
+        `${UID}/staging/def.webp`,
+        `${UID}/staging/ghi.webp`,
+      ],
     };
 
     const res = await updateListing(1, input);

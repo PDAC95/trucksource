@@ -673,10 +673,31 @@ export function ListingForm({
           <div>
             <h2 className="text-lg font-semibold">Photos</h2>
             <p className="text-muted-foreground text-sm">
-              Add up to 8. The first photo is the cover.
+              Add 3 to 8 photos — at least 3 are required to publish. The first
+              photo is the cover.
             </p>
           </div>
-          <PhotoUploader value={photos} onChange={setPhotos} />
+          <PhotoUploader
+            value={photos}
+            onChange={(next) => {
+              setPhotos(next);
+              // Mirror the READY paths into the RHF field so the resolver's
+              // min-3 rule (LIST-08) sees the live photo set at submit (same
+              // reason isBarnyard/fitment are mirrored above).
+              form.setValue(
+                "photoPaths",
+                next
+                  .filter((p) => p.status === "ready" && p.path)
+                  .map((p) => p.path as string),
+                { shouldValidate: form.formState.isSubmitted },
+              );
+            }}
+          />
+          {form.formState.errors.photoPaths && (
+            <p className="text-destructive text-sm">
+              {form.formState.errors.photoPaths.message}
+            </p>
+          )}
         </section>
 
         {/* ── SECTION 4: SHIPPING ────────────────────────────────── */}

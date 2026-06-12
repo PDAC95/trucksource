@@ -171,7 +171,8 @@ describe("FINT-03: accepted suggestion = manual tag (identical fitment rows)", (
     askingPrice: 1200,
     conditionId: 1,
     shippingOption: "shipping_available" as const,
-    photoPaths: [],
+    // LIST-08: 3-photo minimum so the schema parses.
+    photoPaths: ["p/1.webp", "p/2.webp", "p/3.webp"],
   };
 
   it("accept-path fitment normalizes to the SAME array as a manual add", () => {

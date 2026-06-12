@@ -111,8 +111,9 @@ export const csvRowSchema = z
     photo_url_8: httpsUrl,
   })
   // The product rule the publish gate expects: Make+Model required UNLESS
-  // Barnyard. Enforced at IMPORT time because bulk-publish flips drafts to
-  // active without re-validating (drafts may be photo-light, never fitment-less).
+  // Barnyard. Enforced at IMPORT time because bulk-publish never re-validates
+  // fitment (drafts may be photo-light — bulkPublishDrafts enforces the LIST-08
+  // 3-photo minimum itself by skipping short rows — but never fitment-less).
   .refine((v) => v.is_barnyard || (v.fitments ?? "").length > 0, {
     message: "fitments required unless is_barnyard is true",
     path: ["fitments"],

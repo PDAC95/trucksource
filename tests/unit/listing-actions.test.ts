@@ -69,7 +69,13 @@ function validListingInput(overrides: Record<string, unknown> = {}) {
     shippingOption: "local_pickup",
     isBarnyard: true, // barnyard so fitment may be empty (schema refine)
     fitment: [],
-    photoPaths: [`${UID}/staging/abc.webp`],
+    // LIST-08: 3 photos minimum, so the schema gate passes and the tests below
+    // exercise the guards that come AFTER it.
+    photoPaths: [
+      `${UID}/staging/abc.webp`,
+      `${UID}/staging/def.webp`,
+      `${UID}/staging/ghi.webp`,
+    ],
     ...overrides,
   };
 }
@@ -146,10 +152,29 @@ describe("createListing — photo-path ownership + schema guards", () => {
 
   it("photoPath outside the caller's folder -> invalid_photo_path, never inserts", async () => {
     const res = await createListing(
-      validListingInput({ photoPaths: ["someone-else/staging/x.webp"] }),
+      validListingInput({
+        // 3 paths so the LIST-08 schema gate passes — the ownership guard is
+        // what must reject (one foreign path is enough).
+        photoPaths: [
+          `${UID}/staging/a.webp`,
+          `${UID}/staging/b.webp`,
+          "someone-else/staging/x.webp",
+        ],
+      }),
     );
 
     expect(res).toEqual({ ok: false, error: "invalid_photo_path" });
+    expect(fromInsert).not.toHaveBeenCalled();
+  });
+
+  it("fewer than 3 photos -> invalid (LIST-08), never inserts", async () => {
+    const res = await createListing(
+      validListingInput({
+        photoPaths: [`${UID}/staging/a.webp`, `${UID}/staging/b.webp`],
+      }),
+    );
+
+    expect(res).toEqual({ ok: false, error: "invalid" });
     expect(fromInsert).not.toHaveBeenCalled();
   });
 

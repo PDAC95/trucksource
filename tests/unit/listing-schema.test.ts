@@ -4,17 +4,19 @@
 // Plain Vitest unit test (no Supabase env needed — pure Zod). Proves the single
 // client+server validation rules: required title/price, optional part#/damage,
 // USD price rule (>0, cents, string-coercion), the barnyard-or-fitment refine,
-// the shippingOption enum, and the 8-photo cap.
+// the shippingOption enum, and the LIST-08 3..8 photo window.
 import { describe, it, expect } from "vitest";
 import { listingSchema } from "@/lib/listings/schema";
 
-// A minimal valid listing: title + price + condition + shipping + one fitment.
+// A minimal valid listing: title + price + condition + shipping + one fitment +
+// the LIST-08 3-photo publish minimum.
 const base = {
   title: "Peterbilt 379 hood",
   askingPrice: 1999.99,
   conditionId: 2,
   shippingOption: "local_pickup",
   fitment: [{ modelId: 5 }],
+  photoPaths: ["p/1.webp", "p/2.webp", "p/3.webp"],
 } as const;
 
 describe("listingSchema", () => {
@@ -27,7 +29,7 @@ describe("listingSchema", () => {
     expect(r.fitment).toHaveLength(1);
     // defaults applied
     expect(r.isBarnyard).toBe(false);
-    expect(r.photoPaths).toEqual([]);
+    expect(r.photoPaths).toHaveLength(3);
     // Phase-6 dimensions default to empty.
     expect(r.categoryIds).toEqual([]);
     expect(r.searchTermIds).toEqual([]);
@@ -110,6 +112,31 @@ describe("listingSchema", () => {
 
   it("accepts exactly 8 photoPaths", () => {
     const photoPaths = Array.from({ length: 8 }, (_, i) => `p/${i}.webp`);
+    expect(listingSchema.safeParse({ ...base, photoPaths }).success).toBe(true);
+  });
+
+  // --- LIST-08: a listing requires at least 3 photos to publish ---
+
+  it("rejects fewer than 3 photoPaths (LIST-08), error on photoPaths", () => {
+    for (const count of [0, 1, 2]) {
+      const photoPaths = Array.from({ length: count }, (_, i) => `p/${i}.webp`);
+      const r = listingSchema.safeParse({ ...base, photoPaths });
+      expect(r.success).toBe(false);
+      if (!r.success) {
+        expect(r.error.issues.some((i) => i.path.includes("photoPaths"))).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("rejects omitted photoPaths (default [] fails the minimum)", () => {
+    const { photoPaths, ...rest } = base;
+    expect(listingSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("accepts exactly 3 photoPaths", () => {
+    const photoPaths = Array.from({ length: 3 }, (_, i) => `p/${i}.webp`);
     expect(listingSchema.safeParse({ ...base, photoPaths }).success).toBe(true);
   });
 

@@ -42,8 +42,10 @@ export type FitmentEntry = z.infer<typeof fitmentEntry>;
  *   - fitment: zero-or-more fitment combos. The .refine below enforces the product
  *     rule "Make+Model required UNLESS Barnyard": a non-Barnyard listing must carry
  *     at least one fitment; a Barnyard listing may carry none.
- *   - photoPaths: storage paths of already-uploaded (EXIF-stripped) photos, capped
- *     at 8 (CONTEXT limit). First entry is the cover.
+ *   - photoPaths: storage paths of already-uploaded (EXIF-stripped) photos. A
+ *     listing needs at least 3 photos to publish (LIST-08) and is capped at 8
+ *     (CONTEXT limit). First entry is the cover. v1 publishes on create/edit, so
+ *     the min applies to every schema-validated write.
  *   - categoryIds: optional Phase-6 part-category ids (FINT-03). NOT part of the
  *     barnyard-or-fitment requirement — a listing may carry zero categories.
  *   - searchTermIds: optional Phase-6 slang-tag (search_term) ids (FINT-03). Also
@@ -64,7 +66,14 @@ export const listingSchema = z
     damageNotes: z.string().trim().max(2000).optional().or(z.literal("")),
     isBarnyard: z.boolean().default(false),
     fitment: z.array(fitmentEntry).default([]),
-    photoPaths: z.array(z.string()).max(8).default([]),
+    // .prefault (NOT .default): Zod 4 returns a .default value without running
+    // the checks, which would let an omitted photoPaths bypass the LIST-08
+    // minimum; .prefault parses [] through min(3) so omission fails too.
+    photoPaths: z
+      .array(z.string())
+      .min(3, "Add at least 3 photos to publish.")
+      .max(8)
+      .prefault([]),
     categoryIds: z.array(z.coerce.number().int().positive()).default([]),
     searchTermIds: z.array(z.coerce.number().int().positive()).default([]),
   })

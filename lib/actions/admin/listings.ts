@@ -189,7 +189,7 @@ const bulkPublishSchema = z.object({
 });
 
 export type BulkPublishResult =
-  | { ok: true; published: number }
+  | { ok: true; published: number; skipped: number }
   | { ok: false; error: "invalid" | "update_failed" };
 
 /**
@@ -198,6 +198,10 @@ export type BulkPublishResult =
  * expires_at clock (0010 lifecycle — an active row without expires_at would
  * never expire). One statement, scoped to status='draft' so re-submits and
  * stray ids are no-ops; ONE audit row for the whole batch.
+ *
+ * LIST-08 publish gate: a draft with fewer than 3 photos is SKIPPED (it stays
+ * a visible draft in the index), never published. Import deliberately accepts
+ * photo-light rows; this is the moment the 3-photo minimum is enforced.
  */
 export async function bulkPublishDrafts(input: {
   listingIds: number[];
@@ -209,6 +213,23 @@ export async function bulkPublishDrafts(input: {
   const { listingIds } = parsed.data;
 
   const admin = createAdminClient();
+
+  // LIST-08: count photos per requested id; only ids with >= 3 may publish.
+  const { data: photoRows, error: photoError } = await admin
+    .from("listing_photos")
+    .select("listing_id")
+    .in("listing_id", listingIds);
+  if (photoError) return { ok: false, error: "update_failed" };
+  const photoCounts = new Map<number, number>();
+  for (const r of (photoRows ?? []) as { listing_id: number }[]) {
+    photoCounts.set(r.listing_id, (photoCounts.get(r.listing_id) ?? 0) + 1);
+  }
+  const eligibleIds = listingIds.filter(
+    (id) => (photoCounts.get(id) ?? 0) >= 3,
+  );
+  const skipped = listingIds.length - eligibleIds.length;
+  if (eligibleIds.length === 0) return { ok: true, published: 0, skipped };
+
   const now = new Date();
   const { data, error } = await admin
     .from("listings")
@@ -217,7 +238,7 @@ export async function bulkPublishDrafts(input: {
       date_listed: now.toISOString(),
       expires_at: new Date(now.getTime() + 90 * 864e5).toISOString(),
     })
-    .in("id", listingIds)
+    .in("id", eligibleIds)
     .eq("status", "draft")
     .select("id");
 
@@ -229,11 +250,15 @@ export async function bulkPublishDrafts(input: {
     action: "bulk_publish",
     targetType: "listing",
     targetId: publishedIds.join(",") || "none",
-    metadata: { count: publishedIds.length, listingIds: publishedIds },
+    metadata: {
+      count: publishedIds.length,
+      listingIds: publishedIds,
+      skippedBelowPhotoMinimum: skipped,
+    },
   });
 
   revalidatePath("/admin/listings");
-  return { ok: true, published: publishedIds.length };
+  return { ok: true, published: publishedIds.length, skipped };
 }
 
 /**

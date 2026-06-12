@@ -221,7 +221,8 @@ export default async function AdminListingsPage({
           <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-3 py-2">
             <p className="text-sm text-muted-foreground">
               Select drafts to publish — sets active, list date and the 90-day
-              expiry in one click.
+              expiry in one click. Drafts with fewer than 3 photos are skipped
+              and stay in this list.
             </p>
             <Button type="submit" size="sm">
               Publish selected
