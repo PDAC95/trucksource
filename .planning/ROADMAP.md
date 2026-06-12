@@ -31,7 +31,7 @@ Event logging for analytics (search + listing-view events) is instrumented when 
 - [ ] **Phase 7: Search, Feed & Public Profile** - FTS + trigram search, faceted filtering, slang-tolerant matching, browse feed, "fits my truck" personalization, public profile, event logging
 - [x] **Phase 8: Social Layer** - Public username-attributed comments, save/bookmark listings, mark-as-sold (completed 2026-06-10, 6/6 plans; live comments/saves/sold flows user-approved at UAT; UI copy translated to English during UAT)
 - [x] **Phase 9: Contact → Private Chat** - Form-first contact (persist + admin copy before thread opens), private in-site chat, report/abuse logging (completed 2026-06-11, 7/7 plans; full trust spine — contact form → contact_log + admin email → realtime private chat → block/report — user-approved at live two-browser UAT)
-- [ ] **Phase 10: Admin Operations & Analytics** - Service-role-isolated ops console (users/listings/reports/messages/categories/fitment) + analytics dashboard
+- [x] **Phase 10: Admin Operations & Analytics** - Service-role-isolated ops console (users/listings/reports/messages/categories/fitment) + analytics dashboard (completed 2026-06-12)
 
 ## Phase Details
 
@@ -270,7 +270,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 7. Search, Feed & Public Profile | 4/4 | Complete | 2026-06-10 |
 | 8. Social Layer | 6/6 | Complete | 2026-06-10 |
 | 9. Contact → Private Chat | 7/7 | Complete | 2026-06-11 |
-| 10. Admin Operations & Analytics | 9/10 | In Progress|  |
+| 10. Admin Operations & Analytics | 10/10 | Complete   | 2026-06-12 |
 
 ---
 *Roadmap created: 2026-06-01*
