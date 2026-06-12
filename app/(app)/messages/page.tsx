@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { MessageSquare } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getOwnRestriction } from "@/lib/account/restrictions";
 import {
   getMyThreads,
   getThreadForViewer,
@@ -48,11 +49,12 @@ export default async function MessagesPage({
   let selected: ThreadViewData | null = null;
   let messages: MessageRow[] = [];
   let isBlocked = false;
+  let restriction: Awaited<ReturnType<typeof getOwnRestriction>> = null;
   const threadId = Number(rawThread);
   if (rawThread && Number.isInteger(threadId) && threadId > 0) {
     selected = await getThreadForViewer(threadId, viewerId);
     if (selected) {
-      const [msgs, { data: blockRow }] = await Promise.all([
+      const [msgs, { data: blockRow }, ownRestriction] = await Promise.all([
         getThreadMessages(threadId),
         supabase
           .from("user_blocks")
@@ -60,9 +62,11 @@ export default async function MessagesPage({
           .eq("blocker_id", viewerId)
           .eq("blocked_id", selected.counterpartyId)
           .maybeSingle(),
+        getOwnRestriction(),
       ]);
       messages = msgs;
       isBlocked = blockRow !== null;
+      restriction = ownRestriction;
       // Stamp the read watermark on open (clears unread + re-arms the email
       // throttle). Best-effort — never blocks the render.
       await markThreadRead(threadId);
@@ -119,11 +123,25 @@ export default async function MessagesPage({
                     [selected.sellerId]: selected.sellerName,
                   }}
                   sendDisabled={
-                    isBlocked
+                    // Same precedence as /messages/[threadId] — UX mirrors of
+                    // the 0019 messages INSERT policy arms:
+                    // moderation freeze (both sides) > viewer restriction >
+                    // viewer block.
+                    selected.frozenAt
                       ? {
-                          reason: `You blocked ${selected.counterpartyName}. Unblock them to send messages.`,
+                          reason:
+                            "This conversation has been closed by moderation.",
                         }
-                      : undefined
+                      : restriction
+                        ? {
+                            reason:
+                              "You can't send messages while your account is suspended.",
+                          }
+                        : isBlocked
+                          ? {
+                              reason: `You blocked ${selected.counterpartyName}. Unblock them to send messages.`,
+                            }
+                          : undefined
                   }
                 />
               </>
