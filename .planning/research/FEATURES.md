@@ -1,221 +1,186 @@
 # Feature Research
 
-**Domain:** Privacy-first truck-parts online marketplace (~70% marketplace, ~30% specialized social network)
-**Researched:** 2026-06-01
-**Confidence:** MEDIUM-HIGH (competitor feature sets verified across multiple sources; fitment standards verified against eBay/ACES docs; privacy-model specifics are product-novel and reasoned from first principles + analogous patterns)
+**Domain:** App-wide rebrand + visual redesign of an existing marketplace (v1.1 "OG Truck Parts" — neon truck-stop identity over a shipped, functional v1.0)
+**Researched:** 2026-06-12
+**Confidence:** HIGH for surface inventory (read directly from the repo); MEDIUM-HIGH for redesign practices (industry-standard patterns verified against current sources; no single authoritative spec exists for "redesign milestones")
+
+## How Rebrand/Redesign Milestones Typically Work
+
+A visual-only redesign over a working app is a **layered migration**, not a page-by-page rewrite. The proven ordering:
+
+1. **Design-token / theme foundation first** — palette, typography, spacing, radii, semantic tokens. Everything downstream consumes these. In this codebase the slot already exists: `app/globals.css` uses Tailwind v4 `@theme inline` mapped to shadcn CSS variables (`--background`, `--primary`, `--card`, etc.) — currently the **stock neutral light theme** in oklch. The redesign is largely "replace these variable values + add brand fonts," which is why token work is the highest-leverage step.
+2. **Component primitives second** — the ~18 shadcn/ui primitives (`button`, `input`, `card`, `badge`, `dialog`, `select`, `sheet`, `skeleton`, `sonner`, `chart`, …) restyled once propagate everywhere, because all ~70 domain components compose them. shadcn components are CLI-owned (in-repo), so variants can be edited directly.
+3. **Shared chrome third** — `site-header` (the biggest single deliverable: logo, prominent search bar, icon nav with labels, sell entry point), user-menu, admin-sidebar. No footer component exists today; the mockups imply one (social links) — that's a *new* surface, not a reskin.
+4. **Page passes fourth** — route-group by route-group, highest-traffic first: public → auth → app → admin.
+5. **Rebrand sweep + asset swap** — name, metadata, favicon/OG, emails, legal copy (parallel-izable with page passes; see checklist below).
+6. **QA pass** — functional e2e stays green (visual-only proof), accessibility audit, mockup-fidelity walkthrough.
+
+**Component-by-component beats page-by-page** here because the token system is shared: a page-by-page approach forks the theme (old pages on old tokens, new on new) and doubles QA. The interim state of component-first is "whole app gets the dark theme at once, then signage flair lands per page" — acceptable because there is no production traffic (Staging only, not launched).
+
+## Surface Inventory (what v1.0 actually shipped — everything below must be reskinned)
+
+Grounded in `app/**/page.tsx` (31 pages) and `components/**` (~70 components).
+
+| Surface group | Routes | Key components | Reskin complexity |
+|---|---|---|---|
+| **Public browse/search** | `/` (feed + search) | `search-bar`, `facet-sidebar`, `feed-grid`, `listing-card`, `active-filter-chips`, `slang-banner`, `fits-my-truck-control`, `empty-results` | HIGH — this is where browse-as-neon-signage and the listing-card redesign (photo/specs/red price/badges) land |
+| **Listing detail** | `/listings/[id]` | `listing-detail` (gallery), `comment-section`, `comment-composer`, `contact-seller-button`, `save-button`, `sold-toggle` state, `seller-type-badge` | HIGH — densest page; social + contact + gallery |
+| **Public profile** | `/u/[username]` (+ its `not-found.tsx`) | `public-profile-header`, `profile-listings-grid`, `profile-sort`, `empty-listings` | MEDIUM |
+| **Auth flows** | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/check-email`, `/auth-code-error` | `register-form`, `username-field`, `password-strength`, `resend-confirmation` | MEDIUM — mockups show dark navy panels w/ neon borders + numbered steppers; brand name hardcoded in 4 of these pages |
+| **Seller flows** | `/sell` (create), `/sell/[id]/edit`, `/sell/listings` (my listings) | `listing-form`, `photo-uploader`, `fitment-multi-select`, `fitment-suggestions`, `duplicate-warning`, `renew-button`, `sold-toggle` | HIGH — longest form in the app; numbered-stepper treatment from mockups applies here |
+| **Logged-in account/app** | `/account`, `/verify` (OTP), `/saved`, `/profile/garage`, `/suspended` | `display-name-form`, `seller-type-form`, `message-email-form`, `input-otp`, `suspended-screen` | MEDIUM |
+| **Messaging** | `/messages`, `/messages/[threadId]` | `thread-list`, `thread-view`, `thread-header`, `contact-form-modal`, `messages-badge`, `report-menu` | MEDIUM — realtime; visual changes must not touch subscription logic |
+| **Admin console** | `/admin` + users, listings, reports, messages, fitment, import (11 pages) | `admin-sidebar`, `kpi-cards`, `trend-chart`, `ranking-list`, `enforcement-dialogs`, `listing-moderation`, `report-queue-actions`, `thread-actions`, `taxonomy-crud`, `slang-editor`, `import-form` | MEDIUM — gets dark theme + tokens via primitives; does NOT need signage flair (internal tool, density > aesthetics) |
+| **Layout chrome** | `(public)`/`(app)` layouts, `site-header`, `user-menu` | header is the centerpiece deliverable | HIGH |
+| **Emails (in repo)** | `lib/admin/email.ts` (enforcement), `lib/messaging/notify.ts` (new-message), `lib/verify/alert.ts`, `app/api/cron/near-expiry/route.ts` | brand name + tone in plain/HTML email bodies | LOW |
+| **Emails (out of repo)** | Supabase Auth templates (confirm, reset) configured in Supabase dashboard via Resend SMTP | brand name in subject/body; **dashboard change, easy to forget** | LOW |
+| **Metadata & assets** | root `app/layout.tsx`, `app/favicon.ico` | **root metadata is still `title: "Create Next App"`** (default scaffold — currently a live bug); favicon is the Next default; no OG image, no logo asset exists yet | LOW-MEDIUM — needs per-route `metadata`/`generateMetadata` titles, OG image, favicon set from stakeholder logo |
+| **Error/empty/loading states** | only `u/[username]/not-found.tsx` exists; **no global `error.tsx`, no global `not-found.tsx`, no `loading.tsx` anywhere**; `skeleton` component exists | NEW surfaces, not reskins | LOW each — but the global 404/error pages are a gap the redesign should close (branded 404 is table stakes) |
 
 ## Feature Landscape
 
-This product sits at the intersection of three established categories, each with its own table-stakes expectations:
-1. **P2P classifieds** (Facebook Marketplace, Craigslist, OfferUp) — listings, search, contact, save.
-2. **Auto/truck parts e-commerce** (eBay Motors, FinditParts, TruckPartsMart, Class8TruckParts) — fitment/compatibility search, part numbers, condition.
-3. **Social commerce** (FB Marketplace comments, in-app messaging) — public Q&A, private chat.
-
-The product's deliberate edge is the **combination**: deep multi-path fitment + Fitment Intelligence auto-tagging + hard PII separation + form-first private chat + public comments. None of the three category leaders does all of these; each leader is weak on at least two of the five.
-
-### Table Stakes (Users Expect These)
-
-Features users assume exist. Missing these = product feels broken or untrustworthy.
+### Table Stakes (a redesign milestone is incomplete without these)
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| Account registration / auth (email + password, email verify) | Can't list or contact without identity; every competitor has it | LOW | Supabase Auth handles this. Email verification is also an input to the Verified Seller flow. |
-| Create listing (title, photos, price, condition, description) | Core of any classifieds/marketplace | MEDIUM | Truck-specific public fields (Part Number, Make, Model, Fitment, Material, Damage Notes, Shipping Availability) raise complexity vs generic classifieds. Photo upload → Supabase Storage. |
-| Multiple photos per listing | Buyers won't trust a used part without several photos; universal on FB/eBay/OfferUp | MEDIUM | Need ordering, a primary/cover image, mobile-friendly upload, image optimization. Used-part buyers specifically want photos of wear/damage. |
-| Browse / feed of listings | Default landing experience on every marketplace | MEDIUM | The 30% "social" framing leans on this being a scrollable feed, not just a search grid. Needs pagination/infinite scroll + sane default sort (recency). |
-| Keyword + faceted search | Buyers arrive with intent; non-negotiable | MEDIUM-HIGH | This is where the fitment library plugs in (see Differentiators). Basic keyword search is table stakes; multi-path fitment is the differentiator. |
-| Filter & sort (price, condition, location, recency) | Standard on all three classifieds leaders | MEDIUM | Location filter is "State/Province, Country" granularity only (privacy constraint), not radius/zip like OfferUp/FB. |
-| Listing detail page | Where the buy decision happens | LOW-MEDIUM | Must render only public fields; PII must be structurally absent, not hidden. |
-| Contact the seller | The entire point of a connect-only (no-checkout) marketplace | MEDIUM-HIGH | Here it's the form-first→chat flow (see Social & Contact deep-dive). More complex than competitors' one-tap message. |
-| In-app / in-site messaging | Buyers and safety guides expect to stay on-platform; FB/OfferUp both push this hard ("never communicate outside the platform") | HIGH | Realtime threads (Supabase Realtime). This is the trust spine — keeping comms on-platform is both a UX and a safety/logging requirement. |
-| Save / bookmark a listing | "Saved" / "watchlist" is standard (FB Saved, eBay Watch) | LOW | Per-user saved list; requires auth. |
-| Mark listing as "Sold" | Connect-only model needs a lifecycle end-state; competitors all have sold/closed | LOW | Drives accurate "# active listings" on profile and analytics. |
-| Public seller profile | Buyers vet sellers before contacting | MEDIUM | Privacy-constrained: username, State/Province, Country, Member Since, # active listings ONLY. This is a table-stakes feature delivered in a differentiated (privacy-first) way. |
-| Basic admin: manage users & listings | Operator must remove scams/spam or the marketplace rots (12-15% fraud rates in high-value categories per industry data) | MEDIUM | Operations area. Without takedown ability, fraud kills trust fast. |
-| Report a listing / user | User reports are the primary moderation signal at small scale (industry standard before AI moderation pays off) | LOW-MEDIUM | Feeds the admin Reports queue. Cheap, high-leverage trust feature. |
-| Mobile-responsive web | Truckers shop from phones; web-first per constraints | MEDIUM | Responsive, not native. Photo upload + chat must work well on mobile browsers. |
-| Not-financial/safety disclaimers & terms | Liability + sets connect-only expectation | LOW | Terms acceptance is also a gate in the Verified Seller flow. |
+| Design-token foundation (palette, type, spacing, variants) before any page work | Single source of truth; prevents two-theme drift; everything else depends on it | MEDIUM | Replace shadcn neutral oklch values in `globals.css` `:root`; add brand fonts via `next/font` (retro display for headings, readable sans for body); define semantic tokens (e.g. `--neon-red`, `--neon-cyan`, `--panel-navy`) mapped into `@theme` |
+| Restyled shadcn primitives (button, input, card, badge, dialog, …) | ~70 domain components inherit from them; this IS the app-wide application | MEDIUM | Edit owned components directly; add variants (e.g. neon-outline card, red CTA button) rather than per-page overrides |
+| Redesigned persistent header w/ logo, big search bar, icon nav + **sell entry point** | Centerpiece of the mockups; also closes a v1.0 UAT gap (sell not reachable from header) | HIGH | Icon nav: search, sell, messages, saved, alerts, account — `messages-badge` already exists; "alerts" has no backing feature → render only what exists or stub visually |
+| Full name sweep "Take-Off Parts" → "OG Truck Parts" | Half-renamed product reads as broken | LOW | 21 files match today (grep): `package.json`, `README.md`, `site-header`, `(app)/layout.tsx`, 4 auth pages, `suspended-screen`, `lib/actions/admin/enforcement.ts`, 3 email libs, near-expiry cron, 2 e2e specs, docs. Plus Supabase dashboard email templates + Vercel project display name |
+| Correct `<title>`/metadata per route + OG tags + favicon set | Root layout still says "Create Next App"; shared links/bookmarks show the brand | LOW-MEDIUM | `metadata` export per route group; OG image from stakeholder logo; favicon/apple-touch-icon/manifest icons |
+| Branded email pass (4 in-repo senders + Supabase auth templates) | Emails carry the old name post-rebrand otherwise | LOW | Keep plain/simple; brand name + header line is enough for v1.1 |
+| Empty/loading/error states themed (incl. NEW global 404/error pages) | Dark theme makes unthemed white flash/states glaring; branded 404 expected | LOW-MEDIUM | Add `app/not-found.tsx`, route-group `error.tsx`, `loading.tsx` with themed `skeleton`; restyle `empty-results`, `empty-listings` |
+| WCAG AA on the dark neon theme | Legal/usability baseline; neon-on-dark fails easily | MEDIUM | 4.5:1 normal text, 3:1 large text + UI components/borders (WCAG 1.4.11); see accessibility section |
+| Equal mobile/desktop pass per surface | Truckers shop from phones; stakeholder explicitly required no breakpoint bias | MEDIUM | Header icon-nav collapse, facet-sidebar → `sheet`, form steppers on small screens |
+| Functional e2e stays green (visual-only proof) | "Visual-only" is a claim that needs evidence | LOW-MEDIUM | Playwright already set up (`e2e/auth.spec.ts`, `e2e/home.spec.ts`) — these assert brand strings, so they change WITH the rebrand, then gate everything after; PII contract tests must also stay green |
+| UAT fix: freeze-notice realtime refresh | Carried from v1.0 UAT | LOW | Functional (exception to visual-only): stale tabs must reflect enforcement state without manual refresh; touches existing realtime + `suspended-screen` |
+| UAT fix: purge `vitest-*` search terms from Staging analytics | Carried from v1.0 UAT | LOW | Data hygiene: SQL delete on search-event rows + ideally an env/UA guard so tests stop polluting |
 
-### Differentiators (Competitive Advantage)
-
-Features that set the product apart. These map directly to the three Core-Value pillars in PROJECT.md.
+### Differentiators (where this redesign competes)
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **8-level fitment library** (Make → Model → Configuration → Common Search Terms → Part Categories → Materials → Condition → Special Filters + "The Barnyard") | One part surfaces across every applicable truck, body style, configuration, and trucker term — dramatically faster than FB/Craigslist free-text. Deeper than eBay's Year/Make/Model/Trim/Engine. | **HIGH** | This is the #1 differentiator and the hardest data-modeling task. Heavy-truck fitment is messier than passenger-car ACES data (no clean universal catalog for take-off parts), so the taxonomy must be built/curated in-house. "Common Search Terms" (slang) and "The Barnyard" (anything-goes) are uniquely valuable and have no competitor analog. Foundational: most other features depend on this schema existing. |
-| **Trucker-slang / Common Search Terms search** ("359 Guys", "Flat Glass Kenworth", "Aerodyne") | Buyers search how truckers actually talk; competitors force formal Year/Make/Model and miss intent | MEDIUM (given library exists) | A synonym/alias layer mapping slang → canonical fitment nodes. High emotional resonance with the target user; cheap once the library schema supports alias terms. Depends on fitment library. |
-| **Fitment Intelligence (auto-suggest applicable trucks/categories at list time)** | Seller lists once; system suggests every truck/config/category the part fits so the listing appears in all relevant searches without manual tagging. Mirrors eBay "Fitment Plus Auto" (cross-references part data against a compatibility DB) but tuned to heavy-truck slang taxonomy. | **HIGH** | The "intelligence" can be rules/lookup-based in v1 (Part Number + Make/Model → suggested fitment nodes from the library), not necessarily ML. Quality of suggestions is gated entirely by library completeness. Reduces lister effort AND improves searchability — the flywheel of the whole product. Depends on fitment library. |
-| **Privacy model: hard PII separation** (name, phone, personal email, street address, postal code never queryable/renderable on any public surface) | Privacy is a *feature, not a setting*. FB requires real names; Amazon forces seller identity disclosure; Craigslist offers anonymity only by user choice/omission. Here it's guaranteed by data architecture. | **HIGH** | This is an architectural differentiator more than a UI feature — private PII and public profile must be separate tables/columns with RLS/policies so PII can't leak via API or search. Touches every surface (listing, profile, comments, chat, admin). Get it wrong once and the core promise breaks. |
-| **Form-first → private in-site chat contact flow** | Contact form (Name, Email, Phone optional, Message) persists to DB *first* (abuse baseline + admin copy), *then* opens a private realtime chat thread. Connects buyer↔seller without exposing seller PII; every contact is logged. | **HIGH** | More deliberate than competitors' instant DM. The persisted form submission is the legal/abuse record; the chat is the ongoing channel. Couples to messaging + admin logging. See deep-dive below. |
-| **Public comments on listings** (the 30% social layer) | Facebook-Marketplace-style public Q&A ("¿Todavía disponible?", "¿Le queda a un W900L 2018?") builds community and surfaces fitment answers for all buyers, not just one | MEDIUM | Comments are public + attributed to usernames only (PII constraint). Needs its own moderation hooks (report/remove). Distinct from private chat — public knowledge vs private negotiation. |
-| **Verified Seller badge** (email verified + phone verified + terms accepted) | Trust signal at launch in a category with 34% scam-exposure rates; analogous to OfferUp's TruYou but lighter-weight and privacy-preserving (verification status shown, verified data never shown) | MEDIUM | v1 is "soft" verification (control of email+phone + terms), not government ID. Phone verification (OTP) is the only new infra vs auth. Badge renders on public profile; the verified phone/email themselves stay private. |
-| **Shipping Availability as a first-class listing attribute** (Shipping Available / Local Pickup Only / Shipping Assistance Requested) | Heavy truck parts are bulky/freight-class; "Shipping Assistance Requested" enables human-assisted LTL/cross-border referral — a real pain point competitors ignore | LOW (as a field) / the assistance itself is manual ops | The field is trivial; "Shipping Assistance" is a human referral workflow, NOT automated logistics (explicitly out of scope). Surfaces as a filter and a contact context. |
-| **Admin Analytics area** (registered/active users, active listings, most-viewed listings, most-searched makes/models, messages sent, monthly growth) | Operator visibility into the fitment flywheel — "most-searched makes/models" directly informs which fitment library nodes to deepen | MEDIUM | Most-searched-makes/models analytics is a differentiator because it closes the loop on library curation. Requires event logging (search queries, listing views) from day one or the data won't exist retroactively. |
+| Browse-as-neon-signage: Make → Model → Category grids rendered as neon signs | The signature visual of the brand; turns the 8-level taxonomy (a v1.0 strength) into the most memorable screen | HIGH | New presentation over existing taxonomy queries; per-make sign treatment (CSS `text-shadow`/`box-shadow` glow, not images, for crispness + theming); needs hover/focus/active states and a non-glow fallback |
+| Retro display typography for headings/signage | Carries the truck-stop identity in every screen at near-zero per-page cost | LOW | One `next/font` display face + `--font-heading` token (slot already exists in `@theme`); body stays a readable sans |
+| Listing cards w/ photo, specs row, red price, verification badges | Mockup-specified; price-forward cards convert better and read "marketplace," not "blog" | MEDIUM | All data already on `listing-card`; pure restyle. Red price on navy needs a lightened red or large-text size to pass contrast |
+| Dark navy form panels w/ neon borders + numbered steppers | Makes the longest flows (register, verify, sell) feel guided and on-brand | MEDIUM | Visual stepper over existing multi-section forms — presentation only, no flow/validation changes |
+| Tasteful glow/motion (hover glows, sign flicker-on) | Depth and life that flat dark themes lack | LOW-MEDIUM | Must be gated behind `prefers-reduced-motion`; `tw-animate-css` already imported |
 
-### Anti-Features (Commonly Requested, Often Problematic)
-
-Features that seem good but create problems or violate the product thesis. Explicitly NOT for v1.
+### Anti-Features (explicitly do NOT build)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| **Payments / checkout / escrow** | "A real marketplace takes payment" | Massive scope (PCI, fraud, chargebacks, payouts, tax, disputes); turns you into a regulated payment processor; not needed to validate the connect-only thesis | v1 connects buyer↔seller; sale happens off-platform; seller marks "Sold." Revisit in v2 once liquidity is proven. (Explicitly out of scope in PROJECT.md.) |
-| **Seller reputation / star ratings** (Communication, Accuracy, Packaging, Shipping Speed, Overall) | "Buyers need trust signals" | Ratings need transaction volume to be meaningful; cold-start problem; invites retaliation/review fraud; can't verify off-platform sales happened. Premature at launch. | v1 trust comes from Verified Seller badge + on-platform logging + admin moderation. Add multi-axis ratings in v2 once sales volume exists. (Out of scope in PROJECT.md.) |
-| **Native mobile app (iOS/Android)** | "Truckers live on phones" | Doubles platform surface, app-store friction/review cycles, separate codebase; web-first validates the concept far cheaper | Mobile-responsive web (PWA-ready). Build native only after web product-market fit. (Out of scope in PROJECT.md.) |
-| **Automated shipping/logistics, freight quoting, label printing** | "Help truckers ship heavy parts" | Becoming a carrier/3PL is a separate business; LTL/cross-border quoting automation is deep integration work | "Shipping Assistance Requested" is a human-assisted referral workflow (manual freight/LTL/cross-border help), not automated logistics. (Constraint in PROJECT.md.) |
-| **Exposing seller phone/email/name anywhere** (even opt-in "show my number") | "Let sellers share contact if they want" | A single opt-in leak path erodes the entire privacy guarantee and the product's reason to exist; also a magnet for off-platform scam funneling | Seller contact *preference* (Email Only / Email+Phone optional display / Marketplace Messaging Only — recommended) is allowed per PROJECT.md, but PII must remain non-queryable; "phone display" if ever enabled must be an explicit per-seller choice surfaced only inside an authenticated contact context, never on public search/profile surfaces. Default and recommended path = Marketplace Messaging Only. |
-| **Radius / zip-code / map-based local search** | OfferUp/FB Marketplace norm | Requires precise seller location, which violates the State/Province-only privacy rule | Location facet at State/Province + Country granularity only. |
-| **AI/ML moderation pipeline at launch** | "Scale moderation" | Automated moderation only pays off at upload volume the product won't have at launch; over-engineering | Start with user reports + admin queue + velocity/rate limits. Add automated moderation when volume justifies it (industry pattern: reactive→proactive as marketplace grows). |
-| **Open-ended seller "About me" / free social profile** | "Make it more social" | Free-text profile fields are a PII-leak and off-platform-funnel vector (sellers paste phone numbers/WhatsApp) | Constrain public profile to the defined fields (username, location, member-since, # listings, verified badge). Social-ness lives in public comments, not profile bios. |
-| **3D/AR part visualization** (seen in 2026 parts e-commerce trends) | Conversion-boosting trend in new-parts retail | Built for new-parts catalogs with CAD models; take-off/used parts are one-off physical items with no model data | Multiple real photos (incl. damage shots) is the right fidelity for used parts. |
+| Cart / checkout / payments UI from mockups | Present in stakeholder mockups | No payments exist in the product (v2); dead UI erodes trust | Already excluded by milestone scope — header nav renders only real features |
+| Phone-call CTA from mockups | Mockup element | Exposing a phone number violates the privacy pillar (PRIV invariants) | Contact-form → chat flow keeps its primary placement, restyled |
+| "Alerts" nav as a real feature | Mockup icon nav includes it | No notifications feature exists; building one is a functional milestone, not a reskin | Omit, or visual-only icon linking to messages/saved; note as v2 candidate |
+| Continuous neon flicker / animated glow everywhere | "More neon = more brand" | Visual fatigue, battery drain, accessibility risk (vestibular triggers; WCAG 2.3.1 caps flashes at 3/s) | Neon = accents (headings, borders, CTAs, signage); static glow by default; animation only on interaction + reduced-motion gated |
+| Neon-saturated body text / pure white on pure black | Looks "more neon" | Saturated neon text vibrates on dark; 21:1 pure white/black causes halation for astigmatic users | Off-white (`#E0E0E0`–`#F0F0F0`-range) body on very dark navy (~`#121212`–`#1E1E1E` lightness); neon reserved for large/accent text |
+| Repo/folder/Vercel-slug/package rename to `og-truck-parts` | "Complete" rebrand instinct | Breaks local paths, Vercel project wiring, git history ergonomics — all invisible to users | Rename user-visible strings only (`package.json` `name` is fine); keep infra names; revisit at production setup |
+| Light/dark theme toggle | Common in dark redesigns | Doubles the design surface; the brand IS the dark theme | Single dark theme; the `.dark` custom-variant can stay unused |
+| Pixel-perfect mockup replication | Stakeholder provided mockups | Mockups include non-existent features and weren't drawn responsive | Treat mockups as art direction (palette, type, signage, card anatomy); UAT against "feels like the mockup," not pixel diff |
+| Rebuilding components from scratch (dropping shadcn) | "Fresh start" instinct | Throws away tested behavior (focus traps, a11y, form wiring) — the fastest route to functional regressions | Restyle owned shadcn components in place; behavior untouched |
+
+## Keeping It "Visual-Only" (no functional regressions)
+
+1. **Diff discipline:** redesign PRs/commits touch `globals.css`, `components/**`, `app/**/page.tsx`/layouts (JSX + classNames), fonts, assets. Any diff in `lib/actions/**`, `lib/supabase/**`, `supabase/migrations/**`, route handlers, or zod schemas is a red flag — except the two scoped UAT fixes (freeze-notice realtime, analytics purge), which should be **separate commits/plans** so the visual-only claim stays auditable.
+2. **Existing Playwright e2e as the functional gate:** `e2e/auth.spec.ts` and `e2e/home.spec.ts` assert real flows (and brand strings — update those assertions in the same commit as the rename, then freeze). Run after every wave.
+3. **Optional visual baselines, post- not pre-redesign:** Playwright's built-in `toHaveScreenshot()` needs no plugin; taking baselines of the OLD design is pointless (every pixel changes by design). Take baselines AFTER each surface is approved to lock the new look against later drift. Run in CI/consistent env to avoid font/AA false positives. LOW cost, optional for v1.1 — the manual mockup-fidelity walkthrough is the real acceptance gate.
+4. **Per-surface manual QA script:** for each route group, walk the happy path live on Staging (the v1.0 24-step UAT walkthrough is reusable verbatim — same functionality is the whole point).
+5. **Invariant re-checks stay on:** PII contract tests, RLS gates, EXIF gate — none should be touched, all should stay green (per-phase invariant in CLAUDE.md).
+
+## Accessibility Table Stakes for a Dark Neon Theme
+
+| Requirement | Standard | Application here |
+|---|---|---|
+| Text contrast 4.5:1 (normal), 3:1 (large ≥24px / 18.7px bold) | WCAG 2.x AA 1.4.3 | Neon red price on navy: typical neon red (#FF3B3B-ish) fails 4.5:1 on dark navy → lighten the red token for text use, or keep prices at large-text size. Cyan generally passes easily on dark |
+| Non-text contrast 3:1 | WCAG 1.4.11 | Neon borders, input outlines, icon nav, badges — neon borders on navy panels usually pass, but verify the *dimmed/inactive* states |
+| No pure-white-on-pure-black | Halation for astigmatism | Off-white foreground token on very-dark-navy base (not #000) |
+| Desaturated/lightened neon for any text role | Saturated colors vibrate on dark even when ratio passes | Two tokens per neon: `--neon-x` (decorative glow) and `--neon-x-text` (lightened, AA-passing) |
+| Visible focus states | WCAG 2.4.7 | A neon `--ring` is actually an asset on dark — restyle, never remove, shadcn focus rings |
+| `prefers-reduced-motion` honored | WCAG 2.3.3 / OS setting | All glow pulses, flicker-on animations, hover transitions degrade to static; `tw-animate-css` + a `motion-reduce:` audit |
+| No flashing > 3/sec | WCAG 2.3.1 | Bans "buzzing neon sign" loops outright |
+| Contrast check automated | — | Run axe/Lighthouse on the 5 key templates (home, listing detail, register, sell, messages) after token freeze; cheap and catches token-level failures once |
 
 ## Feature Dependencies
 
 ```
-[Auth / Accounts]
-    ├──requires──> [PII / Public-Profile data separation]   (privacy model is architectural, must exist before any profile/listing)
-    │                   └──enables──> [Public Seller Profile]
-    │                   └──enables──> [Verified Seller badge]  (also requires phone OTP verification)
-    │
-    └──enables──> [Create Listing]
-                      └──requires──> [Fitment Library schema]      (listing's Make/Model/Fitment fields bind to it)
-                      └──enables───> [Fitment Intelligence auto-tagging]  (requires Fitment Library populated)
-                      └──enables───> [Photos / Storage]
-
-[Fitment Library schema]
-    └──enables──> [Fitment search + faceted filters]
-                      └──enhanced-by──> [Trucker-slang / Common Search Terms]  (alias layer on the library)
-    └──enables──> [Fitment Intelligence]
-    └──feeds─────> [Admin Analytics: most-searched makes/models]   (requires search-event logging)
-
-[Listing] ──enables──> [Browse Feed]
-[Listing] ──enables──> [Save / Bookmark]
-[Listing] ──enables──> [Public Comments]
-[Listing] ──enables──> [Mark as Sold]
-[Listing] ──enables──> [Contact Seller (form-first)]
-
-[Contact Seller form]
-    └──persists-to──> [DB record + admin copy]   (abuse/dispute baseline; MUST happen before chat)
-        └──then-opens──> [Private in-site Chat thread]  (requires Realtime messaging)
-            └──requires──> [PII separation]  (chat connects parties without exposing identity)
-
-[User Reports] ──feeds──> [Admin Operations / Reports queue]
-[All public surfaces] ──must-respect──> [PII separation]   (cross-cutting; not a phase, a constraint)
-[Search-event + listing-view logging] ──feeds──> [Admin Analytics]   (must start at launch or data is lost)
+Logo/icon assets (stakeholder) ──required by──> Header, favicon/OG, email branding
+Design tokens + fonts (globals.css)
+    └──required by──> shadcn primitive restyle
+                          └──required by──> Shared chrome (header w/ sell entry, sidebar, footer-if-any)
+                                                └──required by──> Page passes (public → auth → app → admin)
+Page passes ──required by──> Visual baselines (new-design screenshots) + a11y audit + mockup-fidelity UAT
+Name sweep + metadata/emails ──independent of──> token work (parallel-izable; must update e2e brand assertions atomically)
+Browse-as-signage ──builds on──> existing taxonomy browse queries (v1.0 FITL) + tokens
+Header sell entry ──closes──> v1.0 UAT gap (depends on header redesign)
+Freeze-notice realtime fix ──independent──> functional fix; isolate from visual commits
+vitest-* analytics purge ──independent──> Staging SQL + test-pollution guard
+"Alerts" nav icon ──conflicts──> no notifications feature exists (render only real destinations)
+Cart/phone mockup elements ──conflict──> no-payments scope + privacy pillar (excluded)
 ```
 
 ### Dependency Notes
 
-- **PII/Public-profile separation is foundational and cross-cutting:** it must be designed into the schema before profiles, listings, comments, chat, or admin are built. Retrofitting privacy onto an existing model is the #1 way this product breaks its core promise. It is a constraint on every other feature, not a standalone phase.
-- **Fitment library is the keystone dependency:** listings, search, slang search, Fitment Intelligence, and the "most-searched makes/models" analytic all require it. It should be one of the earliest phases. Its schema design quality caps the quality of everything downstream.
-- **Fitment Intelligence requires a populated library:** auto-suggestion quality is a direct function of library completeness — a thin library yields useless suggestions. Sequence library curation before/with Intelligence.
-- **Contact form must persist before chat opens:** the DB record (+ admin copy) is the abuse/dispute baseline and is a hard requirement; the chat thread is opened *from* that record. Don't build "instant DM" that skips the persisted form.
-- **Analytics requires event logging from day one:** most-viewed listings, most-searched makes/models, and messages-sent can't be reconstructed retroactively. Instrument search and view events when those features ship, even if the Analytics dashboard comes later.
-- **Verified Seller depends on phone OTP:** the only net-new infrastructure vs. basic auth is phone verification (OTP/SMS). Email verification is shared with auth.
-- **Public comments and private chat are separate systems:** public comments = attributed-to-username, moderated, broadcast knowledge. Private chat = realtime, two-party, logged. Don't conflate them.
+- **Tokens before primitives before pages:** restyling pages against the stock theme produces rework; this ordering is the core phase-structure recommendation.
+- **Name sweep is atomic with e2e updates:** the existing specs assert "Take-Off Parts" strings; rename and assertions must land together or the functional gate goes red for the wrong reason.
+- **No production traffic = no migration-window problem:** the app is Staging-only, so the intermediate "dark theme everywhere, signage landing incrementally" state costs nothing.
+- **Stakeholder assets are an external dependency:** header, favicon, OG, and emails block on the final logo files (formats: SVG preferred + PNG fallbacks).
 
 ## MVP Definition
 
-### Launch With (v1)
+### Launch With (this milestone, v1.1)
 
-Minimum to validate the three-pillar thesis (fitment search + public interaction + privacy-protected private contact). Per PROJECT.md, all "Active" requirements are v1.
-
-- [ ] Auth + accounts with **PII/public-profile separation** — the privacy guarantee is the product; cannot ship without it
-- [ ] Public seller profile (username, State/Province, Country, Member Since, # active listings) — privacy-constrained
-- [ ] Verified Seller flow (email + phone verified + terms → badge) — launch trust signal
-- [ ] Create listing with full public truck-parts field set + multi-photo upload
-- [ ] Shipping Availability options (incl. "Shipping Assistance Requested" as a flag/referral)
-- [ ] **8-level fitment library** + "The Barnyard" — keystone differentiator
-- [ ] Fitment + slang search, faceted filters, browse feed
-- [ ] **Fitment Intelligence** auto-suggest at list time (rules/lookup-based is fine for v1)
-- [ ] Save / bookmark; mark as Sold
-- [ ] Public comments on listings
-- [ ] **Contact = form-first (persist + admin copy) → private in-site chat** with seller-contact-preference options
-- [ ] Communication logging (every contact persisted + copied to admin)
-- [ ] Admin Operations (Users, Listings, Reports, Messages monitoring, Categories, Fitment Library)
-- [ ] Admin Analytics (with search/view event logging instrumented)
-- [ ] Report listing/user; not-financial-advice + safety disclaimers
+- [ ] Token/theme foundation + brand fonts — everything depends on it
+- [ ] shadcn primitive restyle (app-wide dark navy/neon baseline) — the "applied to every surface" mechanism
+- [ ] Redesigned header w/ search bar, icon nav, sell entry — centerpiece + UAT fix
+- [ ] Page passes: public (feed, listing detail, profile) → auth → seller/app → messaging → admin (theme-level)
+- [ ] Browse-as-neon-signage for Make/Model/Category — the brand's signature screen
+- [ ] Full rebrand sweep: UI strings, route metadata/titles, favicon/OG, README/package.json, 4 in-repo email senders, Supabase auth email templates
+- [ ] Branded global 404/error/loading states (new files)
+- [ ] AA contrast + focus + reduced-motion pass on the new theme
+- [ ] Freeze-notice realtime refresh + vitest-* analytics purge (scoped functional fixes, separate commits)
+- [ ] Final UAT: rerun v1.0 walkthrough on the new skin + mockup-fidelity review
 
 ### Add After Validation (v1.x)
 
-Refinements once the core loop works and there's traffic.
-
-- [ ] Custom-username availability/abuse handling and system-generated fallback polish
-- [ ] Library expansion driven by "most-searched makes/models" analytics (the curation flywheel)
-- [ ] Richer slang/alias dictionary as real buyer search logs accumulate
-- [ ] Saved-search / alert ("notify me when a 359 grille is listed")
-- [ ] Lightweight automated spam/velocity controls once report volume justifies it
+- [ ] Post-approval visual regression baselines (`toHaveScreenshot()` in CI) — lock the approved look
+- [ ] Marketing-grade home/landing polish beyond the feed — once brand is validated
+- [ ] Footer with social links — confirm which social profiles actually exist first
 
 ### Future Consideration (v2+)
 
-Deferred until product-market fit (most are explicit out-of-scope items).
-
-- [ ] Payments / checkout / escrow — once liquidity is proven
-- [ ] Multi-axis seller reputation/ratings — once transaction volume makes ratings meaningful
-- [ ] Native mobile app — after web PMF
-- [ ] AI/ML content moderation — at moderation-volume scale
-- [ ] Deeper Shipping Assistance tooling (freight-quote integrations) — still referral, just better tooling
+- [ ] Notifications/"alerts" feature behind the nav icon — functional milestone
+- [ ] Email template visual redesign (HTML/branded layouts) — text-level rebrand suffices now
+- [ ] OG-image-per-listing (dynamic `og:image` with part photo) — nice for sharing, not a rebrand requirement
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| PII/public-profile separation (privacy model) | HIGH | HIGH | P1 |
-| Auth / accounts | HIGH | LOW | P1 |
-| 8-level fitment library | HIGH | HIGH | P1 |
-| Create listing + photos | HIGH | MEDIUM | P1 |
-| Fitment + slang search / feed / filters | HIGH | HIGH | P1 |
-| Fitment Intelligence (rules-based v1) | HIGH | HIGH | P1 |
-| Contact form-first → private chat | HIGH | HIGH | P1 |
-| Communication logging + admin copy | HIGH | MEDIUM | P1 |
-| Public comments | MEDIUM-HIGH | MEDIUM | P1 |
-| Public seller profile | MEDIUM | MEDIUM | P1 |
-| Verified Seller badge (+ phone OTP) | MEDIUM-HIGH | MEDIUM | P1 |
-| Save / bookmark | MEDIUM | LOW | P1 |
-| Mark as Sold | MEDIUM | LOW | P1 |
-| Report listing/user | MEDIUM-HIGH | LOW | P1 |
-| Admin Operations | HIGH (operator) | MEDIUM | P1 |
-| Admin Analytics (+ event logging) | MEDIUM (operator) | MEDIUM | P1 |
-| Saved-search / alerts | MEDIUM | MEDIUM | P2 |
-| Automated moderation / velocity limits | MEDIUM | MEDIUM | P2 |
-| Payments / ratings / native app / auto-logistics | (varies) | HIGH | P3 |
+| Token foundation + fonts | HIGH (enables all) | MEDIUM | P1 |
+| Primitive restyle | HIGH | MEDIUM | P1 |
+| Header redesign + sell entry | HIGH | HIGH | P1 |
+| Name/metadata/favicon/email sweep | HIGH (trust) | LOW | P1 |
+| Public page passes (feed, detail, profile) | HIGH | HIGH | P1 |
+| Browse-as-neon-signage | HIGH (brand signature) | HIGH | P1 |
+| Auth + seller-flow passes (panels/steppers) | MEDIUM-HIGH | MEDIUM | P1 |
+| A11y pass (contrast/focus/reduced-motion) | HIGH (and cheap if done at token time) | MEDIUM | P1 |
+| Messaging + admin theme pass | MEDIUM | MEDIUM | P2 |
+| Global 404/error/loading states | MEDIUM | LOW | P2 |
+| UAT fixes (freeze realtime, vitest purge) | MEDIUM | LOW | P1 (committed scope) |
+| Visual regression baselines in CI | LOW now, MEDIUM later | LOW | P3 |
+| Glow/motion flourishes | MEDIUM | LOW-MEDIUM | P2 |
 
-**Priority key:** P1 = must-have for launch · P2 = should-have, add when possible · P3 = future.
-
-> Note: per PROJECT.md the entire "Active" set is v1, so nearly everything is P1. Within P1, the build *order* should follow dependencies: privacy schema → fitment library → listings → search/intelligence → social/contact → admin/analytics.
-
-## Competitor Feature Analysis
-
-| Feature | Facebook Marketplace | Craigslist | OfferUp | eBay Motors | Dedicated truck-parts (TruckPartsMart / FinditParts / Class8) | Our Approach |
-|---------|----------------------|------------|---------|-------------|---------------------------------------------------------------|--------------|
-| Fitment/compatibility search | None (free-text) | None | None | Year/Make/Model/Trim/Engine via My Garage + Fitment Plus Auto | Dropdown filters, some YMM | **8-level + slang + "Barnyard" — deepest, heavy-truck-tuned** |
-| Auto-tag part to all fitting vehicles | No | No | No | Fitment Plus Auto (cross-references compatibility DB) | Partial/manual | **Fitment Intelligence (rules-based, slang-aware)** |
-| Seller PII privacy | Real name required; commerce profile | User-controlled anonymity (omission) | TruYou pushes real identity | Real seller identity | Business sellers, public | **Guaranteed by architecture; PII never queryable** |
-| Public comments / Q&A on listing | Yes (comments) | No | Limited | Q&A on some listings | Mostly no | **Yes — core 30% social layer, username-attributed** |
-| Private messaging | Messenger | Email relay / phone | In-app chat | eBay messaging | Contact forms / phone | **Form-first (logged) → private realtime chat** |
-| Identity verification | Profile social proof | None | TruYou ID verify | Account-level | Business KYC | **Verified Seller (email+phone+terms), privacy-preserving** |
-| Save / watch | Saved | No | Saved | Watch | Cart/wishlist | **Save / bookmark** |
-| Payments | Optional shipped checkout | No (off-platform) | In-app pay option | Full checkout | Full checkout | **None in v1 — connect-only, mark "Sold"** |
-| Ratings/reputation | Profile ratings | No | Seller ratings | Detailed seller ratings | Reviews | **None in v1 — trust via Verified + logging + moderation** |
-| Communication logging for admin | Internal | No | Internal | Internal | Varies | **Every contact persisted + copied to admin (explicit feature)** |
-
-**Key insight:** the classifieds leaders (FB/Craigslist/OfferUp) own *liquidity and social* but have *zero fitment intelligence* and *weak/forced-identity privacy*. The parts e-commerce leaders (eBay/FinditParts) own *fitment* but are *transactional storefronts with no social layer and full identity exposure*. No competitor combines deep fitment + privacy + social. That gap is the entire product thesis, and it's defensible because the fitment library + slang taxonomy is a curation moat that's hard to copy.
+**Priority key:** P1 must-have for milestone · P2 should-have · P3 future
 
 ## Sources
 
-- Facebook Marketplace vs Craigslist vs OfferUp comparison — https://www.funlovingfamilies.com/facebook-marketplace-vs-craigslist-vs-offerup/ (MEDIUM)
-- OfferUp vs Facebook Marketplace (TruYou, MeetUp spots, safety) — https://www.topbubbleindex.com/blog/offerup-vs-facebook-marketplace/ (MEDIUM)
-- eBay vehicle compatibility (fitment) seller guide — https://export.ebay.com/en/growth/pa/vehicle-compatibility-fitment-guide-for-ebay-sellers/ (HIGH — official eBay)
-- eBay Fitment Plus Auto guide — https://www.3dsellers.com/blog/ebay-fitment-plus-auto (MEDIUM)
-- Automotive parts marketplace fitment / ACES-PIES standards — https://flxpoint.com/blog/automotive-parts-marketplace-fitment-supplier-networks (MEDIUM)
-- Fitment intelligence + ACES 5.0/PIES 8.0 (Mar 2026) — https://pcfitment.com/blog/how-to-future-proof-your-auto-parts-store-with-fitment-intelligence/ (MEDIUM)
-- Auto parts fitment specificity & returns — https://www.efulfillmentservice.com/2026/05/auto-parts-product-descriptions-2026/ (MEDIUM)
-- Selling anonymously on Facebook Marketplace (real-name requirement) — https://softhandtech.com/can-i-sell-anonymously-on-facebook-marketplace/ (MEDIUM)
-- Amazon US marketplace seller identity disclosure — https://sellerengine.com/why-is-amazon-us-marketplace-anonymous-no-more/ (MEDIUM)
-- Never communicate outside the platform (on-platform messaging norm) — https://www.howtogeek.com/never-communicate-with-a-seller-outside-of-facebook-marketplace/ (MEDIUM)
-- Dedicated truck-parts marketplaces (TruckPartsMart, Class8, FinditParts, TPI) — https://resources.truckpartsmart.com/blogs/online-marketplace-for-truck-parts , https://class8truckparts.com/ , https://www.finditparts.com/ , https://truckpartsinventory.com/ (MEDIUM)
-- Marketplace content moderation / trust & safety patterns — https://getstream.io/blog/marketplace-content-moderation/ , https://www.sharetribe.com/academy/most-common-marketplace-attacks/ (MEDIUM)
-- Classifieds fraud rates (34% scam exposure, 12-15% fraud in high-value) — https://www.intelmarketresearch.com/classifieds-marketplace-market-35734 (LOW-MEDIUM)
+- Repo inspection (HIGH confidence): `app/**/page.tsx` (31 pages), `components/**` (~70 components, 18 shadcn primitives), `app/globals.css` (stock shadcn oklch theme on Tailwind v4 `@theme inline`), `app/layout.tsx` (default "Create Next App" metadata), grep for `Take-Off|TakeOff` (21 files), `e2e/*.spec.ts` (existing Playwright), email senders in `lib/admin/email.ts`, `lib/messaging/notify.ts`, `lib/verify/alert.ts`, `app/api/cron/near-expiry/route.ts`
+- `.planning/PROJECT.md`, `.planning/MILESTONES.md` — v1.1 scope, exclusions (cart/payments/phone), UAT carryovers
+- Dark-theme/neon accessibility (MEDIUM-HIGH): [WebAIM — Contrast and Color](https://webaim.org/articles/contrast/), [MDN — Color contrast](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Perceivable/Color_contrast), [Dark Mode Accessibility guide](https://www.accessibilitychecker.org/blog/dark-mode-accessibility/), [Dark mode UI considerations](https://fivejars.com/insights/dark-mode-ui-9-design-considerations-you-cant-ignore/), [Dark mode palettes](https://themeandcolor.com/blog/dark-mode-color-palette)
+- Visual QA (MEDIUM-HIGH): [Playwright visual testing setup/CI](https://testdino.com/blog/playwright-visual-testing), [Chromatic — visual testing with Playwright](https://www.chromatic.com/blog/how-to-visual-test-ui-using-playwright/), [BrowserStack — Playwright visual regression](https://www.browserstack.com/guide/visual-regression-testing-using-playwright)
+- Rebrand checklists (MEDIUM): [Brand Vision — 25-item rebrand checklist](https://www.brandvm.com/post/rebranding-checklist-mandatory-updates), [SaaS rebrand checklist](https://www.poweredbysearch.com/learn/saas-rebrand-checklist/), [50+ touchpoint rebrand checklist](https://nicolesteffen.com/2026/02/03/rebrand-checklist-across-50-touchpoints/)
 
 ---
-*Feature research for: privacy-first truck-parts marketplace with deep fitment + social layer*
-*Researched: 2026-06-01*
+*Feature research for: v1.1 OG Rebrand & UI Redesign (OG Truck Parts)*
+*Researched: 2026-06-12*

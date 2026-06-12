@@ -1,411 +1,222 @@
-# Architecture Research
+# Architecture Research — v1.1 OG Rebrand & UI Redesign
 
-**Domain:** Privacy-first truck-parts marketplace + lightweight social network (Next.js 15 App Router + Supabase)
-**Researched:** 2026-06-01
-**Confidence:** HIGH (stack + RLS + Realtime + search patterns verified against Supabase docs and ACES/PIES industry standards; fitment-taxonomy table design is an opinionated synthesis — MEDIUM)
+**Domain:** App-wide visual rebrand ("Take-Off Parts" → "OG Truck Parts", neon truck-stop identity) on an existing Next.js 16 + Tailwind v4 + shadcn/ui codebase
+**Researched:** 2026-06-12
+**Confidence:** HIGH — every count, file path, and integration point below was read from the actual codebase (app/, components/, lib/, globals.css, package.json), not inferred
 
-## Standard Architecture
+## Scope Frame
 
-This is a **server-first Next.js App Router app with Supabase as the entire backend** (Postgres + Auth + Realtime + Storage). There is no separate API server. Postgres Row Level Security (RLS) is the security boundary — the database protects itself, so even if a query reaches a table it cannot return rows the caller isn't allowed to see. This is the single most important architectural decision because privacy is the product.
+This milestone is **visual-only**: routes, Server Actions, RLS, data model, and Supabase schema are untouched, with exactly **one small new data flow** (the freeze-notice realtime refresh, UAT fix #2) and **one data deletion** (vitest-* purge, UAT fix #3). Everything else is CSS tokens, component markup, copy strings, and static assets.
 
-### System Overview
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                         CLIENT (Browser)                              │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────────┐  │
-│  │ Feed /     │  │ Listing    │  │ Chat       │  │ Admin Console  │  │
-│  │ Search UI  │  │ Detail UI  │  │ (Realtime) │  │ (Ops+Analytics)│  │
-│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘  └───────┬────────┘  │
-│        │ browserClient │               │ WS               │           │
-├────────┼───────────────┼───────────────┼──────────────────┼───────────┤
-│                    NEXT.JS 15 (App Router) — server-first              │
-│  ┌──────────────┐  ┌──────────────────┐  ┌────────────────────────┐   │
-│  │ Server       │  │ Server Actions   │  │ Route Handlers         │   │
-│  │ Components    │  │ (mutations:      │  │ (webhooks, contact     │   │
-│  │ (read via RLS)│  │  list, contact,  │  │  intake, admin RPC)    │   │
-│  │               │  │  comment, save)  │  │                        │   │
-│  └──────┬───────┘  └────────┬─────────┘  └──────────┬─────────────┘   │
-│         │ serverClient (cookie-bound, user JWT)     │ service role     │
-│         │                   │                       │ (admin only)     │
-│  ┌──────┴───────────────────┴───────────────────────┴─────────────┐   │
-│  │  middleware.ts → refreshes session cookie on every request      │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-├─────────────────────────────────────────────────────────────────────┤
-│                      SUPABASE (managed backend)                       │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
-│  │ Postgres │ │  Auth    │ │ Realtime │ │ Storage  │ │ Edge Fns / │  │
-│  │ + RLS    │ │ (JWT)    │ │(Broadcast│ │ (photos) │ │ pg_cron    │  │
-│  │ + FTS    │ │          │ │ + Presence)│ │          │ │ (analytics)│  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| **Public surfaces** (feed, search, listing detail, public profile) | Render only public data; never touch PII | Server Components reading through `serverClient`; RLS guarantees PII tables return nothing |
-| **Auth & session** | Registration, login, session refresh, JWT issuance | Supabase Auth + `@supabase/ssr`; `middleware.ts` refreshes the cookie session on every request |
-| **Listing service** | Create/edit/sell listings, attach photos, attach fitment tags | Server Actions writing to `listings` + `listing_fitment` join tables; Storage for photos |
-| **Fitment taxonomy** | The 8-level library + Barnyard; source of truth for searchable dimensions | Normalized reference tables, mostly read-only (admin-managed) |
-| **Fitment intelligence** | On listing creation, suggest applicable trucks/categories | Rules/mapping table + a suggestion service (Server Action or Edge Function) querying `fitment_rules` |
-| **Search service** | Multi-path query across fitment + slang + FTS | Postgres FTS (`tsvector`) + `pg_trgm` for fuzzy/slang; one RPC (`search_listings`) |
-| **Contact + chat** | Persist contact → copy admin/log → open realtime thread | Server Action writes `contact_log` + `message_threads` + first `message`; Realtime **Broadcast** for live delivery |
-| **Social layer** | Public comments, saves/bookmarks, feed | Tables `comments`, `saved_listings`; feed = paginated query on `listings` |
-| **Admin console** | Ops (users, listings, reports, messages, categories, fitment) + Analytics | Separate route group guarded by `is_admin`; analytics from pre-aggregated tables/materialized views |
-
-## Recommended Project Structure
+## Existing Architecture Snapshot (what the redesign plugs into)
 
 ```
-project/
-├── app/
-│   ├── (public)/                  # unauthenticated/public surfaces
-│   │   ├── page.tsx               # feed
-│   │   ├── search/page.tsx
-│   │   ├── listings/[id]/page.tsx # detail + public comments
-│   │   └── u/[username]/page.tsx  # public profile (NO PII)
-│   ├── (auth)/
-│   │   ├── login/  register/      # Supabase Auth flows
-│   ├── (app)/                     # authenticated buyer/seller area
-│   │   ├── sell/page.tsx          # create listing + fitment auto-suggest
-│   │   ├── messages/              # in-site chat (Realtime)
-│   │   ├── saved/page.tsx         # bookmarks
-│   │   └── account/page.tsx       # edit private PII (self only)
-│   ├── admin/                     # guarded by is_admin (route group)
-│   │   ├── users|listings|reports|messages|categories|fitment/
-│   │   └── analytics/
-│   └── api/                       # Route Handlers (contact intake, webhooks)
-├── lib/
-│   ├── supabase/
-│   │   ├── server.ts              # createServerClient (cookie-bound)
-│   │   ├── client.ts              # createBrowserClient
-│   │   ├── middleware.ts          # session refresh helper
-│   │   └── admin.ts               # service-role client (server-only, admin)
-│   ├── search/                    # query builders for search RPC
-│   ├── fitment/                   # suggestion logic, taxonomy helpers
-│   └── actions/                   # Server Actions (listings, contact, comments)
-├── components/                    # shadcn/ui + feature components
-├── middleware.ts                  # calls lib/supabase/middleware
-└── supabase/
-    ├── migrations/                # SQL schema + RLS policies (source of truth)
-    └── seed.sql                   # fitment taxonomy + barnyard seed data
+app/
+├── layout.tsx                 ← root: next/font (Geist), metadata (STILL "Create Next App"), globals.css
+├── globals.css                ← THE theme: Tailwind v4 @theme inline + :root/.dark CSS vars (stock shadcn neutral)
+├── (public)/  layout.tsx      ← SiteHeader + children (force-dynamic)
+├── (auth)/    layout.tsx      ← centered card column + Toaster (no header)
+├── (app)/     layout.tsx      ← auth gate + suspension gate + SiteHeader (+ 2 inline minimal-chrome headers)
+├── admin/     layout.tsx      ← AdminSidebar + main (no SiteHeader)
+components/
+├── ui/                        ← 18 shadcn primitives (CLI-owned, cva variants)
+├── {account,admin,auth,comments,layout,listings,messaging,profile,search,seller}/  ← 53 feature components
+lib/                           ← no UI; 5 files send brand-named emails
+public/                        ← only create-next-app placeholder SVGs (file/globe/next/vercel/window)
+app/favicon.ico                ← only icon asset that exists
 ```
 
-### Structure Rationale
+Styling reality check: there is **no per-page CSS** anywhere — globals.css is the only stylesheet. Every component styles itself with Tailwind utilities that resolve through the `@theme` token layer. This is the single highest-leverage fact for the redesign: **palette, radius, and fonts swap centrally; layout/markup changes are per-component.**
 
-- **Route groups `(public)` / `(app)` / `admin`:** physically separates surfaces by trust level. Public components are written to never import PII queries, reinforcing the RLS guarantee at the code level.
-- **`lib/supabase/` split clients:** the cookie-bound `serverClient` (user JWT, RLS-enforced) is the default; the `admin.ts` service-role client lives in one file, server-only, used ONLY in `app/admin/` and trusted Route Handlers. Keeping it isolated prevents accidental RLS bypass.
-- **`supabase/migrations/` as source of truth:** RLS policies are schema, not app code. They must be versioned in migrations so the privacy guarantee is reproducible and reviewable.
+## 1. Theme Token System Today — and the Central Swap
 
-## Data Model
+### What globals.css contains now
 
-### Privacy Split (users / profiles) — the core design
+- `@import "tailwindcss"` + `tw-animate-css` + `shadcn/tailwind.css`
+- `@custom-variant dark (&:is(.dark *))` — class-based dark variant (currently unused: no ThemeProvider is mounted anywhere; only `components/ui/sonner.tsx` imports `next-themes`' `useTheme`, defaulting to "system")
+- `@theme inline { ... }` mapping ~30 Tailwind tokens (`--color-background`, `--color-primary`, `--color-card`, `--color-sidebar*`, `--color-chart-1..5`, `--radius-sm..4xl`, `--font-sans/--font-mono/--font-heading`) to runtime CSS variables
+- `:root { ... }` (light) and `.dark { ... }` blocks — **all stock shadcn neutral oklch grays**, zero brand color today
+- `@layer base` applying `bg-background text-foreground` + `font-sans`
 
-Two-table split keyed on the same `auth.users.id`. PII lives in a private table that **anon/authenticated roles cannot read** (RLS allows only `self`); the public profile lives in a separate table readable by everyone.
+### What swaps centrally (one file edit, app-wide effect)
 
-```
-auth.users (Supabase-managed)
-   id (uuid, PK)
-        │ 1:1            │ 1:1
-        ▼                ▼
-profiles_private        profiles_public
-─────────────────       ─────────────────
-id (PK = auth.uid)      id (PK = auth.uid)
-first_name              username (unique)      ← custom or system-generated
-last_name               state_province
-email                   country
-phone                   member_since
-street_address          is_verified           ← email+phone+terms => badge
-postal_code             contact_preference    ← email_only|email_phone|messaging
-contact_pref_internal   (active_listing_count is DERIVED, not stored — count view)
-terms_accepted_at
-phone_verified_at
-email_verified_at
-```
+| Token group | Where | Effect |
+|---|---|---|
+| Full palette (background, card, primary, secondary, accent, muted, destructive, border, input, ring, chart-1..5, sidebar-*) | `:root` block in globals.css | Every `bg-card`, `text-primary`, `border`, chart color in all ~85 components flips at once |
+| **Dark-only strategy** | Put the neon night palette directly in `:root`; delete the `.dark` block (or make it identical) | No theme toggle, no `dark:` class needed, no next-themes provider; set `<Toaster theme="dark">` or hardcode sonner |
+| New brand tokens (neon-red, neon-cyan, glow shadows, sign-border) | Add to `@theme` as `--color-neon-red`, `--color-neon-cyan`, plus `--shadow-glow-*` / utilities via `@utility` | New utilities (`text-neon-cyan`, `shadow-glow-red`) usable everywhere without touching config |
+| Radius scale | `--radius` in `:root` | Signage panels likely want tighter radii — one variable |
+| Fonts | `app/layout.tsx` (next/font registration) + `@theme` font mapping | See wiring bug below |
 
-**RLS policy intent:**
+### Font wiring — existing bug to fix in the token wave
 
-| Table | SELECT | INSERT/UPDATE |
-|-------|--------|----------------|
-| `profiles_private` | `TO authenticated USING (id = auth.uid())` — owner only; no public read EVER | owner only, with `WITH CHECK (id = auth.uid())` |
-| `profiles_public` | `TO anon, authenticated USING (true)` — world-readable | owner only (`id = auth.uid()`), both `USING` + `WITH CHECK` |
+`app/layout.tsx` registers Geist/Geist_Mono exposing `--font-geist-sans` / `--font-geist-mono`, but `@theme` maps `--font-sans: var(--font-sans)` — a runtime variable **that is never defined**. The body font is currently falling through to browser defaults. The redesign must register the new fonts properly: retro display font (e.g. via `next/font/google` or `next/font/local` if the stakeholder supplies one) exposed as `--font-display`, body font as `--font-body`, then map `--font-heading: var(--font-display)` and `--font-sans: var(--font-body)` in `@theme`. `--font-heading` already exists as a token but is aliased to sans — wiring it to the display font gives headings the signage look wherever components opt in with `font-heading`.
 
-Active-listing count is computed (`count(*)` of the owner's non-sold listings) via a view or a small aggregate, never a writable column — avoids drift and avoids exposing PII.
+### What does NOT swap centrally (per-component edits)
 
-> **Why two tables, not "public vs private columns" on one table:** Postgres RLS is row-level, not column-level. Column privacy requires either column-level grants (brittle, easy to leak through `select *`) or views. A clean table split makes the privacy boundary structural: a public Server Component literally cannot reach PII because it queries `profiles_public`, and even a malicious direct query to `profiles_private` is denied by RLS. This is the safest, most auditable pattern. (Confirmed: views bypass RLS unless `security_invoker = true`; relying on a view for privacy is riskier than a separate table.)
+- **Layout/markup changes**: header structure, signage grids, panel framing — these are JSX edits
+- **Hardcoded one-off utilities**: e.g. `thread-view.tsx` message bubbles use `bg-primary`/`bg-muted` (will inherit palette but bubble shape/glow is markup), `suspended-screen.tsx` inline chrome
+- **Charts**: `components/ui/chart.tsx` + recharts consume `--chart-1..5` (central), but axis/grid styling is per-component
+- **Icons**: lucide-react inherits `currentColor` — free
 
-### Fitment Taxonomy (8 levels + Barnyard)
+## 2. Surface Inventory (counted from the codebase)
 
-The 8 levels are a mix of **hierarchical** (Make → Model → Configuration) and **flat tag dimensions** (Common Search Terms, Part Categories, Materials, Condition, Special Filters). A part is findable through MANY of these — pure many-to-many. This mirrors the auto-aftermarket ACES standard (a part fits many vehicle configs; a config accepts many parts), simplified for heavy-truck reality.
+### Layouts — 5 files + 2 inline header variants
 
-```
-makes                models                configurations
-──────               ──────                ──────────────
-id (PK)              id (PK)               id (PK)
-name (Peterbilt)     make_id (FK)          model_id (FK)
-                     name (W900L)          name (Aerodyne / Flat-top / Day Cab)
+| Layout | Header chrome | Redesign work |
+|---|---|---|
+| `app/layout.tsx` | none (html/body, fonts, metadata) | fonts, metadata, dark-only class |
+| `app/(public)/layout.tsx` | `SiteHeader` | inherits new header |
+| `app/(auth)/layout.tsx` | none (centered column) | background treatment only |
+| `app/(app)/layout.tsx` | `SiteHeader` + **inline suspended/read-only header** (brand string hardcoded at line 53) | inherits header + edit inline variant |
+| `app/admin/layout.tsx` | `AdminSidebar` (no SiteHeader) | sidebar reskin |
 
-search_terms (trucker slang)   part_categories       materials
-───────────────────────────    ───────────────       ─────────
-id (PK)                        id (PK)               id (PK)
-term ("359 Guys",              parent_id (FK self,   name (Aluminum,
- "Flat Glass Kenworth")         optional hierarchy)   Stainless, Chrome…)
-                               name
+### Pages — 31 `page.tsx` + 1 `not-found.tsx` = 32 routed screens
 
-conditions          special_filters       (Barnyard = a sentinel category /
-──────────          ───────────────        boolean flag on listing, "anything-goes")
-id, name            id, name
-(New, Used,
- Reman, Core)
-```
+| Route group | Count | Screens |
+|---|---|---|
+| `(public)` | 3 (+1 not-found) | feed/search (`/`), listing detail (`/listings/[id]`), public profile (`/u/[username]`) |
+| `(auth)` | 6 | login, register, forgot-password, reset-password, check-email, auth-code-error |
+| `(app)` | 10 | account, messages, messages/[threadId], profile/garage, saved, sell, sell/[id]/edit, sell/listings, suspended, verify |
+| `admin` | 12 | dashboard/analytics (`/admin`), fitment, fitment/[level], import, listings, listings/[id], messages, messages/threads/[id], reports, reports/[targetKey], users, users/[id] |
 
-**Listing ↔ fitment join tables** (one per dimension that can have multiple values per listing):
+### Shared components
 
-```
-listings
-────────
-id (PK), seller_id (FK auth.uid), title, part_number, asking_price,
-shipping_option (enum), status (active|sold), damage_notes, date_listed,
-is_barnyard (bool), search_vector (tsvector, generated)
+| Bucket | Count | Notes |
+|---|---|---|
+| `components/ui/` shadcn primitives | **18** | alert-dialog, badge, button, card, chart, checkbox, dialog, dropdown-menu, form, input, input-otp, label, radio-group, select, sheet, skeleton, sonner, textarea |
+| `components/` feature components | **53** | account 4 · admin 11 · auth 4 · comments 2 · layout 2 (site-header, user-menu) · listings 8 · messaging 7 · profile 4 · search 10 · seller 1 |
+| Route-colocated components in `app/` | **8** | contact-preference-form, add-truck-dialog, truck-card, truck-cascade, sold-toggle (sell/listings), otp-step, phone-step, terms-step |
 
-listing_models           listing_configs          listing_search_terms
-──────────────           ──────────────           ────────────────────
-listing_id (FK)          listing_id (FK)          listing_id (FK)
-model_id (FK)            config_id (FK)           term_id (FK)
-PK(listing_id,model_id)  PK(...)                  PK(...)
+Total reskin surface: **5 layouts, 32 screens, 18 primitives, ~61 feature/colocated components** — but because zero components carry their own palette (all token-driven), the realistic hand-edit set is much smaller: the 18 primitives, the chrome (site-header, user-menu, admin-sidebar, suspended-screen), and the per-page hero/grid markup on high-traffic screens (feed, listing detail, public profile, sell form, messages).
 
-listing_categories   listing_materials   listing_conditions   listing_special_filters
-(same shape)         (same shape)        (single or M2M)      (same shape)
+## 3. Strategy for Shared Primitives: Restyle In Place
 
-listing_photos
-──────────────
-listing_id (FK), storage_path, sort_order
-```
+**Recommendation: edit the 18 files in `components/ui/` directly. Do NOT create parallel branded variants.**
 
-Make is reachable through `model_id → models.make_id`, so a per-listing `listing_makes` join is optional (derive from models, or denormalize for query speed).
+Rationale:
+- shadcn's whole model is "you own the components" — they are already CLI-vendored into the repo, not a dependency. Editing them is the intended customization path.
+- All 61+ feature components and 32 screens consume these primitives; restyling `button.tsx`, `card.tsx`, `input.tsx`, `dialog.tsx` in place updates every consumer in one commit. A `NeonButton` fork would require touching every import site — exactly the per-component churn this milestone should avoid.
+- The primitives use `cva` variants. Where the design needs *additional* looks (e.g. a "neon sign" card frame vs. a plain navy panel), **add a variant** (`<Card variant="sign">`) rather than a new component — default variant becomes the navy neon-bordered panel, opt-in variants add the louder treatments. Same for Button: `default` becomes the red neon CTA; add `variant="cyan"` if mockups need it.
+- The only justified **new** components are ones with no current equivalent: the **signage browse grid** (see §5) and possibly a `Logo`/wordmark component (used by site-header, suspended-screen, (app) inline header, auth pages — 4+ call sites today hardcode the text string).
 
-**How search queries it:** one Postgres RPC `search_listings(filters, q)` that:
-1. Starts from `listings` where `status = 'active'`.
-2. `JOIN`/`EXISTS` against the relevant `listing_*` join tables for each selected facet (model, config, category, material, condition, special filter).
-3. For free-text `q`: combine **FTS** on `listings.search_vector` (titles, part numbers, descriptions) with **`pg_trgm` similarity** against `search_terms.term` so slang/typos ("359 Guys", "Areodyne") still match.
-4. Rank and paginate. Barnyard listings surface via `is_barnyard` or the Barnyard category.
+Specific primitive notes:
+- `button.tsx` — the highest-leverage file; red neon CTA default, ghost/outline tuned for dark
+- `card.tsx` — navy panel + neon border default
+- `chart.tsx` + `--chart-1..5` tokens — admin analytics inherits neon palette via tokens
+- `sonner.tsx` — pin `theme="dark"` (next-themes has no mounted provider; "system" on a dark-only app is wrong)
+- `skeleton.tsx`, `input.tsx`, `select.tsx`, `textarea.tsx`, `dialog.tsx`, `sheet.tsx`, `dropdown-menu.tsx` — token-inherit mostly; verify contrast on the new dark base
 
-> **Search engine choice (verified):** Postgres FTS handles structured text up to tens of millions of rows; `pg_trgm` covers fuzzy/partial/slang matching that FTS misses. The hybrid FTS + trigram approach is the documented Supabase recommendation for marketplace search — no external search engine (Algolia/Elastic) needed at this scale.
+## 4. Rename Map: every "Take-Off Parts" in code
 
-### Fitment Intelligence (auto-suggest)
+Grep-verified occurrences that must change (excluding `.planning/`, `docs/`, and historical milestone archives, which stay):
 
-A **rules/mapping table** drives suggestions; logic lives in a **suggestion service** (Server Action `lib/fitment/suggest.ts`, promotable to an Edge Function).
+| Category | File:line | What |
+|---|---|---|
+| **Metadata** | `app/layout.tsx:16` | title is literally still `"Create Next App"` — becomes OG Truck Parts metadata (+ description, openGraph) |
+| Page titles | `app/(auth)/register/page.tsx:5`, `check-email/page.tsx:7`, `auth-code-error/page.tsx:6` | `· Take-Off Parts` suffixes |
+| UI copy | `app/(auth)/login/page.tsx:64` | "Log in to your Take-Off Parts account" |
+| Wordmark (hardcoded text) | `components/layout/site-header.tsx:33`, `components/account/suspended-screen.tsx:35`, `app/(app)/layout.tsx:53` | replace with new `Logo` component |
+| **Emails — FROM lines** | `lib/admin/email.ts:14`, `lib/messaging/notify.ts:12` | `"Take-Off Parts <onboarding@resend.dev>"` |
+| Emails — subjects/bodies | `lib/admin/email.ts:33-37`, `lib/actions/admin/enforcement.ts:58,119,169,226,300`, `lib/messaging/notify.ts:79,136`, `lib/verify/alert.ts:49` | 13 brand-named subject/body strings |
+| Emails — cron | `app/api/cron/near-expiry/route.ts:123` | body text + hardcoded `https://takeoffparts.com/...` URL (domain decision needed) |
+| **package.json** | `package.json:2` (+ package-lock) | `"name": "take-off-parts"` → `"og-truck-parts"` |
+| README | `README.md:1` | heading |
+| **E2E tests (will break on rename)** | `e2e/home.spec.ts:6`, `e2e/auth.spec.ts:125,131` | assert heading/link named "Take-Off Parts" — update in the same commit as the wordmark |
+| Out-of-repo | Supabase Staging auth email templates (Resend SMTP sender display name "Take-Off Parts"), Vercel project name | manual dashboard changes — list in plan checklist |
 
-```
-fitment_rules
-─────────────
-id (PK)
-trigger_type   (part_category | search_term | model | part_number_pattern)
-trigger_value  (e.g. category "Hoods")
-implies_type   (model | config | category | search_term)
-implies_value  (e.g. search_term "Long Hood Guys")
-confidence     (for ranking suggestions)
-```
+Leave alone: `tests/integration/_supabase.ts` / `privacy.contract.test.ts` use `takeoffparts.gsd+...@gmail.com` test inboxes — those are real mailbox addresses, not brand copy.
 
-Flow on listing creation: seller picks a category/model → suggestion service queries `fitment_rules` where the seller's selections are triggers → returns implied configs/terms/categories the seller can one-click accept → accepted suggestions become rows in the `listing_*` join tables. This is what makes one part appear in **every** relevant search. Keeping it as data (a rules table) rather than hardcoded logic lets admins extend coverage without code changes.
+### Asset integration points (stakeholder-provided logo/icon)
 
-### Messaging (contact → chat) + Social
+- `app/favicon.ico` → replace; add `app/icon.png` (or `.svg`) and `app/apple-icon.png` (Next.js metadata file conventions — zero config)
+- Add `app/opengraph-image.png` for link sharing
+- Logo file(s) → `public/` (e.g. `public/brand/logo.svg`), consumed by the new `Logo` component
+- Delete create-next-app leftovers: `public/{file,globe,next,vercel,window}.svg`
+
+## 5. Build Order (dependency-reasoned) + Parallelization
 
 ```
-contact_log                 message_threads             messages
-───────────                 ───────────────             ────────
-id (PK)                     id (PK)                     id (PK)
-listing_id (FK)             listing_id (FK)             thread_id (FK)
-buyer_user_id (FK, null     buyer_id (FK)               sender_id (FK)
-  if guest)                 seller_id (FK)              body
-buyer_name, buyer_email,    created_at                  created_at
-  buyer_phone (form data)   last_message_at             read_at
-message_text                status (open|closed)
-admin_copied (bool)
-created_at
+Wave 1 (serial, foundation — everything depends on it)
+  1a. Tokens: globals.css neon palette in :root, dark-only, new brand tokens/utilities
+  1b. Fonts: register display+body fonts in app/layout.tsx, fix the --font-sans wiring bug
+  1c. Assets + metadata: favicon/icon/og-image, Logo component, app/layout.tsx metadata
+  1d. Rename sweep: all §4 strings + e2e spec updates (one atomic commit — greppable, mechanical)
 
-comments                    saved_listings
-────────                    ──────────────
-id (PK)                     user_id (FK)
-listing_id (FK)             listing_id (FK)
-author_id (FK)              created_at
-body                        PK(user_id, listing_id)
-created_at
+Wave 2 (serial after 1 — every surface consumes these)
+  2a. components/ui/ restyle in place (18 primitives; button/card/input/dialog first)
+  2b. Shared chrome: SiteHeader redesign (logo + prominent search bar + icon nav:
+      search, sell, messages, saved, alerts, account) ← UAT fix #1 lands here
+      + user-menu, suspended-screen, (app) inline header, admin-sidebar
+
+Wave 3 (PARALLEL — independent surface groups, all consume Waves 1–2)
+  3a. Public surfaces: feed/search page, listing detail, public profile, not-found
+      + NEW signage browse grid (see below)
+  3b. (app) surfaces: sell form, my listings, garage, messages, saved, account, verify, suspended
+  3c. (auth) surfaces: 6 pages (smallest group — mostly inherit primitives)
+  3d. Admin: 12 screens (lowest priority; mostly inherits primitives + restyled sidebar/charts)
+
+Wave 4 (anytime — independent of all visual work, can run parallel with Wave 3 or even Wave 1)
+  4a. UAT fix #2: freeze-notice realtime refresh (messaging code, no visual dependency)
+  4b. UAT fix #3: vitest-* analytics purge (SQL + test hygiene, no app code dependency)
+
+Wave 5 (last)
+  5.  Emails visual pass (if any HTML styling beyond the Wave-1 string rename) + full-app
+      contrast/mobile QA sweep + e2e green
 ```
 
-`contact_log` is the abuse/dispute base of record and the admin copy. `message_threads` + `messages` are the private in-site chat. RLS on threads/messages: only `buyer_id` or `seller_id` (and admins) may read — buyer and seller still never see each other's PII because the chat is keyed on `auth.uid()`, not on names/emails.
+**Why this order:** tokens/fonts before primitives (primitives reference tokens); primitives before surfaces (surfaces inherit primitives — reskinning a page before `card.tsx` changes means doing it twice); chrome before surfaces (header is on every screen, it sets the visual bar); the rename is mechanical and has no dependencies, so it goes first to get the brand consistent immediately. Waves 3a–3d touch disjoint files and parallelize cleanly across GSD execution waves (watch the known pre-commit stash/restore cross-attribution issue when parallelizing commits).
 
-## Data Flow
+### Browse-as-signage: the one genuinely NEW component surface
 
-### Flow 1: Search query
+Today, browse = `FacetSidebar` (select dropdowns) on the feed page; there is no Make→Model→Category grid anywhere. The neon-sign browse is **new markup, zero new data**:
 
-```
-Buyer selects facets (Make=Peterbilt, Category=Hoods) + types "359 long hood"
-    ↓ (Server Component or Server Action)
-serverClient.rpc('search_listings', { filters, q })
-    ↓
-Postgres: listings WHERE status='active'
-          EXISTS in listing_models / listing_categories for selected facets
-          + FTS(search_vector @@ q) UNION/OR pg_trgm similarity on search_terms.term
-    ↓ RLS: only active listings + public columns
-Ranked, paginated results → rendered feed (no PII anywhere)
-```
+- New `components/browse/sign-grid.tsx` (+ tile component) rendering Makes / Models / Categories as neon-sign link tiles
+- Data already exists: `makes` query (feed page already fetches it), `getModels`/`getConfigs` (`lib/garage/cascade.ts`), `getPartCategories` (`lib/listings/cascade.ts`)
+- Links target the **existing URL params** on `/` (`?make=`, `?model=`, `?category=`) — the feed/search page already parses these via `lib/search/params.ts`
+- Recommended placement: render the signage grid on the feed page's empty-criteria state (the "feed IS the search" locked decision survives; no new route). A dedicated `/browse` route is possible but unnecessary — flag to planning as a choice, default to no-new-route.
 
-### Flow 2: Contact → private chat
+## 6. Where the 3 UAT Fixes Land
 
-```
-Buyer submits contact form (Name, Email, Phone?, Message) on a listing
-    ↓ Server Action / Route Handler (server-side)
-1. INSERT contact_log (form data + listing + buyer) ← persisted FIRST (abuse base)
-2. Copy to admin (admin_copied=true; optional email/notification) + log communication
-3. UPSERT message_threads (buyer_id, seller_id, listing_id)
-4. INSERT first messages row (sender=buyer, body=message_text)
-    ↓
-Redirect buyer to /messages/[thread]; seller notified
-    ↓ Realtime
-Both clients subscribe to a per-thread channel; new messages delivered via
-Supabase Realtime BROADCAST (sent from a DB trigger/Server Action on INSERT)
-Presence shows online/typing. Neither party ever sees the other's PII.
-```
+### Fix 1 — Sell entry point in header
+`components/layout/site-header.tsx`. Subsumed by the Wave-2 header redesign (the icon nav explicitly includes "sell" → links `/sell`). Anonymous users: show it and let the existing `(app)` layout auth-gate redirect to `/login`. No new code paths.
 
-> **Realtime mode (verified):** Use **Broadcast** (not `postgres_changes`) for message delivery — Supabase docs state `postgres_changes` does not scale as well and recommend Broadcast for most chat use cases. Pattern: persist the message (RLS-protected), then broadcast the new-message event to the thread channel; clients render from the broadcast (or refetch). Use **Presence** for online/typing indicators.
+### Fix 2 — Freeze-notice realtime refresh (the only new data flow in v1.1)
+Current behavior: `app/(app)/messages/[threadId]/page.tsx:59` computes `sendDisabled` from `thread.frozenAt` **server-side at render**; `components/messaging/thread-view.tsx` receives it as a prop. A tab already open when an admin freezes (via `lib/actions/admin/threads.ts`) keeps an enabled composer until manual reload (sends would still fail — the `0019` messages INSERT policy carries the `frozen_at is null` arm — but the UI lies).
 
-### Flow 3: Listing creation with fitment auto-suggest
+Fix: in `thread-view.tsx`, add a second `.on("postgres_changes", { event: "UPDATE", table: "message_threads", filter: "id=eq.{threadId}" })` listener **on the already-existing `thread:{id}` channel**, calling `router.refresh()` so the server recomputes `sendDisabled`. Notes:
+- The channel, `setAuth()` JWT push, and cleanup already exist (lines 80–125) — this is additive, ~15 lines
+- **Verify `message_threads` is in the `supabase_realtime` publication** — `messages` demonstrably is, threads likely are not → one small migration (`ALTER PUBLICATION supabase_realtime ADD TABLE message_threads`). RLS SELECT on threads already covers participants, so delivery is correctly scoped
+- Same pattern optionally applies to the split view in `app/(app)/messages/page.tsx:125` (it also derives `sendDisabled` from `frozenAt`); the thread detail page is the must-fix
+- Channel topic must stay `thread:{id}` (locked: future Broadcast topic)
 
-```
-Seller fills public part info + selects Make/Model + a few categories
-    ↓
-lib/fitment/suggest → query fitment_rules where selections are triggers
-    ↓
-UI shows suggested configs/terms/categories ("also tag: Aerodyne, Long Hood Guys?")
-    ↓ seller accepts/edits
-Server Action (transaction):
-  INSERT listings (+ search_vector generated from title/part#/notes)
-  INSERT listing_models / listing_configs / listing_categories /
-         listing_materials / listing_conditions / listing_special_filters
-  Upload photos → Storage → INSERT listing_photos
-    ↓ RLS: WITH CHECK seller_id = auth.uid()
-Listing now surfaces in every search path it was tagged for.
-```
+### Fix 3 — vitest-* analytics purge (Staging data hygiene)
+The integration tests wrote search events with `vitest-*` terms into `search_events` (`raw_term`/`normalized_term` columns — `lib/search/events.ts:34-40`), polluting Top Search Terms in `lib/admin/analytics.ts` (live aggregates, no pre-aggregation, so the fix is pure data deletion). Land as:
+1. One-off Staging SQL (or migration for the audit trail): `DELETE FROM search_events WHERE raw_term LIKE 'vitest-%' OR normalized_term LIKE 'vitest-%'`
+2. Prevention: make the responsible integration tests clean up their own `search_events` rows in teardown (they already use the service-role test harness in `tests/integration/_supabase.ts`), **or** add a `NOT LIKE 'vitest-%'` guard in the analytics top-terms query. Prefer test teardown — analytics should not carry test-awareness.
 
-## Architectural Patterns
+## Data Flow Changes
 
-### Pattern 1: RLS as the privacy boundary (default-deny)
+**None** to existing flows. Summary of deltas:
+- New: one realtime UPDATE subscription on `message_threads` (Fix 2) — read-only, RLS-scoped, additive
+- Removed: `vitest-*` rows in `search_events` (Fix 3) — Staging data only
+- Everything else: tokens, markup, strings, static assets
 
-**What:** Enable RLS on every table in `public`; write explicit policies. PII tables grant SELECT only to the owner; public tables grant world SELECT but owner-only writes.
-**When to use:** Always here — this is the product's core guarantee.
-**Trade-offs:** Policies must be tested (a missing SELECT policy silently returns 0 rows; an over-broad one leaks PII). Worth it: the DB enforces privacy even if app code has a bug.
+## Anti-Patterns to Avoid in This Milestone
 
-```sql
-alter table profiles_private enable row level security;
-create policy "owner reads own PII" on profiles_private
-  for select to authenticated using ( (select auth.uid()) = id );
--- NO anon/public select policy → PII is structurally unreadable publicly
-
-alter table profiles_public enable row level security;
-create policy "public profiles readable" on profiles_public
-  for select to anon, authenticated using ( true );
-create policy "owner edits own profile" on profiles_public
-  for update to authenticated
-  using ( (select auth.uid()) = id ) with check ( (select auth.uid()) = id );
-```
-
-### Pattern 2: Server-first reads, Server Actions for writes
-
-**What:** Server Components read through the cookie-bound `serverClient` (RLS-enforced). Mutations go through Server Actions / Route Handlers, never raw client writes for sensitive flows (contact, listing create).
-**When to use:** Everywhere; the browser client is reserved for Realtime subscriptions and optimistic UI.
-**Trade-offs:** Slightly more server round-trips, but keeps privacy logic server-side and lets RLS + server validation co-enforce rules.
-
-### Pattern 3: Service-role isolated to admin
-
-**What:** The `service_role`/secret key bypasses RLS. Keep it in one server-only module used solely by `app/admin/` (guarded by `is_admin`) and trusted webhooks.
-**When to use:** Admin ops (cross-user moderation, analytics aggregation, communication monitoring).
-**Trade-offs:** Powerful and dangerous — must never reach the browser (`NEXT_PUBLIC_*` is sent to the client). One isolated file makes audit trivial.
-
-## Scaling Considerations
-
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 0–1k users | Single Supabase project; FTS + pg_trgm indexes; Realtime Broadcast for chat. Monolith is correct. |
-| 1k–100k users | Add GIN indexes on `search_vector` and trigram columns; materialized views for analytics refreshed via `pg_cron`; ensure chat uses Broadcast not `postgres_changes`. |
-| 100k+ users | Read replicas for search/feed; consider connection pooling (Supavisor); move analytics to scheduled rollups; evaluate dedicated search if FTS latency degrades. |
-
-### Scaling Priorities
-
-1. **First bottleneck:** search latency on multi-join facet queries — fix with GIN indexes (FTS + trigram) and composite indexes on join tables before anything else.
-2. **Second bottleneck:** Realtime fan-out and analytics aggregation — use Broadcast for chat (scales better than `postgres_changes`) and pre-aggregate analytics via `pg_cron` instead of live `count(*)` over large tables.
-
-## Anti-Patterns
-
-### Anti-Pattern 1: PII in the public profile table (or in a view)
-
-**What people do:** One `profiles` table with a mix of public/private columns, relying on `select` discipline; or a public view over the PII table.
-**Why it's wrong:** `select *`, an ORM, or a forgotten policy leaks PII; views bypass RLS unless `security_invoker = true`, and a view-based privacy boundary is easy to misconfigure.
-**Do this instead:** Physically separate `profiles_private` (owner-only RLS) from `profiles_public` (world-readable). Make privacy structural.
-
-### Anti-Pattern 2: `postgres_changes` for chat at scale
-
-**What people do:** Subscribe the chat UI directly to row inserts via `postgres_changes` because it's the simplest demo.
-**Why it's wrong:** It does not scale well (documented Supabase limitation) and couples UI directly to replication.
-**Do this instead:** Persist the message (RLS-protected) then **Broadcast** the event to the thread channel; render from the broadcast.
-
-### Anti-Pattern 3: Opening chat before persisting contact
-
-**What people do:** Open the chat thread first, log the contact "later."
-**Why it's wrong:** Requirement is form-first — the contact must be the durable abuse/dispute record and the admin copy BEFORE any conversation.
-**Do this instead:** Server Action writes `contact_log` (+ admin copy) first, then creates the thread + first message in the same transaction.
-
-### Anti-Pattern 4: Trusting `user_metadata` for authorization
-
-**What people do:** Put `is_admin` in user metadata and check it in RLS.
-**Why it's wrong:** `raw_user_meta_data` is user-editable and unsafe for authz.
-**Do this instead:** Store admin/role flags in `app_metadata` or a server-controlled `admins` table; check that in policies.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Supabase Auth | `@supabase/ssr` `createServerClient`/`createBrowserClient` + `middleware.ts` | Refresh session every request; use new publishable/secret keys (legacy anon/service_role work through 2026 but are deprecating) |
-| Supabase Storage | Server Action upload → `listing_photos.storage_path` | Upsert needs INSERT+SELECT+UPDATE storage policies; serve via public bucket or signed URLs |
-| Supabase Realtime | Broadcast (chat) + Presence (online/typing) | Broadcast over `postgres_changes` for scale |
-| pg_cron / Edge Functions | Scheduled analytics rollups, notification sends | Analytics aggregation lives here, not in request path |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| Public surface ↔ PII | NONE (by design) | Public components query `profiles_public` only; RLS denies PII |
-| Listing create ↔ fitment intelligence | Server Action → `fitment_rules` lookup | Suggestions are data-driven, admin-extensible |
-| Contact ↔ chat ↔ admin | Single Server Action transaction | contact_log (+admin copy) → thread → message |
-| Buyer ↔ seller in chat | Keyed on `auth.uid()`, not identity | RLS on threads/messages; neither sees the other's PII |
-
-## Build Order Implications
-
-Dependencies dictate this order (each layer needs the one before it):
-
-1. **Foundation:** Supabase project, `@supabase/ssr` clients + `middleware.ts`, RLS-on-everything baseline. Nothing is safe to build until the session + RLS scaffolding exists.
-2. **Auth + Privacy split:** `profiles_private` / `profiles_public` tables + RLS + registration (custom/system username, verified-seller flow). The privacy model must be correct before any public surface renders.
-3. **Fitment taxonomy:** seed the 8 reference tables + Barnyard. Listings can't be tagged or searched without the taxonomy existing first.
-4. **Listings + fitment join tables + Storage:** create/edit/sell + photos. Depends on auth (seller_id) and taxonomy (tags).
-5. **Fitment intelligence:** `fitment_rules` + suggestion service. Depends on listings + taxonomy.
-6. **Search + feed:** `search_listings` RPC (FTS + pg_trgm) + facet UI + public profile. Depends on listings being taggable.
-7. **Social layer:** comments + saved listings. Depends on listings.
-8. **Contact → chat:** `contact_log` → threads/messages + Realtime Broadcast. Depends on listings + auth; the contact_log/admin-copy must come before live chat.
-9. **Admin:** Ops console (uses service-role, isolated) + Analytics (pre-aggregated via pg_cron/materialized views). Depends on all data existing to manage/measure.
-
-Critical sequencing: **RLS scaffolding → privacy split → fitment taxonomy** must precede listings; **listings** must precede search, social, and contact/chat; **admin** comes last.
+1. **Forking primitives** (`NeonButton` alongside `Button`) — touches every import site; use in-place restyle + cva variants instead.
+2. **Hardcoding neon hex values in components** — all brand color goes through `@theme` tokens; a component with `#ff2d55` inline is the new version of the "Spanish string in UI" bug.
+3. **Adding a theme toggle / next-themes provider** — the design is dark-only; shipping a half-working light mode doubles QA for zero requirement.
+4. **Letting the redesign drift into functional changes** — the mockups show cart/payments/phone elements that are explicitly out of scope; the header icon set is fixed (search, sell, messages, saved, alerts, account). "Alerts" needs a scope decision in planning (no notifications feature exists — likely the messages unread badge or a stub).
+5. **Renaming in dribbles** — a partial rename leaves mixed-brand emails/titles in front of real Staging users; do the §4 sweep atomically with the e2e updates.
+6. **Forgetting the inline headers** — `app/(app)/layout.tsx` (suspended read-only chrome) and `suspended-screen.tsx` hardcode their own mini-headers; they will silently keep the old wordmark if only `site-header.tsx` is updated.
 
 ## Sources
 
-- Supabase RLS / SSR / security checklist — `supabase` skill (current product-security guidance), [Creating a Supabase client for SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [Server-Side Auth for Next.js](https://supabase.com/docs/guides/auth/server-side/nextjs) — HIGH
-- [RLS in Supabase: Complete Guide for Next.js with @supabase/ssr (2026)](https://blog.starmorph.com/blog/row-level-security-supabase-tables-nextjs) — MEDIUM (default-deny RLS, middleware refresh confirmed)
-- Realtime: [Broadcast | Supabase Docs](https://supabase.com/docs/guides/realtime/broadcast), [Subscribing to Database Changes](https://supabase.com/docs/guides/realtime/subscribing-to-database-changes) — HIGH (Broadcast preferred over postgres_changes at scale)
-- Search: [Postgres Full Text Search vs the rest (Supabase)](https://supabase.com/blog/postgres-full-text-search-vs-the-rest), [Full Text Search | Supabase Docs](https://supabase.com/docs/guides/database/full-text-search), [pg_trgm](https://www.postgresql.org/docs/current/pgtrgm.html) — HIGH (FTS + trigram hybrid)
-- Fitment many-to-many: [ACES and PIES Data Standards](https://automotiveaftermarket.org/aftermarket-industry-trends/aces-pies-data-explained/), [ACES and PIES: The Guide for 2026](https://www.sparkshipping.com/blog/aces-and-pies-guide) — MEDIUM (validates part↔vehicle M2M; our schema is a simplified heavy-truck adaptation)
+- Direct codebase reads (2026-06-12): `app/globals.css`, `app/layout.tsx`, all 5 layouts, `components/layout/site-header.tsx`, `components/layout/user-menu.tsx`, `components/account/suspended-screen.tsx`, `components/messaging/thread-view.tsx`, `app/(public)/page.tsx`, `app/(app)/messages/[threadId]/page.tsx`, `lib/admin/analytics.ts`, `lib/search/events.ts`, `package.json`; full file enumeration of `app/`, `components/`, `lib/`; repo-wide grep for the brand name — HIGH
+- Tailwind v4 CSS-first `@theme` / shadcn "own your components" model — consistent with the existing globals.css structure and `.planning/research/STACK.md` (v1.0) — HIGH
+- Supabase Realtime postgres_changes publication + RLS delivery — pattern already proven in `thread-view.tsx` (messages table) — HIGH; `message_threads` publication membership unverified → flagged as a check in Fix 2 — MEDIUM
 
 ---
-*Architecture research for: privacy-first truck-parts marketplace (Next.js 15 + Supabase)*
-*Researched: 2026-06-01*
+*Architecture research for milestone v1.1: OG Rebrand & UI Redesign (visual-only on shipped v1.0)*
+*Researched: 2026-06-12*

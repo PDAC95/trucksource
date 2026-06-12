@@ -1,144 +1,230 @@
-# Stack Research
+# Stack Research — v1.1 OG Rebrand & UI Redesign
 
-**Domain:** Privacy-first, fitment-driven truck-parts online marketplace (Next.js + Supabase)
-**Researched:** 2026-06-01
-**Confidence:** HIGH (core stack + versions verified against official sources/npm as of June 2026)
+**Domain:** App-wide neon truck-stop visual identity on an existing Next.js 16 + Tailwind v4 + shadcn/ui app
+**Researched:** 2026-06-12
+**Confidence:** HIGH (core techniques verified against Tailwind v4 official docs via Context7; fonts verified on Google Fonts)
 
-> **Prescriptive intent:** The stack (Next.js App Router + Supabase + Tailwind + shadcn/ui) is already decided. This document makes it exact — pinned versions, one library per concern, and explicit "do not use" calls. Where the decided constraint conflicts with the current 2025/2026 ecosystem standard, it is flagged (see the Next.js version note below).
+> **Milestone scope:** This file covers ONLY what the v1.1 rebrand needs. The v1.0 application stack (Next.js 16.2.x, React 19, Supabase, Tailwind v4, shadcn/ui, RHF+Zod, Vercel) is shipped, validated, and unchanged — see `.planning/PROJECT.md` Key Decisions and `MILESTONES.md` for the v1.0 record. The headline finding: **this redesign needs almost zero new dependencies.** It is a token + font + asset exercise on top of what's already installed.
 
 ---
 
-## ⚠️ Version Decision That Needs a Call: Next.js 15 vs 16
+## Executive Answer (the five questions)
 
-PROJECT.md specifies **Next.js 15 (App Router)**. As of June 2026, **Next.js 16 is the current stable line (16.2.x)** and the App Router API is essentially the same. Key differences relevant to this project:
-
-- Next.js 16 makes **Turbopack the default bundler** (dev + prod), with stable filesystem caching — faster builds, no config needed.
-- React 19 is the minimum for both 15 and 16, so the component model is identical.
-- `@supabase/ssr`, shadcn/ui, Tailwind v4, RHF, and Zod all support 16.
-- Async request APIs (`cookies()`, `headers()`, `params`, `searchParams` are `await`-ed) landed in 15 and remain in 16 — this is the single biggest "gotcha" carried into both.
-
-**Recommendation: build on Next.js 16 (latest stable) using the App Router.** "Next.js 15 App Router" in PROJECT.md should be read as "Next.js App Router, latest stable" — there is no architectural reason to pin to 15, and 16 is what a greenfield 2026 project should start on. If a hard external constraint forces 15, pin `next@15.5.x` (last 15.x); everything else below is unchanged. **Confidence: HIGH.**
+1. **Theme tokens:** Redefine the existing shadcn semantic CSS variables (`--background`, `--primary`, `--card`, …) in `:root` of `globals.css` with the dark neon palette in **oklch**, and add brand-scale tokens (`--color-neon-red-*`, `--color-neon-cyan-*`, `--color-navy-*`) plus custom glow shadows (`--shadow-neon-*`, `--text-shadow-neon-*`) in `@theme`. No new tooling.
+2. **Fonts:** **Barlow Condensed** (Bold/Black Italic) as the display face via `next/font/google` — it's literally derived from California highway/roadside signage, has true italics in 9 weights, OFL-licensed, self-hosted by next/font. Optionally **Tilt Neon** as a sparing accent for literal neon-sign moments. Body stays **Geist Sans** (already wired).
+3. **Glow effects:** CSS-only. Tailwind **v4.1+ native `text-shadow-*` utilities** + custom `--shadow-*` / `--text-shadow-*` theme tokens for box/text glows; `drop-shadow` filter only for the non-rectangular logo. Animate **opacity of a pre-shadowed pseudo-element**, never the shadow values themselves. No glow library.
+4. **Logo assets:** Keep the stakeholder PNG as the rendered logo via `next/image` (neon glows don't vectorize cleanly); request the vector source if one exists. Regenerate `app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`, and a static `app/opengraph-image.png` (1200×630) using Next's metadata file conventions — a one-off `sharp` script (already a dependency) covers the resizes.
+5. **Dark-only:** Force dark. Collapse the neon dark palette into `:root` (delete the light values and the `.dark` override block), set `color-scheme: dark`, hardcode Sonner's `theme="dark"`, and drop the unused `next-themes` dependency. No ThemeProvider, no toggle.
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies
+### Core Technologies (existing — version notes only)
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| **Next.js (App Router)** | `16.2.x` (or `15.5.x` if forced) | Full-stack React framework: SSR/RSC pages, Server Actions, route handlers, middleware | The default 2026 framework for Supabase apps. Server Components keep seller PII server-side by default; Server Actions handle listing/contact form mutations without a separate API layer; middleware is exactly where Supabase session refresh belongs. **HIGH** |
-| **React** | `19.x` | UI runtime | Required minimum for Next 15/16. Server Components + `useActionState`/`useFormStatus` pair perfectly with Server Actions for the listing and contact forms. **HIGH** |
-| **TypeScript** | `5.7+` | Type safety end-to-end | Supabase generates DB types via CLI; Zod infers form types. Non-negotiable for a relational-heavy app. **HIGH** |
-| **Supabase** | Platform (hosted) | Postgres + Auth + Realtime + Storage | One managed backend covers the four hard requirements (relational fitment, RLS privacy, realtime chat, photo storage) with minimal custom backend. **HIGH** |
-| **PostgreSQL** | `15+` (Supabase-managed, currently PG 17) | Relational store + search engine | The fitment library is deeply relational AND needs fuzzy/slang search. Postgres does both natively (FTS + `pg_trgm`) — no external search service needed at this scale. **HIGH** |
+| Technology | Version | Purpose | Why It Matters for v1.1 |
+|------------|---------|---------|--------------------------|
+| **Tailwind CSS** | `^4` installed — **verify lockfile resolves ≥ 4.1** (current line 4.2.x) | All theming + glow utilities | Native `text-shadow-*` utilities (with color + `/opacity` modifiers) landed in **v4.1**. The repo pins `^4`, so the resolved version almost certainly qualifies — confirm `package-lock.json` before relying on `text-shadow-*`. **HIGH** |
+| **shadcn/ui components** | already CLI-installed (owned in `components/ui/`) | Component restyle surface | shadcn theming is 100% CSS-variable driven. Changing the semantic vars restyles every installed component (Button, Card, Dialog, Sheet…) without touching their TSX. Only per-component edits needed are decorative (neon borders/glows via `cn()` class additions). **HIGH** |
+| **next/font** (`next/font/google`) | bundled with Next 16 | Display font loading | Self-hosts Google Fonts at build time: zero external requests, zero CLS (`adjustFontFallback`), exposes a CSS variable that plugs straight into `@theme`. Same pattern already used for Geist. **HIGH** |
+| **sharp** | `0.34.5` (already installed for EXIF strip) | One-off icon/OG asset generation script | Resize the stakeholder PNG into 32/180/512px icons and a 1200×630 OG canvas. No new dependency. **HIGH** |
+| **tw-animate-css** | `^1.4.0` (already installed) | Keyframe utilities for any flicker/pulse animation | Pair with custom `--animate-*` theme tokens for a neon "buzz/flicker" if mockups call for it. **HIGH** |
 
-### Supabase Client Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| **@supabase/supabase-js** | `2.106.x` | Core JS client (DB, auth, storage, realtime) | Always. Base SDK. **HIGH** |
-| **@supabase/ssr** | `0.10.x` | Cookie-based SSR auth for Next.js App Router | Always, for this project. Creates browser + server clients, handles cookie-based sessions in Server Components, route handlers, and middleware. **This is the only supported SSR auth path.** **HIGH** |
-| **supabase** (CLI) | `2.x` (dev dependency) | Local dev, migrations, `gen types typescript` | Dev/CI. Run migrations as versioned SQL files; generate TS types from the schema. **HIGH** |
-
-> **Critical:** Do NOT use `@supabase/auth-helpers-nextjs` — it is **deprecated**. `@supabase/ssr` replaces it. In server code, authenticate with **`supabase.auth.getClaims()`** (verifies the JWT signature against the project's published keys on every call), **not** `getSession()` (which trusts unverified cookie data). Source: Supabase server-side auth docs.
-
-### UI Layer
+### New Additions
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| **Tailwind CSS** | `4.2.x` | Utility-first styling | Always. v4 uses the CSS-first `@theme` config (no `tailwind.config.js` JS object required), OKLCH colors, ~5x faster builds. shadcn/ui is fully aligned with v4. **HIGH** |
-| **shadcn/ui** | latest (CLI-installed components, not a versioned dep) | Copy-in accessible component primitives | Always. Components are copied into your repo (you own them), built on Radix UI + Tailwind. Use the CLI (`npx shadcn@latest add ...`) to scaffold Form, Dialog, Input, Select, Command (for the fitment combobox/search), Badge (Verified Seller), Sonner (toasts). **HIGH** |
-| **Radix UI** | (pulled in by shadcn components) | Unstyled accessible primitives | Transitively. Don't install standalone unless a component isn't covered by shadcn. **HIGH** |
-| **lucide-react** | latest | Icon set | Default icon set shadcn uses. **HIGH** |
-| **@tailwindcss/postcss** | `4.2.x` | PostCSS plugin for Tailwind v4 | Build pipeline (replaces the old `tailwindcss` + `autoprefixer` + `postcss` trio config). **HIGH** |
+| **Barlow Condensed** (via `next/font/google`) | n/a (font, OFL license) | Display/heading face — condensed bold italic, roadside-signage DNA | All headings, nav labels, signage-style browse tiles. Load only the weights used (recommend `700`/`800`/`900` + matching italics) to keep payload small. **HIGH** |
+| **Tilt Neon** (via `next/font/google`) | n/a (font, OFL, variable) | Optional accent face that mimics neon-tube construction | Sparingly: hero wordmark moments, "The Barnyard" header, browse-as-signage grid titles. Skip entirely if Barlow Condensed Italic + glow already matches the mockups — decide against the 4 hi-fi mockups during design-token planning. **MEDIUM** |
 
-### Forms & Validation
+**That's the whole shopping list.** Everything else is configuration of what's already installed.
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| **react-hook-form** | `7.76.x` | Performant form state | All forms: listing creation (large, multi-section), registration, contact-seller, admin. Minimal re-renders matters on the big listing form. **HIGH** |
-| **zod** | `4.4.x` | Schema validation + TS inference | Define each form/DB-input schema once; reuse on client (RHF) AND server (Server Action revalidation). Zod 4 is stable, ~57% smaller, much faster than v3. **HIGH** |
-| **@hookform/resolvers** | `5.x` | Bridges Zod → RHF | Use `zodResolver` from `@hookform/resolvers/zod`. v5 supports Zod 4. **HIGH** |
-
-> **Validate on the server too.** Client-side Zod is UX only. Re-run the same Zod schema inside the Server Action before writing to Postgres — never trust the client, especially for the contact form (which must persist + copy to admin) and listing inputs.
-
-### Search (Fitment + Trucker Slang)
-
-| Technology | Version | Purpose | When to Use |
-|------------|---------|---------|-------------|
-| **Postgres Full-Text Search** (`tsvector`/`tsquery`, `GIN`) | built-in | Tokenized, ranked search over titles/descriptions/part numbers | Primary relevance-ranked search across listing text + aggregated fitment terms. **HIGH** |
-| **pg_trgm** extension | built-in (enable) | Trigram fuzzy/typo-tolerant matching | Slang and misspellings ("Aerodyne", "359 Guys", "Flat Glass Kenworth", "W900L"), short-string similarity, autocomplete. **HIGH** |
-| **unaccent** extension | built-in (enable) | Strip accents for search | Bilingual user base (Spanish comments in PROJECT.md examples). Normalize "¿disponible?" / accented input. **MEDIUM** |
-
-> **Do NOT reach for Elasticsearch/Algolia/Meilisearch in v1.** Postgres FTS + `pg_trgm` covers fuzzy + slang + ranking for a single-language-ish catalog at marketplace-launch scale. Adding an external search engine means a sync pipeline and another moving part with no payoff yet. Revisit only if catalog size or query complexity outgrows Postgres. **HIGH.**
-
-### Realtime Chat & Comments
-
-| Feature | Mechanism | Purpose | Notes |
-|---------|-----------|---------|-------|
-| **Supabase Realtime — Postgres Changes** | built-in | In-site buyer↔seller chat (persisted messages) | Messages are stored in a `messages` table; clients subscribe to inserts on their thread. **Realtime applies table RLS automatically** — users only receive rows they're allowed to see. **HIGH** |
-| **Supabase Realtime — Presence** | built-in | Online status / typing indicators (optional v1) | Share one channel with the chat subscription to limit WebSocket count. **MEDIUM** |
-| **Supabase Realtime — Broadcast** | built-in | (Future) ephemeral signals at scale | Supabase now recommends Broadcast over Postgres Changes for high-scale fan-out. For v1 launch volumes, Postgres Changes is simpler and correct; design the `messages` table so you can switch to "Broadcast from a trigger" later without schema churn. **MEDIUM** |
-
-> Public comments on listings are **not** realtime-critical — store in a `comments` table, render server-side, and optionally subscribe via Postgres Changes for live updates. RLS makes comments world-readable but write-restricted to authenticated users.
-
-### Images / Storage
-
-| Technology | Purpose | Notes |
-|------------|---------|-------|
-| **Supabase Storage** | Listing photo storage (buckets) | RLS-style storage policies control who can upload/read. Use a public bucket for listing photos (they're meant to be seen) with owner-only write policies. **HIGH** |
-| **Supabase Storage Image Transformations** (ImgProxy-backed) | On-the-fly resize/compress/WebP | `render/image/...?width=&quality=` endpoint. Serve thumbnails for the feed, full-size on detail pages, auto-WebP to cut egress. **Note: requires Pro plan.** **HIGH** |
-| **next/image** | Optimized rendering + lazy loading | Use a custom Supabase image **loader** so `next/image` delegates resizing to Supabase transforms (avoids double-optimization). Whitelist the Supabase domain in `next.config` `images.remotePatterns`. **HIGH** |
-| **browser-image-compression** | Client-side pre-upload compression | OPTIONAL. Truckers upload large phone photos; compress to a sane max dimension client-side before upload to save bandwidth and storage. **MEDIUM** |
-
-> If staying on the Supabase free tier (no Image Transformations), do client-side compression + generate a thumbnail at upload time, OR use `next/image`'s built-in optimizer pointed at the raw Storage URL. Decide based on plan.
-
-### Auth Specifics (per PROJECT.md requirements)
-
-| Requirement | Mechanism | Notes |
-|-------------|-----------|-------|
-| Email/password + email verification | Supabase Auth (email provider, "Confirm email" on) | Built-in. **HIGH** |
-| Phone verification for Verified Seller | Supabase Auth Phone OTP via **Twilio Verify** (or MessageBird/Vonage) | Use `auth.updateUser({ phone })` → `auth.verifyOtp(...)` to attach + verify a phone to an existing email account. Requires an SMS provider (Twilio Verify recommended; needs Account SID, Auth Token, Verify Service SID). **HIGH** |
-| Verified badge logic | App-level: `verified_email && verified_phone && accepted_terms` → set a `verified_seller` flag/column | Compute server-side; expose only the boolean publicly. **HIGH** |
-
-### Deployment & Env
+### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| **Vercel** | Hosting Next.js | First-class Next.js host; preview deployments per PR; native env-var management per environment (Development/Preview/Production). **HIGH** |
-| **Vercel env vars** | Secrets/config | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public, RLS-protected). Keep `SUPABASE_SERVICE_ROLE_KEY` **server-only** (never `NEXT_PUBLIC_`), used only in trusted server code (e.g. admin copy of contact messages, admin operations). **HIGH** |
-| **Supabase CLI migrations** | Schema as code | Version SQL migrations in repo; apply via CI. Keep RLS policies in migrations so the privacy model is reviewable and reproducible. **HIGH** |
+| `scripts/generate-brand-assets.mjs` (write it, ~30 lines) | sharp-based resize of the logo PNG → `app/icon.png` (512²), `app/apple-icon.png` (180²), OG canvas (1200×630) | Run once per logo revision; commit outputs. For `favicon.ico` either use a one-off converter (e.g., RealFaviconGenerator) or add `png-to-ico` as a devDependency for the script — `.ico` is the only format sharp can't emit. |
+| Browser DevTools paint profiling | Verify glow perf on listing grids | Check Layers/Paint flashing on the feed page after applying card glows — large blurred shadows on dozens of cards is the one real perf risk (see Glow section). |
+
+---
+
+## 1. Tailwind v4 `@theme` Token Strategy (neon palette)
+
+The current `globals.css` already follows the shadcn v4 convention: raw values on `:root`, bridged into Tailwind via `@theme inline`. **Keep that structure** — it means zero component churn. The work is three layers:
+
+**Layer 1 — brand scale (new, in `@theme`):** real Tailwind color tokens so utilities like `text-neon-cyan` and `border-neon-red/40` exist.
+
+```css
+@theme {
+  /* Brand palette — oklch keeps perceptual lightness consistent across hues */
+  --color-night-900: oklch(0.13 0.03 260);   /* page background (near-black navy) */
+  --color-navy-800: oklch(0.20 0.05 260);    /* panel / card */
+  --color-navy-700: oklch(0.26 0.06 260);    /* raised surface / input */
+  --color-neon-red-500: oklch(0.62 0.26 25); /* primary CTA / signage red */
+  --color-neon-red-400: oklch(0.70 0.24 25); /* hover / glow core */
+  --color-neon-cyan-400: oklch(0.85 0.14 195); /* secondary signage / links / accents */
+  --color-neon-cyan-300: oklch(0.90 0.12 195);
+
+  /* Glow shadows — generate shadow-neon-red, shadow-neon-cyan utilities */
+  --shadow-neon-red: 0 0 4px oklch(0.62 0.26 25 / 0.9), 0 0 16px oklch(0.62 0.26 25 / 0.5), 0 0 40px oklch(0.62 0.26 25 / 0.25);
+  --shadow-neon-cyan: 0 0 4px oklch(0.85 0.14 195 / 0.9), 0 0 16px oklch(0.85 0.14 195 / 0.5), 0 0 40px oklch(0.85 0.14 195 / 0.25);
+
+  /* Text glows — generate text-shadow-neon-* utilities (Tailwind ≥ 4.1) */
+  --text-shadow-neon-red: 0 0 2px oklch(0.62 0.26 25 / 0.9), 0 0 10px oklch(0.62 0.26 25 / 0.6), 0 0 24px oklch(0.62 0.26 25 / 0.3);
+  --text-shadow-neon-cyan: 0 0 2px oklch(0.85 0.14 195 / 0.9), 0 0 10px oklch(0.85 0.14 195 / 0.6), 0 0 24px oklch(0.85 0.14 195 / 0.3);
+}
+```
+*(Exact oklch values get tuned against the mockups; the structure is the decision.)*
+
+**Layer 2 — semantic remap (edit existing `:root`):** point the shadcn variables at the brand scale. This is what restyles every component at once.
+
+```css
+:root {
+  --background: var(--color-night-900);
+  --foreground: oklch(0.96 0.01 250);
+  --card: var(--color-navy-800);
+  --primary: var(--color-neon-red-500);        /* red neon CTAs */
+  --primary-foreground: oklch(0.98 0 0);
+  --accent: var(--color-neon-cyan-400);
+  --border: oklch(0.85 0.14 195 / 0.25);       /* faint cyan line = "tube off" state */
+  --ring: var(--color-neon-cyan-400);
+  /* ...remaining shadcn vars (popover, muted, destructive, sidebar, chart) same pattern */
+}
+```
+
+**Layer 3 — composed utilities (optional, `@utility`):** for repeated multi-property looks like a signage panel, define once:
+
+```css
+@utility panel-neon {
+  background-color: var(--color-navy-800);
+  border: 1px solid --alpha(var(--color-neon-cyan-400) / 40%);
+  box-shadow: var(--shadow-neon-cyan);
+  border-radius: var(--radius-lg);
+}
+```
+
+**Why oklch:** the codebase is already oklch (shadcn v4 default); oklch keeps the red and cyan at matched perceived brightness on the dark background, and lightness-only ramps (hover states) stay predictable. Don't reintroduce hex/hsl.
+
+**Verified:** `--shadow-*`, `--drop-shadow-*` theme namespaces and `text-shadow-*` utilities (with `text-shadow-<color>` and `/opacity` modifiers) are official Tailwind v4 features — Context7 `/tailwindlabs/tailwindcss.com` (theme.mdx, text-shadow.mdx, v4.1 release post). **HIGH**
+
+**Accessibility gate:** neon-on-navy must still pass contrast. Cyan ~`oklch(0.85 …)` on night-900 is fine; neon red at `oklch(0.62 …)` is borderline for body-size text — reserve pure neon red for large display text, buttons with white foreground, and borders; never for small body copy. Check key pairs with a contrast tool during token tuning. **MEDIUM** (values need empirical tuning).
+
+---
+
+## 2. Typography (retro display + readable body)
+
+| Role | Font | Source | Why |
+|------|------|--------|-----|
+| **Display / headings / signage** | **Barlow Condensed** — Bold (700), ExtraBold (800), Black (900) + true Italics | `next/font/google`, OFL | The family is explicitly derived from California highway signage, bus/train plates — the exact roadside-Americana register of the mockups. It's one of the few quality Google Fonts condensed families with **real italics at every weight** (9 weights roman + italic), which the "condensed bold italic" signage look requires. Free for commercial use, self-hosted by next/font. **HIGH** |
+| **Neon accent (optional)** | **Tilt Neon** (variable) | `next/font/google`, OFL | Designed by Andy Clymer to mimic neon-tube lettering construction. Use only for literal "neon sign" set pieces (browse-grid tiles, section signs). It is decorative — never for UI labels or anything under ~24px. **MEDIUM** |
+| **Body / UI text** | **Geist Sans** (keep) | already loaded | Already wired into `--font-sans` and every component; highly readable on dark backgrounds; changing it buys nothing and risks app-wide regression. Zero work. **HIGH** |
+| **Mono** | **Geist Mono** (keep) | already loaded | Unchanged (part numbers, admin). **HIGH** |
+
+**Integration** (`app/layout.tsx` + `globals.css`):
+
+```tsx
+import { Barlow_Condensed } from "next/font/google";
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow-condensed",
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  style: ["normal", "italic"],
+});
+// add barlowCondensed.variable to the <html> className
+```
+
+```css
+@theme inline {
+  --font-heading: var(--font-barlow-condensed); /* replaces the current alias to --font-sans */
+}
+```
+
+The codebase already uses `font-heading` in `card.tsx`, `dialog.tsx`, `sheet.tsx`, `alert-dialog.tsx` — swapping the alias propagates the display face automatically; the signage *italic* lean is then applied per-surface with `italic` / `not-italic` utilities.
+
+**Licensing:** everything recommended is SIL Open Font License via Google Fonts — free commercial use, no attribution UI requirement, and `next/font` self-hosting means no Google Fonts CDN call (no GDPR/consent surface). **HIGH**
+
+**Alternatives considered:** Bebas Neue / Anton / Oswald (no italics — disqualified for the brief), Bungee (signage-designed but caps-only, no italic — close second for accent role), Monoton (single-weight outline neon — too decorative, poor at small sizes), Saira Condensed (no italics on Google Fonts).
+
+---
+
+## 3. Neon Glow Effects — CSS-only, no library
+
+**Decision: zero JS, zero new packages.** Tailwind v4.1+ covers all of it natively.
+
+| Technique | Use for | Why |
+|-----------|---------|-----|
+| **`text-shadow-*` utilities / `--text-shadow-neon-*` tokens** | Glowing headings, signage text, nav labels | Cheapest glow there is; native in Tailwind ≥ 4.1 with color + opacity modifiers. **HIGH** |
+| **`box-shadow` via `--shadow-neon-*` tokens** | Buttons, panels, card borders, input focus rings | Fast for rectangular UI; supports spread for the "tube halo" look; combine with a 1px border as the "tube" itself. **HIGH** |
+| **`filter: drop-shadow()` (`drop-shadow-*`)** | The logo PNG and other non-rectangular shapes ONLY | Traces the alpha channel instead of the bounding box — the only correct glow for the logo. More expensive than box-shadow; keep it static. **HIGH** |
+| **SVG filters** | Not needed | Overkill; only worthwhile for animated tube-path effects that the mockups don't show. **HIGH** |
+
+**Performance rules (the part that actually matters at feed scale):**
+
+1. **Never animate `box-shadow`/`text-shadow`/`filter` values.** Each frame repaints. For pulse/flicker, render the glow on a `::after` pseudo-element (or stacked element) at full strength and **animate its `opacity`** — opacity composites on the GPU. (Verified pattern: Coder's Block "Creating Glow Effects with CSS", Zell Liew neon-button writeup.) **HIGH**
+2. **Budget glows on list surfaces.** Dozens of cards × 3-layer 40px-blur shadows is the one realistic jank source. On the feed/search grid, use a single-layer tight glow (or border-only "tube off" state) and reserve the full 3-layer halo for hover/focus and hero surfaces. Profile with paint flashing after Phase-1 of the redesign. **MEDIUM**
+3. **Respect `prefers-reduced-motion`** for any flicker/buzz keyframes — wrap in the `motion-safe:` variant. tw-animate-css + a custom `--animate-flicker` token handles the keyframes; no animation library. **HIGH**
+4. Use `will-change` only if profiling shows a problem; don't sprinkle it preemptively. **HIGH**
+
+**What this rules out:** framer-motion/`motion` (no functional animation need), glow/particle libraries, canvas/WebGL backdrops. Visual-only milestone = CSS-only effects.
+
+---
+
+## 4. Logo & Brand Asset Pipeline
+
+**Reality check on PNG→SVG:** the stakeholder logo is a neon-style PNG. Neon artwork = soft gradient glows, which **auto-tracers (vectorizer.ai, Inkscape trace, vtracer) reproduce badly** — they posterize the glow into banded blobs. **MEDIUM** confidence on tool specifics, **HIGH** on the recommendation:
+
+1. **Ask the stakeholder for the original vector/layered source** (AI/Figma/PSD). If it exists, export a clean SVG of the tube linework and let CSS `drop-shadow` provide the glow (crisp at every size, tiny file).
+2. **If no source exists: ship the PNG.** Render through `next/image` with explicit `width`/`height` (no CLS) and provide a 2x-resolution export for the header. A PNG logo is not a launch blocker; vector recreation is a nice-to-have a designer can do later.
+3. Do NOT add an SVG-tracing build step or runtime dependency.
+
+**Icons / favicon / OG via Next.js metadata file conventions** (no `<head>` hand-wiring — Next generates the tags):
+
+| File | Size | Notes |
+|------|------|-------|
+| `app/favicon.ico` | 32² (multi-size ok) | Replace the create-next-app default. Generate once from the logo mark. |
+| `app/icon.png` | 512² | Served as `<link rel="icon">`; browsers scale down. Transparent or night-900 background. |
+| `app/apple-icon.png` | 180² | iOS home screen; needs an opaque background (use night-900) — iOS fills transparency with black-on-white unpredictably. |
+| `app/opengraph-image.png` (+ `opengraph-image.alt.txt`) | 1200×630 | Static brand card: logo over night background. Sufficient for v1.1; dynamic per-listing OG images via `next/og` `ImageResponse` is a later enhancement, not this milestone. |
+| `app/twitter-image.png` | 1200×630 | Optional; falls back to OG image if omitted. |
+
+Generation: one `sharp` script (dependency already present). Only `.ico` needs an extra step (`png-to-ico` devDependency or a one-off online generator). Also update `metadata` in `app/layout.tsx` — it still says **"Create Next App"**; the rebrand must set `title.template` (e.g., `"%s | OG Truck Parts"`), `description`, `openGraph`, and `metadataBase`. **HIGH**
+
+---
+
+## 5. Dark-Only Theming Decision
+
+**Recommendation: forced dark, light mode deleted.** Rationale: the brand IS the dark night background — a light variant of a neon truck-stop identity is a contradiction, doubles every token decision, and doubles visual QA. The current app effectively runs light-only today (no ThemeProvider mounts, `.dark` is never applied), so nobody loses a preference.
+
+Implementation (all subtraction, no additions):
+
+1. **`globals.css`:** write the neon dark values directly into `:root`; **delete the `.dark` block** (or leave it empty-aliased — deleting is cleaner). The `@custom-variant dark` line can stay harmlessly or go.
+2. **`color-scheme`:** add `color-scheme: dark` on `:root` (or `<html className="dark" style>`) so native form controls, scrollbars, and the UA default canvas render dark. Belt-and-suspenders: keep `className="dark"` on `<html>` so any `dark:` utility in owned shadcn components still activates. **HIGH**
+3. **Sonner:** `components/ui/sonner.tsx` is the only `next-themes` consumer — replace `useTheme()` with a hardcoded `theme="dark"` prop.
+4. **Remove `next-themes`** from `package.json` (currently dead weight once sonner is edited). One less dependency, no FOUC script, no hydration concern.
+5. **Email templates** (Resend/Supabase auth emails): rebrand the copy/name, but keep emails light-background and simple — dark-mode email rendering is a swamp (Gmail/Outlook color inversion) and out of scope for a web UI milestone. **MEDIUM**
+
+**What NOT to build:** a theme toggle, `prefers-color-scheme` media handling, or a ThemeProvider. If the stakeholder ever wants light mode back, the shadcn variable architecture makes it a re-add, not a rewrite.
 
 ---
 
 ## Installation
 
 ```bash
-# Scaffold (Next.js latest stable + App Router + TS + Tailwind v4 + shadcn-ready)
-npx create-next-app@latest takeoff-parts --typescript --tailwind --app --eslint
-
-# Supabase client + SSR auth
-npm install @supabase/supabase-js @supabase/ssr
-
-# Forms & validation
-npm install react-hook-form zod @hookform/resolvers
-
-# Icons (shadcn default) + optional client-side image compression
-npm install lucide-react browser-image-compression
-
-# shadcn/ui (initialize, then add components as needed)
-npx shadcn@latest init
-npx shadcn@latest add form input select textarea button dialog command badge sonner card
-
-# Dev dependencies
-npm install -D supabase   # CLI (or use it via npx)
+# No required runtime packages. Optional, only for the favicon script:
+npm install -D png-to-ico
+# (then remove the dead dependency after editing sonner.tsx)
+npm uninstall next-themes
 ```
 
-```sql
--- Enable search extensions (in a migration)
-create extension if not exists pg_trgm;
-create extension if not exists unaccent;
+```tsx
+// app/layout.tsx — font addition (next/font/google, no package install)
+import { Barlow_Condensed } from "next/font/google"; // + optionally Tilt_Neon
+```
+
+Pre-flight check: confirm the lockfile resolves `tailwindcss` ≥ 4.1 (for `text-shadow-*`):
+
+```bash
+npm ls tailwindcss
 ```
 
 ---
@@ -147,91 +233,63 @@ create extension if not exists unaccent;
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Zod 4 | Zod 3 | Only if a dependency hard-pins Zod 3. `@hookform/resolvers` v5 supports both; greenfield → Zod 4. |
-| react-hook-form | TanStack Form / Conform | RHF is the shadcn-blessed default and battle-tested with Server Actions. TanStack Form is viable but adds learning cost with no clear win here. |
-| Postgres FTS + pg_trgm | Algolia / Meilisearch / Elasticsearch | Only when catalog scale or query sophistication (typo+synonym+facet ranking at very high volume) outgrows Postgres. Adds a sync pipeline — defer past v1. |
-| Realtime Postgres Changes | Realtime Broadcast (trigger-driven) | Switch when concurrent chat volume makes per-client RLS-checked change streams a bottleneck. Design schema now so the migration is non-breaking. |
-| Supabase Image Transformations | Next.js built-in optimizer / Cloudinary | Use Next optimizer on free tier; Cloudinary only if you need advanced editing/DAM features (overkill for v1). |
-| Supabase Auth phone (Twilio Verify) | MessageBird / Vonage | Pick by SMS pricing/coverage in target countries (US/Canada/Mexico). Mechanism identical. |
-| Next.js 16 | Next.js 15.5 | Only if an external constraint mandates 15. No architectural difference for this app. |
-
----
+| Barlow Condensed (display) | Bungee / Bungee Shade | If mockup lettering is caps-only chromatic signage rather than italic condensed; Bungee was designed for signage but has no italics or lowercase. |
+| Tilt Neon (accent, optional) | Monoton / Neonderthaw | Monoton if a single retro-glam outline headline is wanted; Neonderthaw for neon *script*. Both are single-style and weaker at UI sizes. |
+| Keep Geist body | Barlow (regular widths) as body | If the stakeholder wants display+body from one family for a warmer match; costs a full-app readability re-QA — only do it if mockups demand it. |
+| CSS-only glows | `motion`/framer-motion for animated neon | Only if a later milestone needs orchestrated entrance animations; never needed for static glow. |
+| Static `app/opengraph-image.png` | Dynamic `next/og` `ImageResponse` per listing | Later SEO/sharing milestone; per-listing OG cards with photos are valuable but not "visual-only rebrand" scope. |
+| PNG logo via next/image | Manual vector recreation of the logo | When a designer is available or stakeholder supplies source vectors; do it then, not now. |
+| Forced dark (`:root` = dark) | next-themes `forcedTheme="dark"` | Only if light mode is expected back within v1.x; keeps the dependency for no current benefit. |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| **@supabase/auth-helpers-nextjs** | Deprecated; not maintained for App Router | `@supabase/ssr` |
-| **`supabase.auth.getSession()` in server code for authz** | Trusts unverified cookie data; can be spoofed | `supabase.auth.getClaims()` (verifies JWT signature every call) |
-| **Single `users`/`profiles` table holding PII + public fields** | One leaky RLS policy or `select *` exposes name/phone/email/address — violates the core privacy guarantee | **Separate tables**: public `profiles` (username, state, country, member-since, active-listing count) vs private `seller_private` (first/last name, email, phone, address) with strict owner-only RLS. The PRIVACY model depends on this split. |
-| **Client-side filtering to "hide" PII** | Data still travels to the browser; RLS is the only real boundary | Enforce with **RLS policies + table separation**; never send PII columns to public surfaces at all |
-| **Service-role key in client/`NEXT_PUBLIC_` env** | Bypasses RLS entirely — full data exposure | Keep service-role key server-only; use anon key (RLS-bound) in the browser |
-| **`LIKE '%term%'` for fitment/slang search** | No index usage, slow at scale, no typo tolerance | `pg_trgm` similarity + GIN index for fuzzy; `tsvector` for ranked FTS |
-| **`tailwind.config.js` JS-object theming (v3 style)** | Tailwind v4 is CSS-first via `@theme` | Define theme tokens in `globals.css` under `@theme` (shadcn v4 convention) |
-| **A separate Express/Nest API server** | Redundant with Server Actions + route handlers + RLS; more to host/secure | Next.js Server Actions + route handlers; Postgres RLS as the authorization layer |
-| **Storing chat as ephemeral Broadcast-only in v1** | PROJECT.md requires persisted, admin-copyable communication logs | Persist messages in a `messages` table (Postgres Changes for realtime); contact-form submission persists first, then opens the thread |
-
----
+| **A new component library / theme kit** (DaisyUI, HeroUI, "neon UI kits") | shadcn components are already owned in-repo; a second system means dual styling sources and regression risk across 33.7k LOC | Retheme shadcn via CSS variables + targeted `cn()` class edits |
+| **CSS-in-JS** (styled-components, Emotion) | Runtime cost, RSC friction, parallel styling system | Tailwind v4 `@theme` / `@utility` |
+| **Tailwind text-shadow plugins** (e.g., `tailwindcss-textshadow`) | Obsolete — native in Tailwind ≥ 4.1 | Built-in `text-shadow-*` + `--text-shadow-*` tokens |
+| **Animating `box-shadow`/`filter` values** for pulse/flicker | Per-frame repaints; janks the feed on mid-range phones | Pre-rendered glow on a pseudo-element, animate `opacity` |
+| **Full 3-layer glows on every feed card** | Dozens of large blurred shadows = measurable paint cost on list pages | Border + tight single shadow at rest; full halo on hover/focus/hero only |
+| **Auto PNG→SVG tracing of the neon logo** | Gradient glows posterize into banded vector blobs | Ship PNG; request vector source; CSS drop-shadow for glow |
+| **Google Fonts `<link>` CDN tags** | External request, CLS, consent surface — and next/font already solves it | `next/font/google` (self-hosted, CSS variable output) |
+| **Loading all 18 Barlow Condensed styles** | ~hundreds of KB of unused font payload | Subset to the 2–3 weights (+italics) the design actually uses |
+| **A dark/light theme toggle** | Brand is dark-only; toggle doubles QA for zero stakeholder value | Forced dark in `:root`, `color-scheme: dark` |
+| **`tailwind.config.js` re-introduction** | Project is CSS-first v4; JS config splits the source of truth | `@theme` in `globals.css` |
 
 ## Stack Patterns by Variant
 
-**If on Supabase free tier (no Image Transformations):**
-- Compress client-side (`browser-image-compression`) + generate a thumbnail at upload, OR use `next/image` built-in optimizer against raw Storage URLs.
-- Because: Image Transformations require Pro plan.
+**If the mockups' lettering is more "highway sign" than "neon tube":**
+- Barlow Condensed Black Italic + cyan/red `text-shadow` glow alone reproduces it; skip Tilt Neon entirely.
+- Because: fewer fonts = smaller payload and a tighter system.
 
-**If chat concurrency grows large:**
-- Move from Realtime Postgres Changes to **Broadcast emitted from a DB trigger** on `messages`.
-- Because: Supabase recommends Broadcast for high-scale fan-out; per-client RLS-checked change streams don't scale as well.
+**If feed-page paint profiling shows glow jank:**
+- Demote card glows to `border` + `text-shadow` only; keep `box-shadow` halos for above-the-fold hero and interactive states.
+- Because: text-shadow is the lightest glow; box-shadow cost scales with blur radius × element count.
 
-**If forced to Next.js 15:**
-- Pin `next@15.5.x`; everything else identical.
-- Because: App Router API and all listed libraries are compatible across 15/16.
-
----
-
-## The Privacy Model (load-bearing — call out for roadmap)
-
-The privacy guarantee ("seller PII never queryable/renderable on any public surface") is **a data-modeling decision, not a UI decision**. Prescriptive shape:
-
-- `auth.users` — Supabase-managed identity.
-- `profiles` (PUBLIC-readable via RLS): `id`, `username`, `state_province`, `country`, `member_since`, `verified_seller` (bool), `active_listings_count`. **No PII columns exist here.**
-- `seller_private` (OWNER-ONLY via RLS): `user_id`, `first_name`, `last_name`, `email`, `phone`, `address`, `postal_code`. RLS: `auth.uid() = user_id` for select/update; no public/anon access.
-- `contact_messages` / `messages`: persisted; RLS limits visibility to the two participants; a server-side (service-role) path copies each contact to admin for abuse/dispute logging (PROJECT.md requirement).
-- Public surfaces (`profiles`, `listings`, `comments`) must **physically not contain** PII columns — so even a misconfigured policy can't leak a name or phone.
-
-**Confidence: HIGH** that the separate-table pattern is the correct, Supabase-recommended approach for this exact requirement.
-
----
+**If the stakeholder produces vector logo source mid-milestone:**
+- Swap the header `next/image` PNG for inline SVG + CSS `drop-shadow`; regenerate icons from the vector.
+- Because: crisp at all densities and smaller than 2x PNG; the asset pipeline (metadata files) is unchanged.
 
 ## Version Compatibility
 
 | Package A | Compatible With | Notes |
 |-----------|-----------------|-------|
-| `next@16.2.x` | `react@19`, `react-dom@19` | React 19 is the minimum for Next 15/16. |
-| `@supabase/ssr@0.10.x` | `@supabase/supabase-js@2.106.x`, Next 15/16 App Router | Use together; ssr depends on supabase-js as peer. |
-| `@hookform/resolvers@5.x` | `react-hook-form@7.76.x`, `zod@4.4.x` | v5 resolver supports Zod 4 (and still Zod 3). |
-| `tailwindcss@4.2.x` | `@tailwindcss/postcss@4.2.x`, shadcn/ui (v4 components), React 19 | shadcn components are updated for Tailwind v4 + React 19; HSL→OKLCH. |
-| Supabase Image Transformations | Pro plan and above | Free tier: use Next optimizer / client compression. |
-
----
+| `tailwindcss@^4` (need ≥ 4.1; current 4.2.x) | `@tailwindcss/postcss@^4`, existing shadcn components | `text-shadow-*` utilities and `--text-shadow-*` namespace require 4.1+. `--shadow-*`/`--drop-shadow-*` namespaces exist since 4.0. |
+| `next@16.2.6` `next/font/google` | Barlow Condensed, Tilt Neon (any Google Font) | Variable + static fonts both supported; `style: ["normal","italic"]` + `weight` array for static subsets. |
+| `next@16.2.6` metadata file conventions | `app/icon.png`, `apple-icon.png`, `opengraph-image.png`, `favicon.ico` | Stable since Next 13; unchanged in 16. |
+| `sonner@^2` | hardcoded `theme="dark"` | `next-themes` is optional for sonner; removing it requires only the one edit in `components/ui/sonner.tsx`. |
+| `sharp@0.34.5` | icon/OG PNG generation | Cannot emit `.ico` — pair with `png-to-ico` (dev-only) or generate the .ico once externally. |
 
 ## Sources
 
-- `/vercel/next.js` (Context7) — Next.js version availability (15.x, 16.x stable confirmed)
-- `/supabase/ssr`, `/supabase/supabase` (Context7) — SSR client + platform docs
-- https://nextjs.org/blog/next-16 — Next.js 16 stable, Turbopack default, React Compiler — **HIGH**
-- https://endoflife.date/nextjs — version lifecycle — **MEDIUM**
-- https://supabase.com/docs/guides/auth/server-side/nextjs — `@supabase/ssr` setup, `getClaims` vs `getSession`, auth-helpers deprecation — **HIGH**
-- https://supabase.com/docs/guides/database/postgres/row-level-security + supabase discussion #36429 — separate public/private table pattern for PII — **HIGH/MEDIUM**
-- https://supabase.com/docs/guides/realtime/postgres-changes + /broadcast — chat = Postgres Changes (persisted) + RLS-applied; Broadcast for scale — **HIGH**
-- https://supabase.com/docs/guides/storage/serving/image-transformations — ImgProxy transforms, WebP, Next.js loader, Pro-plan requirement — **HIGH**
-- https://supabase.com/docs/guides/auth/phone-login — phone OTP, Twilio Verify/MessageBird/Vonage — **HIGH**
-- https://www.postgresql.org/docs/current/pgtrgm.html + Cockroach/Aapeli Vuorinen articles — FTS vs trigram, hybrid recommended for catalog/slang — **HIGH/MEDIUM**
-- https://www.postgresql.org/docs/current/ltree.html + Ackee/Fueled — hierarchy modeling (adjacency list start, closure table for read-heavy filters) — **MEDIUM**
-- https://ui.shadcn.com/docs/tailwind-v4 + https://tailwindcss.com/blog/tailwindcss-v4 — shadcn on Tailwind v4, `@theme`, OKLCH — **HIGH**
-- npm (via search): `@supabase/supabase-js@2.106.2`, `@supabase/ssr@0.10.3`, `react-hook-form@7.76.0`, `zod@4.4.3`, `tailwindcss@4.2.0` — current as of June 2026 — **HIGH**
-- https://github.com/react-hook-form/resolvers — resolvers v5 supports Zod 4 + Zod 3 — **HIGH**
+- `/tailwindlabs/tailwindcss.com` (Context7) — `@theme` namespaces (`--shadow-*`, `--text-shadow-*`, `--drop-shadow-*`, `--font-*`, `--animate-*`), `@utility` directive, text-shadow color/opacity modifiers, v4.1 release notes — **HIGH**
+- https://fonts.google.com/specimen/Barlow+Condensed — 9 weights roman + italic, OFL; "shares qualities with California's car plates, highway signs" — **HIGH**
+- https://fonts.google.com/specimen/Tilt+Neon + https://design.google/library/neon-prism-tilt-variable-font — Tilt Neon designed to mimic neon-tube lettering; variable; OFL — **HIGH**
+- https://fonts.google.com/specimen/Bungee, /Monoton — alternates assessed (caps-only / single-style) — **MEDIUM**
+- https://codersblock.com/blog/creating-glow-effects-with-css/ + https://medium.com/@zellwk/making-a-nice-neon-button-e4969762b461 — glow construction; animate pseudo-element opacity, not shadow values; drop-shadow for non-rect shapes — **MEDIUM (multiple sources agree)**
+- Next.js docs (training-data, stable since 13; spot-consistent with Next 16 repo usage) — metadata file conventions (`icon.png`, `apple-icon.png`, `opengraph-image.png`), `next/font` self-hosting — **HIGH**
+- Repo inspection — `app/globals.css` (shadcn oklch vars + `@theme inline` bridge, `--font-heading` alias), `app/layout.tsx` (Geist via next/font, default metadata still "Create Next App"), `package.json` (sharp, tw-animate-css, next-themes present; sonner.tsx sole next-themes consumer) — **HIGH**
 
 ---
-*Stack research for: privacy-first truck-parts fitment marketplace*
-*Researched: 2026-06-01*
+*Stack research for: v1.1 OG Truck Parts rebrand — neon truck-stop visual identity on existing Next.js 16 + Tailwind v4 + shadcn stack*
+*Researched: 2026-06-12*

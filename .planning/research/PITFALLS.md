@@ -1,286 +1,258 @@
-# Pitfalls Research
+# Pitfalls Research — v1.1 OG Rebrand & UI Redesign
 
-**Domain:** Privacy-first truck-parts marketplace + specialized social network (Next.js 15 App Router + Supabase)
-**Researched:** 2026-06-01
-**Confidence:** HIGH for PII/RLS/Next.js auth & caching (Supabase + Next.js official docs, CVE-2025-48757 reporting); MEDIUM for fitment search, chat abuse, cold start, SMS fraud (multiple credible secondary sources, verified against official Postgres/Twilio docs where possible)
+**Domain:** App-wide rebrand ("Take-Off Parts" → "OG Truck Parts") + neon truck-stop dark visual identity applied to a shipped Next.js 16 + Tailwind v4 + shadcn/ui marketplace (~33.7k LOC, passing vitest + Playwright suites, strict architectural invariants)
+**Researched:** 2026-06-12
+**Confidence:** HIGH for codebase-grounded pitfalls (verified by direct inspection of this repo), HIGH for WCAG/performance/font claims (W3C, web.dev, Vercel docs), MEDIUM for out-of-repo rebrand surfaces (Supabase/Twilio dashboard config — verify in consoles)
 
 ---
 
-This product's entire value proposition is **"the seller's real identity is never exposed."** That makes PII leakage not a generic security concern but an existential one: a single leak (an address visible in an API response, a GPS coordinate baked into a photo) destroys the core promise. Pitfalls below are ordered so the most product-fatal ones come first.
+The danger profile of this milestone is the *inverse* of v1.0. v1.0's risk was building the wrong thing; v1.1's risk is **breaking a working thing while changing how it looks**. Every pitfall below is some flavor of: a visual change that silently becomes a behavior change, an aesthetic choice that fails real users, or a rebrand that misses a surface nobody greps. The system under change has a green 43-file test suite, strict invariants (privacy table split, RLS, EXIF strip, contact-before-chat), and a stakeholder-approved 24-step UAT walkthrough — all of which are assets to protect, not obstacles.
 
 ## Critical Pitfalls
 
-### Pitfall 1: PII columns leak through over-fetching, JOINs, and `select('*')`
+### Pitfall 1: "Visual-only" silently changes behavior
 
 **What goes wrong:**
-The seller's private columns (first/last name, email, phone, street, postal code) live in the same database as public listing data. A developer writes `supabase.from('listings').select('*, profiles(*)')` to render a listing card, and the `profiles(*)` pulls the *entire* profile row — including PII — into the API response. Even if the UI only renders `username` and `State, Country`, the private fields are now in the JSON payload sent to the browser, visible in DevTools Network tab and to any scraper. This is the single most common way "privacy-first" marketplaces leak: not a dramatic breach, just a careless `select`.
+The redesign brief says "functionality unchanged," but the actual work items are inherently behavior-adjacent: a redesigned header with icon nav and a new sell entry point, browse-as-neon-signage for Make/Model/Category, and restyled forms. During implementation, a nav reorganization changes a route or removes a link target; a "signage grid" browse rebuild swaps the data flow or drops a query param the search page depends on; a restyled multi-step form (the verify wizard, the listing create flow with its 3–8 photo requirement and fitment pre-fill) reorders fields or merges steps, altering the Server Action submit path. Each one breaks deep links, e2e tests, or — worst case — an architectural invariant like contact-form-persists-before-chat-opens, because someone "simplified" the contact modal into a direct "Message seller" button to match the mockup.
+
+The mockups themselves are a scope-creep vector: they contain cart, payments, and phone-display elements that are explicitly out of scope. A pixel-faithful implementation imports them by accident.
 
 **Why it happens:**
-- `select('*')` is the path of least resistance and gets copy-pasted.
-- Supabase's nested-resource syntax (`profiles(*)`) makes JOINs trivial, so pulling the whole related row feels natural.
-- The UI looks correct (PII isn't rendered), so the leak is invisible in manual testing — it only shows in the network payload.
-- RLS protects *rows* by default, not *columns*. A seller can read their own full profile row legitimately; the bug is exposing it to *other* users via a relationship query.
+- Visual and behavioral code live in the same components; restyling a form component *is* touching its submit wiring.
+- Mockups are treated as specs. The stakeholder's mockup shows a cart icon, so a cart icon appears — now there's a dead affordance implying a feature that doesn't exist (payments are v2).
+- "While I'm in here" refactors: a developer restyling the browse page decides the old query-param scheme is ugly and changes it.
+- The bundled UAT fixes (freeze-notice realtime refresh) are *real* behavior changes shipping in the same milestone, blurring the "visual-only" line.
 
 **How to avoid:**
-1. **Physically separate PII from public data.** Two tables: `profiles` (public: `user_id`, `username`, `state`, `country`, `member_since`, `is_verified`) and `private_profiles` (PII: names, email, phone, address, postal). Public queries can only ever touch `profiles`. This is a structural guarantee, not a discipline-based one.
-2. **Never `select('*')` on anything joined to user data.** Enumerate columns explicitly, always. Add a lint rule / code-review checklist item banning `select('*')` and `(*)` nested selects in public-facing queries.
-3. **Use a Postgres VIEW or a `SECURITY INVOKER` view (`public_listings`) that exposes only safe columns**, and point all public reads at the view, not the base table.
-4. **Column-level grants:** `REVOKE` SELECT on PII columns from the `anon` and `authenticated` roles so even a mistaken `select('*')` returns nothing for those columns. Postgres supports column-level privileges; use them as a backstop.
-5. **Contract-test the JSON shape:** write an automated test that fetches a public listing as an anonymous user and asserts the response body contains NO email/phone/name/address keys.
+1. **Write a behavior-freeze contract before any restyle:** inventory every route, every form's action/fields, every nav destination. The redesign may not add, remove, or rename any of these without an explicit decision logged in STATE.md. The route map and Zod schemas are the contract.
+2. **Maintain a written mockup-exclusion list** (cart, payments/checkout, phone display, anything else spotted) and check each implemented surface against it. A dead cart icon is a bug, not fidelity.
+3. **Treat the e2e suite as the behavior oracle:** run the full Playwright suite after each surface is restyled, not once at the end. A behavior regression caught per-surface is a one-commit fix; caught at UAT it's archaeology.
+4. **Isolate the three UAT fixes (sell entry, freeze-notice refresh, vitest-* purge) in their own plans/commits**, never mixed into visual commits — so `git bisect` and review can tell skin from behavior.
+5. **Invariant #5 special watch:** any redesign of the listing detail page or contact flow must keep the contact form as the primary action and chat strictly downstream of the persisted `contact_log` write. Re-run `tests/integration/messaging.contract.test.ts` and the contact e2e path after touching that surface.
 
 **Warning signs:**
-- Any `select('*')` in the codebase touching `profiles`, `users`, or contact data.
-- A single `profiles` or `users` table holding both `username` and `email`/`phone`/`address`.
-- Network payloads on listing/feed pages containing fields the UI never renders.
-- RLS policies that allow `authenticated` to `SELECT` the whole profile table for "convenience."
+- A PR labeled "restyle X" that touches files in `lib/actions/` or changes a Zod schema.
+- New icons/buttons in the header that have no v1.0 destination.
+- e2e failures that aren't selector-text failures (navigation timeouts, wrong URL assertions).
+- The diff for a "visual" plan includes route renames or `redirect()` changes.
 
 **Phase to address:**
-Data-model / schema phase (PII/public separation must be the *first* schema decision). Re-verify in every phase that adds a public surface (listings, feed, comments, profile, chat).
+Every redesign phase; enforce via the behavior-freeze contract in the first (foundation/tokens) phase and per-surface e2e runs thereafter.
 
 ---
 
-### Pitfall 2: RLS disabled, missing, or too permissive (the CVE-2025-48757 class)
+### Pitfall 2: Restyling by scattering hardcoded values instead of changing the token layer
 
 **What goes wrong:**
-A table is created (via SQL editor or Table Editor) and RLS is **off by default**, so anyone with the public `anon` key — which ships in the browser bundle by design — can read, update, or delete every row. In the 2025 CVE-2025-48757 wave, ~10% of audited Supabase/Lovable apps were leaking data this exact way. Variants: RLS *enabled* but with a permissive policy like `USING (true)`, or a policy on `authenticated` that doesn't scope rows to `auth.uid()`, letting any logged-in user read every other user's private data.
+The app's entire look is currently driven by ~30 shadcn CSS variables in `app/globals.css` (`--background`, `--primary`, `--card`, `--ring`, `--chart-1..5`, etc.) mapped through Tailwind v4's `@theme inline`. The fast-but-fatal way to do this redesign is to ignore that layer and sprinkle arbitrary values across components: `bg-[#0a0f1e]`, `text-[#ff1f3a]`, `shadow-[0_0_24px_rgba(255,31,58,0.6)]` repeated in hundreds of files. Result: three slightly different neon reds, panels that don't match across pages, an admin area that drifted from the public site, and a theme that can never be adjusted again without another app-wide sweep. The 33.7k LOC codebase makes class-by-class repainting both slow and unreviewable.
 
 **Why it happens:**
-- RLS is **opt-in per table**. Forget one table (e.g. `contact_submissions`, `messages`, `private_profiles`, `reports`) and it's wide open.
-- The `anon` key is publicly embedded in the client (correct and expected) — so the *only* thing standing between the public and your data is RLS. People assume the key is a secret; it is not.
-- "I'll add policies later" — and later never comes, or a new table added in a later phase silently lacks RLS.
-- Policies written against `auth.uid()` without the `(select auth.uid())` wrapping re-evaluate per-row, which both hurts performance and tempts developers to write looser policies.
+- Matching a mockup pixel-by-pixel pulls developers toward eyedropper hex values at the point of use.
+- The neon aesthetic needs *new* token categories the shadcn set lacks (glow shadows, neon border colors, sign-panel surfaces, display font), and inventing tokens feels slower than inlining values.
+- Tailwind v4 makes arbitrary values frictionless, so nothing pushes back.
 
 **How to avoid:**
-1. **Enable RLS on every table at creation, no exceptions** — including join tables, log tables, and admin tables. Make `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;` part of every migration's definition-of-done.
-2. **Default-deny posture:** enable RLS, add zero policies → table is locked. Then add the *minimum* policies needed. Never start from `USING (true)`.
-3. **Scope every authenticated policy to the owner:** `USING ((select auth.uid()) = user_id)`. Wrap `auth.uid()` in a subselect so Postgres evaluates it once (CVE-era performance + correctness guidance).
-4. **Separate `anon` from `authenticated` policies deliberately.** Public reads of `public_listings` can be `anon`; everything touching PII, chat, contact submissions, and reports must be `authenticated` *and* owner/admin-scoped.
-5. **CI check:** query `pg_tables` / `pg_policies` in CI to assert no table in `public` schema has RLS disabled and every table has at least one policy. Supabase's linter/advisor flags RLS-disabled tables — wire it into the pipeline.
-6. **Admin access uses the service role on the server only** (see Pitfall 3), never a broad `authenticated` policy that grants admins everything from the client.
+1. **Phase 1 of the redesign is the token layer, not any page.** Redefine the existing shadcn variables to the OG palette (dark navy base, neon red primary, cyan accent) in `globals.css` — this alone re-skins ~80% of the app because every shadcn primitive already consumes them.
+2. **Add the new brand tokens once, in `@theme`:** `--color-neon-red`, `--color-neon-cyan`, `--color-panel`, `--shadow-glow-red`, `--shadow-glow-cyan`, `--font-display`. Components use `shadow-glow-red`, never `shadow-[0_0_24px_#ff1f3a]`.
+3. **Budget the diff:** if restyling a page requires editing more than its layout classes and token names, the token layer is incomplete — go back and extend it.
+4. **Grep gate at phase end:** `rg "#[0-9a-fA-F]{3,8}" app components --glob '!globals.css'` should return (near) zero new hardcoded colors.
 
 **Warning signs:**
-- Any migration that creates a table without an accompanying `ENABLE ROW LEVEL SECURITY`.
-- Policies containing `USING (true)` or `WITH CHECK (true)`.
-- Supabase dashboard "Unrestricted" / "RLS disabled" badge on any table.
-- A logged-in test user can fetch another user's messages, contact submissions, or private profile.
+- The same neon red appearing as three different hex/oklch values in the codebase.
+- `globals.css` unchanged while component files fill with arbitrary-value classes.
+- Admin pages visibly mismatching public pages after both are "done."
 
 **Phase to address:**
-Foundational schema/security phase, and a recurring gate in every phase that adds a table. This is the highest-leverage place to put a hard verification checkpoint.
+First redesign phase (brand foundation / design tokens). Everything downstream depends on getting this right first.
 
 ---
 
-### Pitfall 3: Service-role key reaches the client / used in the wrong place
+### Pitfall 3: Neon-on-dark accessibility failures (contrast, halation, glow-as-focus, display fonts at small sizes)
 
 **What goes wrong:**
-The `service_role` key bypasses RLS entirely (Postgres superuser-equivalent). In 2025 audits, roughly half of AI-generated Supabase apps had the service_role key reachable from the browser. The classic mistake: prefixing it `NEXT_PUBLIC_SERVICE_ROLE_KEY` so a Server Action or admin feature "just works" — Next.js then **inlines any `NEXT_PUBLIC_`-prefixed var into the client bundle at build time**, publishing a full admin credential to the internet. A subtler variant: in `@supabase/ssr`, initializing the SSR client with the service-role key — the user's session cookie overrides the service-role authorization header, producing confusing RLS errors and tempting devs to "fix" it by loosening policies.
+Four distinct failures, all baked into the neon truck-stop aesthetic if applied naively:
+
+1. **Contrast math fails where you don't expect it.** Saturated red on near-black is borderline: pure `#FF0000` on `#000` is ~5.25:1 (passes AA 4.5:1 for body text — barely), but darker/deeper neon reds drop below it fast, and red *glow blur* around thin strokes reduces effective legibility well below what the ratio suggests. The sneakier failure is the **CTA**: white text on a neon-red button (`#FF1F3A`-class) is ~4:1 — *fails* WCAG AA for normal-size text. Cyan on dark is the safe channel (~16:1 for `#00FFFF` on black). Red is for accents and large display text, not body copy or small button labels.
+2. **Halation.** High-saturation glowing text on very dark backgrounds produces a halo/bloom effect for people with astigmatism — a large fraction of adults — making text physically uncomfortable to read. Pure black (`#000`) backgrounds maximize this; the mockups' "night" base must land on dark navy, not black.
+3. **Glow is not a focus indicator.** Replacing shadcn's `focus-visible` ring with a soft neon glow fails WCAG 1.4.11 (Non-text Contrast): focus indicators need a clearly defined area with ≥3:1 contrast against adjacent colors, and a blurred shadow has no defined contrasting edge. Keyboard users of a marketplace (forms everywhere: register, verify, list, contact) lose their place.
+4. **Retro display typography at small sizes.** Condensed/stylized sign fonts are illegible at 14px and below, and brutal for data: prices, part numbers, model codes ("W900L", "4900EX"), timestamps, chat text. If the display font leaks into body text, form labels, or admin tables, the app becomes hard to *use*, not just hard to read.
 
 **Why it happens:**
-- Admin/analytics features and the contact-logging "copy to admin" flow legitimately need to bypass RLS, so reaching for service_role is natural.
-- The `NEXT_PUBLIC_` prefix is required for the *anon* key, so devs habitually prefix the service key too.
-- Next.js's build-time inlining of `NEXT_PUBLIC_*` is silent — there's no warning that you just shipped a secret.
+- Mockups are judged on a designer's bright desktop monitor at large sizes; contrast and halation failures appear on dim screens, night use (this audience: truckers, often on phones at night — the literal use case), and for the ~1-in-3 users with astigmatism.
+- "Neon = glow everywhere" applies the signature treatment uniformly instead of hierarchically.
+- shadcn's default ring is easy to delete and hard to notice missing if no one tests with a keyboard.
 
 **How to avoid:**
-1. **Service-role key: server-only, never `NEXT_PUBLIC_`.** Name it `SUPABASE_SERVICE_ROLE_KEY`. Use it exclusively inside Route Handlers / Server Actions / server-only modules.
-2. **Create a dedicated server admin client with `supabase-js` directly** (not `@supabase/ssr`), so no user cookie can override the auth header. Keep it in a file marked `import 'server-only'` so an accidental client import is a build error.
-3. **Default to the anon/RLS-respecting client everywhere;** reach for the service-role client only for the few admin/logging operations that genuinely must bypass RLS, and gate those behind a server-side admin authorization check.
-4. **Build-time guard:** add a check that fails CI if any `NEXT_PUBLIC_*` env var value matches the service-role key, or scan the built `.next` bundle for the key string.
-5. **Rotate immediately if ever exposed** — a leaked service_role key = total database compromise.
+1. **Contrast-check the token palette before any page is built** (the token phase): every foreground/background token pair gets checked (WebAIM contrast checker / oklch tooling). Rules of thumb for this palette: body text = soft white/light gray (`#E0E0E0`-class) on dark navy; neon red = headings ≥24px, borders, accents, and large CTA text only; small/critical labels on red buttons get near-black text or the button gets large text; cyan = links/info/focus.
+2. **Background base = very dark navy (e.g., oklch ~0.15–0.18, blue hue), never pure black.** Panels a step lighter than the page so elevation reads without pure-contrast jumps.
+3. **Keep a solid 2px `focus-visible` ring** (cyan reads ≥3:1 on every dark surface in this palette). The neon glow may be *added on top* as decoration; it never *replaces* the ring. Do not touch the `focus-visible:` utilities in `components/ui/*` except to recolor the ring token.
+4. **Display font is a heading-scale-only token.** Enforce: `--font-display` applied via heading components / `font-display` utility, never on `body`, inputs, tables, or anything under ~20px. Numbers and part codes always render in the sans/mono stack.
+5. **Destructive ≠ brand red.** Neon red is becoming the *primary* CTA color while `--destructive` is also red — "Delete listing" and "Publish listing" must not look like siblings. Differentiate destructive actions (darker red fill + icon + confirm dialog wording) or shift destructive to a visibly different treatment (outline + warning icon).
+6. **Manual a11y pass per phase:** keyboard-only walk of each restyled surface + axe/Lighthouse a11y audit as a phase gate.
 
 **Warning signs:**
-- A `NEXT_PUBLIC_` env var holding anything other than the anon key + project URL.
-- `service_role` referenced in any file that isn't `server-only`.
-- Admin features querying Supabase from a Client Component.
+- Body or form-label text in saturated red or the display font.
+- White small text on neon-red buttons (run the numbers — it fails).
+- Tab key produces no visible focus change on a restyled surface.
+- Anyone on the team saying text looks "blurry" or "vibrating" on the staging site at night.
 
 **Phase to address:**
-Auth/infrastructure setup phase, before any admin or contact-logging feature is built.
+Token/foundation phase (palette contrast rules, focus ring, font scale policy); verified per surface phase; full keyboard + axe audit in the final QA phase.
 
 ---
 
-### Pitfall 4: EXIF GPS data in listing photos leaks the seller's exact location
+### Pitfall 4: Rebrand misses — stale "Take-Off Parts" (and worse) on surfaces nobody greps
 
 **What goes wrong:**
-A seller photographs a part in their garage/driveway. The phone embeds **GPS coordinates in the image's EXIF metadata**. The photo is uploaded as-is to Supabase Storage and served from the CDN. Anyone can download the image and read the EXIF to get the seller's home coordinates — **defeating the entire privacy model**, which deliberately shows location only as coarse "State, Country." Worse: server-side image resizing/compression libraries **copy the EXIF block through unchanged** (they optimize pixels, not metadata), so even "we resize on upload" does NOT strip it unless explicitly told to. eBay/Etsy-class platforms have been shown to leave this to undefined second-pass behavior.
+The rename ships in the header and homepage, demo looks rebranded, and then a suspended user receives an email reading "Your Take-Off Parts account has been suspended," a buyer's OTP arrives as "Your Take-Off Parts verification code," and a shared link unfurls with the title **"Create Next App."** Verified in this repo right now:
+
+- `app/layout.tsx` root metadata is **still the scaffold default**: `title: "Create Next App", description: "Generated by create next app"` — the current tab title/SEO identity isn't even the *old* brand. Only 3 auth pages set their own metadata; most routes inherit the scaffold default.
+- **Transactional email copy** hardcodes the old brand in 3 modules: `lib/admin/email.ts` (FROM line + 5 enforcement-ladder body strings: warn/suspend/ban/reactivate/rename), `lib/messaging/notify.ts` (FROM + contact/report notification subjects), `lib/verify/alert.ts` (OTP spend-cap alert subject).
+- **Out-of-repo surfaces a grep can never find:** Supabase Auth email templates (confirm-signup, magic link, reset — configured in the Supabase dashboard, sent via Resend SMTP per the Phase-1 setup); the **Twilio Verify service friendly name** (it's interpolated into the OTP SMS text users receive — MEDIUM confidence on exact template, verify in Twilio console); Resend sender name; Vercel project name/domains; Supabase project naming.
+- **In-repo long tail:** `package.json` name, `README.md`, `app/favicon.ico` (old icon), Verified Seller **terms text** (users legally accepted "Take-Off Parts" terms — new acceptances must reference the new name), error/edge pages (`auth-code-error`, `check-email`, suspended screen at `components/account/suspended-screen.tsx`), login/register pages, `site-header.tsx`.
+- **OG/social images don't exist yet** — the rebrand is the moment to add `opengraph-image` assets; shipping a neon brand whose shared links render with no image (or "Create Next App") undercuts the whole exercise.
 
 **Why it happens:**
-- EXIF is invisible in normal use — the image looks fine; the coordinates are in a separate metadata structure.
-- Resize/thumbnail pipelines preserve metadata by default.
-- The team protects PII in the *database* and forgets that a JPEG is also a data carrier.
-- Supabase Storage stores and serves whatever bytes you give it; it does not strip EXIF for you.
+- Rebrands are executed by visual surface area, but the brand string lives in *communication* surfaces (emails, SMS, metadata, link unfurls) that don't appear in any screen-by-screen redesign plan.
+- Dashboard-configured strings (Supabase, Twilio, Resend, Vercel) are invisible to code search and belong to no file.
+- Error and lifecycle paths (suspension, auth errors, expiry notices) are exactly the pages nobody opens during a happy-path UAT.
 
 **How to avoid:**
-1. **Strip ALL metadata server-side on upload**, before the file ever lands in Storage. Use `sharp` with `.rotate()` (to bake in orientation) and **without** `.withMetadata()` — sharp drops EXIF by default unless you explicitly re-attach it. Re-encode every uploaded image; never store the original bytes.
-2. **Do the strip on the server (Route Handler / Server Action / Edge Function), not the client** — never trust a client-side strip alone (a malicious client can skip it and POST the raw file).
-3. **Strip orientation, GPS, timestamps, device model, and thumbnails** (EXIF thumbnails can themselves contain un-stripped GPS).
-4. **Verify with a test:** upload a known photo containing GPS EXIF, fetch the stored object back, and assert `exiftool`/`sharp.metadata()` reports no GPS/maker tags. Make this an automated regression test — this is the single most important "looks done but isn't" check in the project.
-5. Treat this as part of the privacy guarantee, not an image-quality nicety.
+1. **Make the sweep a dedicated plan with two checklists:** (a) repo: `rg -i "take-off|takeoff|take off parts|create next app"` across `app/ components/ lib/ e2e/ tests/ package.json README.md` must return zero product-copy hits at phase end (planning docs exempt); (b) **dashboard checklist**: Supabase Auth templates, Twilio Verify friendly name, Resend sender, Vercel project — each item checked off with a screenshot or a sent test email/SMS as evidence.
+2. **Centralize the brand string now:** a `lib/brand.ts` (`BRAND_NAME = "OG Truck Parts"`, support email, tagline) imported by emails, metadata, and headers — so the *next* rename is one line.
+3. **Fix root metadata properly, not just the title string:** `metadata` with `title.template` (`"%s | OG Truck Parts"`), description, and new `opengraph-image`/`icon` assets from the stakeholder logo package.
+4. **Trigger every transactional sender once on Staging** (enforcement email, contact notification, report notification, OTP SMS, Supabase signup confirm) and read the actual received message — the only test that catches FROM-name and template misses.
+5. **Terms text:** update the Verified Seller terms copy to the new name and confirm with the stakeholder whether existing acceptances need any note (likely fine for a Staging-only product, but decide explicitly).
 
 **Warning signs:**
-- Upload pipeline that stores the original file or only client-side resizes.
-- Use of `.withMetadata()` in sharp, or an image library that preserves EXIF by default (ImageMagick without `-strip`).
-- No automated test asserting zero GPS tags on stored images.
+- A "rebrand complete" claim with no grep output attached.
+- Any received Staging email/SMS still saying Take-Off Parts.
+- Browser tab or link preview showing "Create Next App" anywhere.
 
 **Phase to address:**
-Image-upload / Storage phase. Flag explicitly for deeper research — the downstream consumer called this out as a priority. Must ship in v1 before any photo is public.
+A dedicated rebrand-sweep phase (or plan) with the grep gate + dashboard checklist as its success criteria; root metadata + brand module can land in the foundation phase.
 
 ---
 
-### Pitfall 5: Next.js Server/Client boundary leaks server-only data to the client
+### Pitfall 5: Copy/markup changes break the e2e and unit suites in misleading ways
 
 **What goes wrong:**
-In the App Router, props passed from a Server Component to a Client Component are **serialized and shipped to the browser** (visible in the HTML/RSC payload). A developer fetches a full seller object (with PII) in a Server Component and passes it as a prop to a `'use client'` listing card — the PII is now in the page source even though the card only renders the username. Related: importing a server-only module (one that holds the service-role client or a secret) into a Client Component bundles the secret into client JS.
+The Playwright suite selects by exactly the strings and roles the redesign will change. Verified in this repo: `e2e/home.spec.ts` asserts `getByRole("heading", { name: "Take-Off Parts" })`; `e2e/auth.spec.ts` asserts `getByRole("link", { name: "Take-Off Parts" })` twice (header logo link, pre/post-login); the suites lean heavily on `getByLabel("Email")`, `getByRole("button", { name: /create account/i })`, `getByText(/member since/i)` — every reworded label, retitled heading, or restructured component is a test failure. Two failure modes follow:
+
+1. **Death by red suite:** tests are left to break en masse, the suite stays red for the whole milestone, real regressions (a broken submit, a missing route) hide inside the noise, and the team learns to ignore failures — destroying the suite's value exactly when it's most needed (see Pitfall 1: the suite is the behavior oracle).
+2. **Silent semantic regressions:** the text logo becomes an `<img>`; if `alt` is empty or wrong, `getByRole("link", { name: ... })` fails — and that failure is *correct*, because screen-reader users lost the link's name too. "Fixing the test" by switching to a CSS selector papers over a real a11y regression. Same for headings demoted to styled `<div>`s for visual reasons, and form labels replaced by placeholder-only neon inputs (breaks `getByLabel` *and* accessibility).
 
 **Why it happens:**
-- The Server/Client boundary is invisible in the code — props "just flow," and there's no compile error for passing too much.
-- Devs fetch a convenient wide object on the server and forget that handing it to a client component publishes it.
+- Role/name selectors are intentionally coupled to the accessible UI — a redesign changes exactly that contract.
+- Updating tests feels like cleanup, so it's batched "for later."
+- Visual rewrites casually swap semantic elements (`h1`→`div`, `label`→placeholder) because the styled result looks identical.
 
 **How to avoid:**
-1. **Fetch narrow, owner-safe shapes** in Server Components; pass only the exact fields the Client Component renders. Combine with the public/private table split (Pitfall 1) so PII literally isn't in the object you fetched.
-2. **Mark secret-holding modules with `import 'server-only'`** so importing them client-side is a build error.
-3. **Prefer keeping PII-touching logic in Server Components / Server Actions** and never pass raw rows across the boundary.
-4. **Inspect the RSC/HTML payload** in review for any PII fields.
+1. **Tests update in the same plan/commit as the surface they cover.** A surface's restyle plan is not done until its specs are green. The suite must be green at every phase boundary.
+2. **Treat role/name selector failures as a11y signals first:** when `getByRole` breaks, ask "did this element lose its accessible name/role?" before editing the test. Logo `<img alt="OG Truck Parts">` keeps both the test pattern and screen readers working.
+3. **Preserve semantics under new skin:** every page keeps a real `h1` (visually styled as neon signage is fine), every input keeps a real associated `<label>` (visually hidden if the design demands), buttons stay `<button>`.
+4. **Centralize the brand string in test fixtures too** (one `BRAND` const in e2e helpers) so the name change is one edit, not a hunt.
+5. **The vitest unit/integration suites (43 files) are mostly logic-level and should NOT need changes** — schema, RLS, privacy-contract, EXIF tests are skin-independent. If a redesign PR modifies `tests/integration/*.contract.test.ts`, that's a red flag for Pitfall 1, not test maintenance.
 
 **Warning signs:**
-- Server Components passing whole DB rows as props to `'use client'` components.
-- Secrets appearing in the browser's view-source or RSC stream.
+- CI red for more than one plan's duration.
+- Test diffs replacing `getByRole`/`getByLabel` with `locator(".class")` or `data-testid` to "make it pass."
+- A redesign commit touching contract/RLS/privacy test files.
 
 **Phase to address:**
-Auth + first listing-render phase; reinforce in feed and profile phases.
+Every surface phase (same-commit test updates); add the brand-const refactor to the foundation phase.
 
 ---
 
-### Pitfall 6: Caching/ISR serves one user's private data to another
+### Pitfall 6: Neon performance traps — glow effects, background art, and display fonts degrade the experience
 
 **What goes wrong:**
-Next.js 15 no longer caches `fetch` by default, but `use cache` / `unstable_cache` and static/ISR routes still can. If a route that renders user-specific or PII-adjacent data (chat inbox, contact submissions, "my listings") is statically cached or sits behind a CDN, **a second user can be served the first user's cached HTML/session**. The Supabase docs explicitly warn that trusting `getSession()` in Server Components compounds this because the session from cookies can be spoofed and isn't revalidated.
+The aesthetic's signature elements are exactly the expensive ones:
+
+1. **Glow on repeated elements.** Search results, the feed, browse signage grids, and admin tables render dozens of cards. Static multi-layer `box-shadow` glows are paintable, but *animated* glows (hover transitions on `box-shadow`, pulsing neon, `filter: drop-shadow`/`blur` transitions) trigger full repaints every frame — per card. On mid-range Android (this audience: truckers on phones), a feed of 30 glowing, hover-animated cards scrolls at a slideshow.
+2. **Backdrop blur panels.** `backdrop-filter: blur()` on headers/panels over textured backgrounds is among the most expensive compositing operations on mobile GPUs.
+3. **Big background art on every page.** A night-road/truck-stop photo texture behind every route adds hundreds of KB to every navigation, competes with listing photos for bandwidth, and tanks LCP — on a marketplace, the listing photo *is* the content.
+4. **Retro display font CLS.** A new decorative font loaded carelessly (e.g., a `<link>` to Google Fonts, or `next/font` without thought) swaps in late with very different metrics from the fallback, shifting every signage headline. The current app uses `next/font` (Geist) correctly; the new display font must go through the same pipeline.
+5. **iOS quirk:** `background-attachment: fixed` for the "fixed night sky" effect is broken/disabled on iOS Safari — half the mobile audience.
 
 **Why it happens:**
-- Caching defaults shifted between Next.js versions; mental models are stale.
-- `use cache` keyed on request inputs (cookies/headers) can "poison" a shared cache if the route is treated as static.
-- Personalized pages get accidentally marked static.
+- Mockups are static; nobody sees paint cost in Figma.
+- Glow reads as "just CSS," so it's not budgeted like images or JS.
+- Desktop dev machines hide all of it until a real phone touches Staging.
 
 **How to avoid:**
-1. **Use `supabase.auth.getUser()` (not `getSession()`) in all Server Components, middleware, and server code** — it revalidates the token against the Auth server. This is the official Supabase rule and it directly prevents cross-user leakage.
-2. **Mark all authenticated/personalized routes dynamic** (`export const dynamic = 'force-dynamic'` or rely on `cookies()`/`headers()` access to opt out of static). Never statically cache pages that render PII, chat, or per-user data.
-3. **Do not use `use cache`/`unstable_cache` for per-user private data** in v1; use plain dynamic rendering. Reserve caching for the public fitment taxonomy and anonymous listing feed.
-4. **Refresh sessions in middleware** per the Supabase SSR guide, and never cache responses that set auth cookies.
+1. **Glow budget: static shadows yes, animated shadows no.** Hover/pulse effects animate the `opacity` of a pre-painted glow pseudo-element (`::after` with the shadow, `transition: opacity`) — compositor-only, GPU-cheap. Encode this as the `shadow-glow-*` token pattern from Pitfall 2 so the cheap version is the default.
+2. **Backgrounds are CSS, not photos:** dark navy base + gradients + a tiny tiling noise texture (<10KB) deliver the night-sky feel at near-zero cost. If a hero photo is used, it's homepage-only, `next/image` with `priority`, properly sized.
+3. **All fonts through `next/font`** (Google or local) so they're self-hosted with `size-adjust`-matched fallbacks (automatic CLS prevention). Limit to one display family + existing Geist; subset to latin.
+4. **`backdrop-filter` only on the sticky header, if at all;** panels use solid/semi-transparent token surfaces.
+5. **Phase-gate with Lighthouse on a throttled mobile profile:** record v1.0 baseline scores for home, search results, and listing detail *before* the redesign starts; no restyled page may regress LCP/CLS/INP materially. Scroll the search results page on a real mid-range phone once per phase.
 
 **Warning signs:**
-- `getSession()` used in any server context.
-- Authenticated pages without `cookies()`/`headers()` access or dynamic marking.
-- A user reports seeing someone else's name/messages after a deploy.
+- `transition: box-shadow` or `transition: all` on card components.
+- A multi-hundred-KB background asset in `public/`.
+- Headline text visibly jumping on first load (font swap shift).
+- Staging feels smooth on desktop, janky scrolling on a phone.
 
 **Phase to address:**
-Auth/session phase; re-check on chat and admin phases.
+Token/foundation phase (glow pattern, font pipeline, background strategy decided once); Lighthouse baseline before phase 1, re-checked per surface phase, full pass in final QA.
 
 ---
 
-### Pitfall 7: Fitment search is slow or returns wrong results; Fitment Intelligence false positives erode trust
+### Pitfall 7: Dark-only theme half-applied — native UI, autofill, and user photos betray the skin
 
 **What goes wrong:**
-Two failure modes. **(a) Modeling/perf:** the 8-level taxonomy (Make → Model → Configuration → Search Terms → Categories → Materials → Condition → Filters) plus many-to-many tagging is queried with deep recursive JOINs or unindexed `ILIKE '%term%'`, which forces sequential scans and gets slow as listings grow. **(b) Correctness:** trucker slang ("359 Guys," "Flat Glass Kenworth," "Aerodyne") doesn't match literal columns; naive `LIKE` returns wrong or empty results. Most damaging: **Fitment Intelligence auto-suggesting that a part fits trucks it doesn't** — false positives. A buyer who shows up for a part that doesn't actually fit their W900L loses trust permanently, and trust is the product's moat.
+The app today is **light-first**: `:root` holds light shadcn tokens, a `.dark` variant exists in `globals.css` but no `dark` class is applied in `app/layout.tsx`. Going dark-only by just repainting component backgrounds leaves the browser's native layer light: white scrollbars on dark panels (Windows especially), light-styled `<select>` dropdown panels, white date/number input chrome, the autofill yellow/white flash on the login form, a white `theme-color` strip in mobile browser chrome, and a blinding white flash on load before CSS applies. Separately, **user content fights the theme**: listing photos are often parts shot against white garage walls or light backgrounds — on a near-black page they glare like headlights and make the feed look patchy; admin charts currently use a grayscale `--chart-1..5` palette that turns invisible on navy.
 
 **Why it happens:**
-- `LIKE '%x%'` with a leading wildcard can't use a B-tree index → seq scan.
-- pg_trgm/full-text indexes get skipped if queries aren't written to use them, or a query pattern yields "no extractable trigrams" and degenerates to a full scan.
-- Synonyms/slang are treated as a search problem to solve at query time rather than modeled as data.
-- Fitment Intelligence is tuned for recall ("appear in every relevant search") which directly increases false-positive risk.
+- `color-scheme` is a separate, easily-forgotten declaration — repainting tokens doesn't touch native widgets.
+- Autofill styling is a notorious WebKit special case (`:-webkit-autofill` needs the inset box-shadow override).
+- Nobody tests with autofilled credentials, native selects, or light-background photos until real use.
 
 **How to avoid:**
-1. **Model the taxonomy explicitly** with proper FK relationships and a dedicated many-to-many `listing_fitments` join table; index every FK. Avoid runtime recursive tree-walking for hot paths — denormalize/materialize the fitment paths a listing belongs to.
-2. **Model slang/synonyms as data, not query hacks:** a `search_synonyms` / alias table mapping trucker terms → canonical taxonomy nodes ("359 Guys" → Peterbilt 359). Curate it; this is a domain asset.
-3. **Use Postgres full-text search (`tsvector` + GIN index)** for the main keyword search, plus **pg_trgm GIN/GiST index** for fuzzy/misspelling tolerance — and confirm `EXPLAIN ANALYZE` actually uses the index (don't assume).
-4. **Make Fitment Intelligence a *suggestion the seller confirms*, not an auto-apply.** Show suggested fitments at listing time; require the seller to accept/reject. Tune for *precision over recall* for auto-suggested fits, and clearly label inferred vs. seller-confirmed fitment in the UI ("Seller confirmed fits" vs "May also fit"). A wrong confirmed-fit is far costlier than a missed one.
-5. **Add a "report wrong fitment" affordance** so false positives are caught and the synonym/fitment data improves.
+1. **Go dark at the root, the simple way:** since v1.1 is dark-only (no toggle), redefine the `:root` token values as the dark palette directly — don't bolt a `.dark` class onto `<html>` and maintain two palettes for a product with one theme. Keep the existing `@custom-variant dark` plumbing intact for a possible future light mode, but make `:root` the source of truth.
+2. **Declare `color-scheme: dark` on `:root` in CSS *and* `<meta name="color-scheme" content="dark">` in the root layout** (the meta applies before stylesheets load, killing the white flash) — this flips scrollbars, form-control chrome, and UA defaults to dark. Add `<meta name="theme-color">` with the navy base for mobile browser chrome.
+3. **Autofill override:** style `input:-webkit-autofill` with an inset `box-shadow` of the input background token + correct `-webkit-text-fill-color` — test by actually logging in with saved credentials.
+4. **Frame user photos:** listing cards render images in a consistent neutral well (slightly-lighter panel token, small padding/rounded frame) so light-background photos read as framed content, not glare. Never apply darkening filters to listing photos — accurate part appearance is a marketplace trust requirement.
+5. **Recalibrate `--chart-1..5`** for the navy base in the token phase (cyan/red/amber/violet family with verified contrast) — the analytics dashboard is unreadable otherwise.
+6. **Audit non-shadcn native elements:** any raw `<select>`, date input, file-upload control, and the Sonner toaster (set its `theme="dark"`) across the app.
 
 **Warning signs:**
-- `EXPLAIN ANALYZE` shows `Seq Scan` on listing/fitment search at any real data volume.
-- Search uses `ILIKE '%...%'` on raw columns with no trigram/FTS index.
-- Fitment auto-applies suggestions without seller confirmation.
-- Buyers commenting "this doesn't fit my truck."
+- White scrollbar track inside a dark scrollable panel (check Windows, not just macOS).
+- Login form turning white/yellow when the browser autofills.
+- White flash on first paint or white strip in Android Chrome's UI.
+- Feed looks like a checkerboard of glowing white photo rectangles.
 
 **Phase to address:**
-Fitment library/schema phase (modeling + synonym table) and search phase (indexing + Fitment Intelligence precision). Flag for deeper research — taxonomy modeling and the precision/recall tradeoff need careful design.
+Token/foundation phase (`:root` flip, `color-scheme`, meta tags, autofill, toaster, chart palette); photo-framing pattern in the listing/feed surface phase; native-widget audit in final QA.
 
 ---
 
-### Pitfall 8: Contact/chat abuse — scams, off-platform circumvention, spam, harassment
+### Pitfall 8: Novelty aesthetic applied uniformly — admin screens and mobile reality suffer
 
 **What goes wrong:**
-The contact-form→chat flow is the surface scammers and spammers attack. Common failures: (a) scammers immediately push buyers off-platform ("text me on WhatsApp/Telegram") to evade logging — the exact behavior the form-first/admin-copy design exists to fight, but which fails if there's no detection; (b) no rate-limiting, so bots blast the same scam message to every listing; (c) harassment with no block/report path; (d) the "copy to admin" log exists but nobody can act on it (no moderation queue, no ability to disable accounts), so it's logging theater.
+Two related judgment failures:
+
+1. **Neon on data-dense admin.** The admin area is tables, queues, and charts: enforcement ladder, grouped report queue, message monitoring, fitment CRUD, CSV import, analytics. Applying the full signage treatment — display fonts in table headers, glow borders on every row, red/cyan everywhere — turns scanning 50 reports into reading a casino floor. Moderation work needs row-level scannability, clear status colors (which now collide with brand red = primary), and zero decoration competing with data.
+2. **Mockup-fidelity vs responsive reality.** The stakeholder mockups are desktop compositions; the milestone explicitly requires equal mobile/desktop care. Neon sign grids designed as fixed desktop tiles break on a 360px phone: long taxonomy names ("Western Star 4900EX", "Freightliner Cascadia") overflow or truncate inside sign-shaped containers, decorative borders eat content width, glow spacing collapses, and tap targets shrink below 44px. Implementing the desktop mockup first and "adapting down" later produces a cramped mobile port of a desktop poster — for an audience that is substantially phone-in-truck-cab.
 
 **Why it happens:**
-- Teams build the happy-path messaging and treat moderation/reporting as "v2."
-- Phone/email circumvention is easy to type and hard to detect with naive keyword filters.
-- Banning by account only — fraudsters just create a new account.
+- A single visual language feels like consistency; nobody mocks up the report queue, so it gets the homepage's treatment by default.
+- Mockups carry authority; deviation feels like disobedience even where the mockup never considered the context (admin, mobile, 50-row tables).
 
 **How to avoid:**
-1. **Persist the contact-form submission to DB before opening chat** (already in the design) — this is the abuse base; ensure it captures enough signal (IP, user agent, timestamps) to detect repeat offenders and enable IP-based block of re-registration.
-2. **Rate-limit contact submissions and messages** per account *and* per IP (e.g. N contacts/hour) to kill bot blasting.
-3. **Behavior-aware filtering, not just keywords:** flag messages containing phone numbers, emails, or "WhatsApp/Telegram/Cashapp/Zelle/wire" early in a thread for review. Keyword filters alone are evadable; combine with frequency/behavior signals.
-4. **Ship reporting + a moderation queue in v1**, not v2: a "Report" button on listings, comments, and messages with categories (scam/phishing, spam/promotion, harassment), feeding the admin Reports area. The plan already lists Reports under admin — make sure the *buyer-facing* report action and the *admin action* (restrict/disable account, block IP) both exist.
-5. **Block & mute** between users; disable accounts on confirmed fraud and prevent obvious re-registration (IP/device signals).
-6. Consider holding first-contact messages for lightweight screening if abuse volume rises.
+1. **Define two intensity tiers in the token phase:** *Signage* (homepage, browse grids, headers, marketing-ish surfaces: display font, glows, neon borders) and *Workbench* (admin, forms, chat, tables: same dark navy palette and accents, but sans-serif data text, minimal glow, neon reserved for primary actions and status). Admin gets the Workbench tier — it still looks like OG Truck Parts, it just respects the work.
+2. **Status colors get their own tokens** (success/warn/danger/info) distinct from brand red/cyan so a "banned" badge and a primary button never read the same.
+3. **Build signage grids mobile-first:** the neon sign tile is a fluid component tested at 360px with the longest real taxonomy strings from the seeded fitment data before the desktop layout is polished. Tap targets ≥44px including the decorative border.
+4. **Get stakeholder sign-off on the two-tier approach early** (one screenshot pair: neon homepage + quiet admin) instead of discovering disagreement at UAT.
 
 **Warning signs:**
-- Messaging shipped with no rate limit, no report button, or no admin action on reports.
-- Contact logs accumulate but no one reviews/acts on them.
-- Spike in identical messages across many listings.
+- Display font appearing inside a `<table>` or form label.
+- Admin status badges indistinguishable from CTAs.
+- Horizontal scrolling or two-line-truncated model names on a phone-width browse grid.
+- Any plan that says "desktop first, mobile adjustments later."
 
 **Phase to address:**
-Contact/chat phase (form-first persistence, rate limiting, reporting) and admin phase (moderation queue + enforcement actions). Reporting must NOT be deferred to v2.
-
----
-
-### Pitfall 9: Cold start — empty marketplace with no listings or buyers
-
-**What goes wrong:**
-A two-sided marketplace has no value until both sides show up, but neither wants to be first. Launch with zero listings → buyers arrive, see an empty feed and empty search results, leave immediately, and rarely return. The fitment search — the differentiator — looks broken when there's nothing to find.
-
-**Why it happens:**
-- Treating launch as "build it and they'll come."
-- Trying to grow both sides everywhere at once instead of concentrating density.
-
-**How to avoid:**
-1. **Seed supply first.** Buyers come for inventory; manually onboard sellers and hand-create quality listings before any buyer marketing. Concentrate on **one truck make/region first** (e.g. Peterbilt parts in one state/cross-border corridor) to reach local density rather than thin national coverage.
-2. **Single-player utility for sellers:** make listing genuinely better than Facebook/Craigslist (fitment auto-surfacing, clean privacy) so sellers get value even before buyer volume — a Trojan-horse reason to list.
-3. **Aggregate where supply already exists** (the Airbnb/Craigslist move): identify sellers already posting take-off parts on Facebook groups/Craigslist and recruit them with better tooling and privacy.
-4. **Avoid an empty-looking product:** never show "0 results / empty feed" cold; seed enough real listings that fitment search returns hits on common queries before opening to buyers.
-5. **Dual-role advantage:** many truckers/shops are both buyers and sellers — lean into that to ease the cold start.
-
-**Warning signs:**
-- Launch plan markets to buyers before there's inventory.
-- Search/feed returns empty for common makes at launch.
-- Spreading thin across all makes/regions instead of dominating one segment.
-
-**Phase to address:**
-Not a build phase per se — a launch/go-to-market and seeding strategy concern. Influences MVP scope (admin tools to bulk-onboard sellers / create listings should exist early) and which segment to build fitment data for first.
-
----
-
-### Pitfall 10: Phone-verification SMS fraud (SMS pumping / toll fraud)
-
-**What goes wrong:**
-The Verified Seller flow requires phone verification (OTP via SMS). An unprotected "send OTP" endpoint is a target for **SMS pumping / Artificially Inflated Traffic**: bots flood the endpoint to trigger mass OTP sends to premium routes the attacker profits from via carrier revenue-share. You pay your SMS gateway per message whether or not a real user requested it — global losses topped $1.2B/yr in 2025; Twitter lost ~$60M/yr to this. A small marketplace can rack up a shocking bill overnight.
-
-**Why it happens:**
-- The OTP endpoint is public and unauthenticated by nature (you verify *before* trust).
-- Teams test with their own phone and never simulate abuse.
-- No per-IP/per-account/per-number rate limits.
-
-**How to avoid:**
-1. **Rate-limit OTP sends** per IP, per account, and per destination number (e.g. small N/hour, exponential backoff on retries).
-2. **Add a CAPTCHA / bot check** (e.g. Turnstile) before sending an SMS, plus require an authenticated, registered account before phone verification is offered (verification is a post-signup step here, which helps).
-3. **Geo/route allowlisting:** restrict OTP destinations to expected countries (North America for this product) — blocks the premium international routes pumping exploits.
-4. **Use a provider with built-in fraud protection** (Twilio Verify with Fraud Guard, or similar) rather than rolling raw SMS.
-5. **Set hard spend caps/alerts** on the SMS account so an attack can't run up an unbounded bill.
-
-**Warning signs:**
-- "Send OTP" callable without auth, CAPTCHA, or rate limit.
-- SMS spend spikes or sends to unexpected country codes.
-- Many OTP requests, few completed verifications.
-
-**Phase to address:**
-Verified Seller phase. Don't ship phone verification without rate limiting + bot check + spend caps.
+Token phase (two tiers + status tokens); admin surface phase uses Workbench tier; mobile checks per surface phase, not deferred.
 
 ---
 
@@ -288,124 +260,130 @@ Verified Seller phase. Don't ship phone verification without rate limiting + bot
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Single `users` table holding PII + public fields | One table, simple JOINs | Every public query is one careless `select('*')` away from leaking PII; hard to retrofit | **Never** — the public/private split is foundational |
-| `select('*')` / `profiles(*)` nested selects | Fast to write | Ships hidden PII in payloads | Never on user/PII-adjacent data |
-| Skip RLS "for now," add later | Build features faster | Wide-open tables; later-added tables silently unprotected | Never — enable at table creation |
-| Client-side-only EXIF strip | No server image lib needed | Malicious client skips it; raw GPS lands in Storage | Never as the only line of defense |
-| `ILIKE '%term%'` search, no index | Works in dev with 10 rows | Seq scans, slow search at scale | Only as a throwaway spike, never in the search feature |
-| Fitment Intelligence auto-applies suggestions | Listings appear everywhere instantly | False positives erode buyer trust irreversibly | Never auto-apply; require seller confirm |
-| Defer reporting/moderation to v2 | Ship messaging sooner | Abuse runs unchecked from day one; logs no one acts on | Never — basic report + admin action are v1 |
-| OTP endpoint with no rate limit | Verification "works" | SMS-pumping bill / toll fraud | Never |
+| Hardcoded hex/arbitrary classes instead of tokens | Matches mockup fast | Unmaintainable, inconsistent palette across 33.7k LOC; next theme change = full re-sweep | Never — token layer first (Pitfall 2) |
+| Find-replace "Take-Off Parts" in UI files only | Demo looks rebranded | Old brand persists in emails, SMS, metadata, dashboards | Never — full sweep + dashboard checklist (Pitfall 4) |
+| Fix broken e2e selectors with `data-testid`/CSS locators | Suite green quickly | Hides accessible-name regressions; tests stop testing what users perceive | Only for elements with genuinely no accessible role; document why |
+| Keep `.dark` class machinery + duplicate palettes for dark-only product | "Future-proof" | Two palettes to keep in sync for one theme | Acceptable to keep the variant *plumbing*; not acceptable to maintain duplicate values |
+| Restyle shadcn primitives by rewriting their DOM structure | Pixel-perfect freedom | Breaks Radix focus traps, aria wiring, every consumer (dialogs, selects, OTP input) | Never — recolor via tokens/classes; structure changes need per-primitive regression testing |
+| Skip Lighthouse baseline before starting | Start visuals sooner | No way to prove the redesign didn't regress perf | Never — baseline is one hour |
+| Desktop-mockup-first, mobile "later" | Faster stakeholder demo | Cramped mobile port for a phone-heavy audience | Never for this milestone (equal-care is a stated requirement) |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Supabase RLS | Assuming RLS on by default; assuming anon key is secret | RLS is opt-in per table; anon key is public — RLS is your only guard |
-| Supabase service_role | `NEXT_PUBLIC_` prefix; using it in the `@supabase/ssr` client | Server-only env var; dedicated `supabase-js` admin client in a `server-only` module |
-| `@supabase/ssr` + Next.js auth | Trusting `getSession()` in server code | Use `getUser()` server-side; refresh session in middleware |
-| Supabase Storage | Expecting it to strip EXIF/resize | It stores raw bytes; strip + re-encode with `sharp` before upload |
-| Next.js 15 caching | Assuming old default-cache behavior; statically caching personalized routes | Mark per-user routes dynamic; avoid `use cache` for private data |
-| SMS/OTP provider | Public unauthenticated send endpoint | Rate limit + CAPTCHA + geo allowlist + spend cap; prefer Verify-with-FraudGuard |
-| Postgres pg_trgm / FTS | Adding the extension but not confirming the index is used | `EXPLAIN ANALYZE`; ensure GIN index + query shape that hits it |
+| Supabase Auth emails | Assuming repo grep covers all email copy | Templates live in Supabase dashboard (Resend SMTP) — update there, send a real test signup |
+| Twilio Verify | Forgetting the OTP SMS carries the service friendly name | Rename the Verify service in Twilio console; trigger one OTP and read the SMS (MEDIUM confidence on template wording — verify) |
+| Resend | Updating email bodies but not the FROM display name | `lib/admin/email.ts`, `lib/messaging/notify.ts`, `lib/verify/alert.ts` all hardcode `"Take-Off Parts <onboarding@resend.dev>"` — centralize via `lib/brand.ts` |
+| Next.js Metadata API | Replacing one title string | Root `layout.tsx` is still `"Create Next App"`; use `title.template`, description, `opengraph-image`, icons from the new asset pack |
+| next/font | Adding the retro display font via `<link>` or raw `@font-face` | Load through `next/font` (google or local) for self-hosting + automatic size-adjust fallback (CLS-free) |
+| Tailwind v4 `@theme` | Defining new brand colors in a JS config or per-component | All tokens in `globals.css` `@theme` / `:root` vars — v4 is CSS-first; the shadcn vars are the re-skin lever |
+| shadcn/ui (owned components) | Treating `components/ui/*` as a vendor lib to swap | They're owned code consumed app-wide; recolor via tokens, keep `focus-visible` rings and Radix structure intact |
+| Sonner toasts | Toasts staying light on the dark app | Set toaster `theme="dark"` / token-based styles in `components/ui/sonner.tsx` |
+| Vercel/Supabase projects | Old project names/domains confusing later envs | Rename at the dashboard level during the sweep; note production-domain rebrand as a pre-launch item |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| `ILIKE '%x%'` / leading-wildcard search | Slow search, rising DB CPU | pg_trgm GIN index + FTS; rewrite query to use index | Hundreds–thousands of listings |
-| Deep recursive JOINs across 8-level taxonomy per request | Slow listing/feed pages | Denormalize/materialize fitment paths; index FKs; cache public taxonomy | Thousands of listings + traffic |
-| `auth.uid()` un-wrapped in RLS policy | DB CPU spikes under load | Use `(select auth.uid())` so it evaluates once | Many rows per policy check |
-| Unindexed many-to-many `listing_fitments` lookups | Slow filtered search | Composite indexes on join columns | As tagging grows |
-| Realtime chat without pagination | Slow thread loads | Paginate messages; index by thread + created_at | Long threads |
+| Animating `box-shadow`/`filter` glows on cards | Janky scroll on mobile, high paint times in DevTools | Pre-painted glow on `::after`, transition `opacity` only; encode as the token pattern | Immediately on mid-range phones with 20+ cards |
+| Photo background textures on every route | LCP regression, bandwidth competing with listing photos | CSS gradients + tiny tiling noise; photo hero homepage-only via `next/image` | Every page load on cellular |
+| `backdrop-filter: blur` on large panels | Scroll/composite jank on mobile GPUs | Solid/semi-transparent token surfaces; blur only on sticky header if needed | Mobile, especially over animated/textured content |
+| Display font without next/font pipeline | Headline CLS on every load; FOUT | `next/font` with `display: swap` + auto fallback metrics; subset latin | First paint, every page, every user |
+| `background-attachment: fixed` night-sky effect | Background broken/detached on iOS Safari | Fixed-position decorative layer or accept scrolling background | All iOS users |
+| Glow + border + shadow stacked per row in admin tables | Slow admin pages with 100+ rows | Workbench tier: flat rows, glow reserved for interactive emphasis | Report queue / analytics at real moderation volume |
 
 ## Security Mistakes
 
+Visual-only milestone, but the invariants can still be nicked while moving code around:
+
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| PII columns reachable via RLS/joins/`select('*')` | Core privacy promise broken | Public/private table split + column grants + contract tests |
-| Table without RLS | Full data read/write via anon key | Enable RLS at creation; CI assertion |
-| service_role key in client bundle | Total DB compromise | Server-only; bundle scan in CI; rotate if leaked |
-| EXIF GPS in uploaded photos | Seller's home location exposed | Server-side strip + re-encode; automated no-GPS test |
-| `getSession()` trusted server-side | Spoofed/cross-user session | `getUser()` everywhere server-side |
-| No rate limit on contact/OTP endpoints | Spam blasting; SMS toll fraud | Per-IP/account/number rate limits + CAPTCHA |
-| Logs/analytics capturing PII | Leak via log aggregation/analytics vendor | Scrub PII before logging; never send PII to analytics |
+| Restructuring a Server Component surface and widening the data passed to new client components | PII crossing the RSC boundary (v1.0 Pitfall 5 redux) | Redesign keeps existing data-fetch shapes; re-run `privacy.contract` + `public-profile.contract` tests each phase |
+| "Simplifying" the contact modal to open chat directly | Breaks invariant #5 (contact persists + admin copy before chat) | Behavior-freeze contract; messaging contract tests green per phase |
+| New OG/social images generated from live pages with user data | User content/PII in cached social previews | Static brand OG images only in v1.1 |
+| Loading the display font from a third-party CDN `<link>` | New external request on every page (privacy + perf) | `next/font` self-hosting only |
+| New public assets (logo pack) dumped with original files | Stakeholder source files may carry metadata | Export clean web assets; only optimized SVG/PNG/ICO in `public/` |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Empty feed/search at launch | Buyers bounce, never return | Seed supply first; never show cold empty results |
-| Wrong fitment suggestions | Buyer wastes time, loses trust | Seller-confirmed vs inferred labeling; precision over recall; report-wrong-fitment |
-| Slang queries return nothing | "This site doesn't have what I need" | Curated synonym/alias table mapping slang → taxonomy |
-| No block/report on harassment | Victims leave the platform | v1 block + report with categories |
-| Location shown more precisely than promised | Privacy promise feels broken | Only "State/Province, Country" anywhere public; coarse-only |
+| Saturated red body text / thin display font at small sizes | Eye strain, halation for astigmatic users, illegible part numbers | Soft-white body text; red for large display + accents; data in sans/mono |
+| Glow replaces focus ring | Keyboard users lose their place in forms (register, verify, list, contact) | Solid 2px ring kept; glow as decoration only |
+| Brand red = destructive red | "Publish" and "Delete" look like siblings; misclicks on enforcement actions | Distinct destructive treatment + status token set |
+| Dead mockup affordances (cart icon) | Users expect checkout that doesn't exist; trust hit | Mockup-exclusion list enforced per surface |
+| White-background listing photos glaring on dark feed | Patchy, amateur-looking feed; photo content is the product | Neutral photo wells/frames on cards; no filters on photos |
+| Desktop-poster signage cramped on phones | Primary audience (phone in truck cab, at night) gets the worst version | Mobile-first signage components, real taxonomy strings, ≥44px targets |
+| Full neon treatment on admin queues | Moderation gets slower and error-prone | Workbench tier for admin |
+| Spanish or placeholder copy sneaking in during rewording | Violates the English-only UI rule | English-copy check in each surface's review (existing rule, new copy = new risk) |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Public listing API:** Renders correctly but verify the JSON payload contains NO name/email/phone/address/postal keys (DevTools + automated contract test).
-- [ ] **Every table:** Looks queryable but verify RLS is ENABLED and has owner/admin-scoped policies (no `USING (true)`).
-- [ ] **Image upload:** Photos display fine but verify stored objects have NO GPS/EXIF (re-download + `exiftool`/`sharp.metadata()` test).
-- [ ] **Auth on server:** Pages load but verify `getUser()` (not `getSession()`) is used and personalized routes are dynamic (not CDN-cached).
-- [ ] **service_role key:** Admin features work but verify the key is NOT in the client bundle (grep built `.next`, check no `NEXT_PUBLIC_` prefix).
-- [ ] **Fitment search:** Returns results but run `EXPLAIN ANALYZE` to confirm index usage (no Seq Scan), and test slang queries return correct hits.
-- [ ] **Fitment Intelligence:** Suggests fitments but verify seller must confirm and UI distinguishes confirmed vs inferred.
-- [ ] **Contact/chat:** Messages send but verify rate limiting, a working Report button, an admin moderation queue, and that admin actually receives the logged copy.
-- [ ] **Phone verification:** OTP arrives but verify rate limiting + CAPTCHA + geo allowlist + spend cap protect the send endpoint.
-- [ ] **Comments (public):** Post fine but verify commenter is shown by username only, never PII.
+- [ ] **Rebrand:** UI shows OG Truck Parts — but run the repo grep (`take-off|takeoff|create next app`) AND trigger real emails/SMS from Staging (enforcement email, contact notification, OTP SMS, Supabase signup confirm) and read them.
+- [ ] **Metadata:** Tab title fixed on home — but check every route group inherits the new `title.template`, link unfurls show the OG image, favicon updated in `app/favicon.ico` and any manifest/icons.
+- [ ] **Dark theme:** Pages look dark — but check Windows scrollbars, native select dropdowns, date inputs, autofilled login fields, mobile browser `theme-color` strip, and first-paint flash.
+- [ ] **Focus:** Buttons look great — but Tab through register → verify wizard → listing create → contact form with a keyboard and confirm a visible ring on every stop.
+- [ ] **Contrast:** Palette looks "on brand" — but every token pair has a recorded ratio; white-on-neon-red small text is the known trap (≈4:1, fails AA).
+- [ ] **Tests:** Suite green — but confirm no role/name selector was downgraded to a CSS locator to pass, and no contract/RLS/privacy test file was modified by a "visual" commit.
+- [ ] **Behavior freeze:** All surfaces restyled — but diff the route map and form schemas against the pre-milestone inventory; re-run the 24-step UAT walkthrough.
+- [ ] **Performance:** Desktop feels fine — but compare Lighthouse mobile against the pre-redesign baseline for home/search/listing, and scroll the feed on a real phone.
+- [ ] **Mobile:** Desktop matches mockups — but check signage grids at 360px with the longest seeded taxonomy names and 44px tap targets.
+- [ ] **Admin:** Public pages branded — but verify admin got the Workbench tier (scannable tables, distinct status colors, readable charts on navy).
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| PII leaked in API payload | HIGH | Patch query, audit access logs, assess breach-notification duties; if PII separated from public table the blast radius is smaller |
-| Table shipped without RLS | MEDIUM | Enable RLS + policies immediately; audit anon-key access logs for exfiltration window |
-| service_role key exposed | HIGH | Rotate key immediately; audit DB activity; assume full compromise of exposure window |
-| EXIF GPS in already-stored photos | MEDIUM | Batch re-process all Storage objects through strip pipeline; notify affected sellers if exposed |
-| Cross-user cached session | MEDIUM | Switch to `getUser()`, mark routes dynamic, purge CDN cache |
-| Fitment false positives at scale | MEDIUM | Switch auto-apply → seller-confirm; backfill corrections from "report wrong fitment" data |
-| SMS pumping bill | LOW–MEDIUM | Add rate limit/CAPTCHA/geo allowlist + spend cap; dispute fraudulent traffic with provider |
+| Behavior change shipped inside a visual commit | MEDIUM | `git bisect` against the e2e suite; revert the behavioral hunk; re-run messaging/privacy contract tests |
+| Hardcoded-value sprawl discovered mid-milestone | MEDIUM | Stop, extract tokens, codemod arbitrary values → token classes before more surfaces are built |
+| Stale brand found post-"completion" | LOW | Re-run grep + dashboard checklist; the `lib/brand.ts` refactor makes repo fixes one-line |
+| Contrast/focus failures found at UAT | LOW–MEDIUM | Token-level fixes propagate app-wide (the payoff of Pitfall 2 done right); re-run axe |
+| Suite left red for weeks | MEDIUM | Freeze new surfaces; dedicate a plan to restoring green with role/name selectors intact before continuing |
+| Mobile jank from animated glows | LOW | Swap to the pseudo-element opacity pattern at the token/utility level — no per-component rework if tokens were used |
+| Admin unusable under full neon | LOW–MEDIUM | Introduce Workbench tier tokens and reskin admin against them; faster if status tokens already exist |
 
 ## Pitfall-to-Phase Mapping
 
+v1.1 phases aren't finalized; mapping uses the natural shape (foundation/tokens → header/nav → public surfaces → app surfaces → admin → rebrand sweep → QA/UAT-fixes).
+
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| PII over-fetch / `select('*')` leak | Schema / data-model (public/private split) | Contract test: anon listing fetch has no PII keys |
-| RLS disabled / too permissive | Foundational security; gate every table-adding phase | CI assertion: all `public` tables RLS-on with policies |
-| service_role key exposure | Auth/infra setup | Bundle scan; no `NEXT_PUBLIC_` service key |
-| EXIF GPS leak | Image upload / Storage | Automated no-GPS-tag test on stored objects |
-| Server/Client boundary leak | Listing render / feed | Review RSC payload; `server-only` on secret modules |
-| Caching serves private data | Auth/session; chat; admin | `getUser()` used; personalized routes dynamic |
-| Fitment slow / wrong / false-positive | Fitment library + search | `EXPLAIN ANALYZE` index use; seller-confirm UI; slang tests |
-| Contact/chat abuse | Contact/chat + admin moderation | Rate limits; report button; admin queue + enforcement |
-| Cold start | Launch/seeding strategy (influences MVP admin tooling) | Search returns hits for common makes pre-launch |
-| SMS pumping | Verified Seller | OTP endpoint rate-limited + CAPTCHA + geo + spend cap |
+| Visual-only scope creep (1) | Foundation (behavior-freeze contract) + every surface phase | Route/schema inventory diff clean; full e2e green per phase; no `lib/actions/` churn in visual commits |
+| Hardcoded-value sprawl (2) | Foundation (token layer first) | Grep for raw hex outside `globals.css`; single source for neon red/cyan/glows |
+| Neon a11y failures (3) | Foundation (palette ratios, focus ring, font policy); final QA (axe + keyboard walk) | Recorded contrast ratios; Tab-walk of all forms; display font absent <20px |
+| Rebrand misses (4) | Dedicated rebrand-sweep plan | Repo grep zero hits; dashboard checklist (Supabase/Twilio/Resend/Vercel) evidenced; real emails/SMS read |
+| Test breakage mishandled (5) | Every surface phase (same-commit updates) | Suite green at phase boundaries; role/name selectors preserved; contract tests untouched |
+| Performance traps (6) | Foundation (glow pattern, font pipeline, background strategy); QA (Lighthouse vs baseline) | Mobile Lighthouse ≥ baseline; no `transition: box-shadow`; CLS ≈ 0 on font swap |
+| Dark-theme half-applied (7) | Foundation (`color-scheme`, meta, autofill, charts); listing/feed phase (photo wells) | Native-widget audit; autofill login test; chart readability |
+| Uniform aesthetic / mobile bias (8) | Foundation (two tiers + status tokens); admin phase; per-surface mobile checks | Admin in Workbench tier; 360px signage check with real taxonomy strings; stakeholder sign-off on tier split |
 
 ## Sources
 
-- [Supabase RLS: Common Mistakes, the (select auth.uid()) Trap & CVE-2025-48757 Breakdown](https://vibeappscanner.com/supabase-row-level-security) (MEDIUM)
-- [Supabase Security Best Practices: RLS, API Keys & CVE-2025-48757](https://vibeappscanner.com/best-practices/supabase) (MEDIUM)
-- [Supabase Docs — Why is my service role key client getting RLS errors](https://supabase.com/docs/guides/troubleshooting/why-is-my-service-role-key-client-getting-rls-errors-or-not-returning-data-7_1K9z) (HIGH)
-- [Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security) (HIGH)
-- [Setting up Server-Side Auth for Next.js | Supabase Docs](https://supabase.com/docs/guides/auth/server-side/nextjs) (HIGH)
-- [Creating a Supabase client for SSR | Supabase Docs](https://supabase.com/docs/guides/auth/server-side/creating-a-client) (HIGH)
-- [Supabase — getSession reference (don't trust server-side)](https://supabase.com/docs/reference/javascript/auth-getsession) (HIGH)
-- [Caching (Previous Model) | Next.js Docs](https://nextjs.org/docs/app/guides/caching-without-cache-components) (HIGH)
-- [Directives: use cache | Next.js Docs](https://nextjs.org/docs/app/api-reference/directives/use-cache) (HIGH)
-- [Fix over-caching with Dynamic IO in Next.js 15 — LogRocket](https://blog.logrocket.com/dynamic-io-caching-next-js-15/) (MEDIUM)
-- [EXIF Data Risks: Strip Image Metadata — Mochify](https://mochify.xyz/guides/exif-data-risks-image-compression-2026) (MEDIUM)
-- [Strip EXIF and GPS Metadata Before Sharing — Konvrt](https://konvrt.dev/blog/exif-metadata-stripping-guide-2026) (MEDIUM)
-- [Unstripped Image Metadata (EXIF) Leakage via File Upload — GHSA advisory](https://github.com/NeoRazorX/facturascripts/security/advisories/GHSA-q7f2-rv22-2xgr) (HIGH, real advisory)
-- [pg_trgm — PostgreSQL Documentation](https://www.postgresql.org/docs/current/pgtrgm.html) (HIGH)
-- [Postgres Text Search: Full Text vs Trigram — Aapeli Vuorinen](https://www.aapelivuorinen.com/blog/2021/02/24/postgres-text-search/) (MEDIUM)
-- [Marketplace Content Moderation — GetStream](https://getstream.io/blog/marketplace-content-moderation/) (MEDIUM)
-- [Handling promotion, spam and fraud with Content Moderation — Sightengine](https://sightengine.com/promotion-spam-fraud-moderation-guide) (MEDIUM)
-- [Trust and Safety on Marketplace — Meta](https://www.meta.com/safety/scam-prevention/marketplace-safety/) (MEDIUM)
-- [19 Tactics to Solve the Chicken-or-Egg Problem — NFX](https://www.nfx.com/post/19-marketplace-tactics-for-overcoming-the-chicken-or-egg-problem) (MEDIUM)
-- [The Chicken and Egg Problem in Online Marketplaces — Prometora](https://www.prometora.com/learn/chicken-and-egg-problem) (MEDIUM)
-- [What Is SMS Pumping Fraud and How to Stop It — Twilio](https://www.twilio.com/en-us/blog/sms-pumping-fraud-solutions) (HIGH)
-- [Handling toll fraud and SMS pumping with Twilio in Auth0 — Okta whitepaper](https://www.okta.com/sites/default/files/2025-06/Toll-Fraud-SMS-Pumping.pdf) (HIGH)
+**Codebase (HIGH — direct inspection, 2026-06-12):** `app/layout.tsx` (scaffold metadata, light-only fonts, no dark class), `app/globals.css` (light `:root` tokens, `.dark` variant unused, grayscale charts), `lib/admin/email.ts` / `lib/messaging/notify.ts` / `lib/verify/alert.ts` (hardcoded old-brand FROM/subjects/bodies), `e2e/home.spec.ts` + `e2e/auth.spec.ts` (brand-string role selectors), `components/ui/` (18 owned shadcn primitives), 43 vitest files incl. privacy/RLS/messaging contracts.
+
+**Accessibility (HIGH):**
+- [Understanding SC 1.4.11 Non-text Contrast — W3C WAI](https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html)
+- [Understanding SC 2.4.13 Focus Appearance — W3C WAI](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)
+- [A guide to designing accessible, WCAG-conformant focus indicators — Sara Soueidan](https://www.sarasoueidan.com/blog/focus-indicators/)
+- [WebAIM: Contrast and Color Accessibility](https://webaim.org/articles/contrast/)
+- [Dark Mode Best Practices for Accessibility — DubBot](https://dubbot.com/dubblog/2023/dark-mode-a11y.html) (MEDIUM — halation/astigmatism guidance)
+- [The Designer's Guide to Dark Mode Accessibility — AccessibilityChecker](https://www.accessibilitychecker.org/blog/dark-mode-accessibility/) (MEDIUM)
+
+**Performance (HIGH/MEDIUM):**
+- [How to animate box-shadow with silky smooth performance — Tobias Ahlin](https://tobiasahlin.com/blog/how-to-animate-box-shadow/) (HIGH — canonical pseudo-element/opacity pattern)
+- [CSS Box Shadow Animation Performance — SitePoint](https://www.sitepoint.com/css-box-shadow-animation-performance/) (MEDIUM)
+- [Custom fonts without compromise using next/font — Vercel](https://vercel.com/blog/nextjs-next-font) (HIGH — size-adjust fallback, CLS prevention)
+- [Framework tools for font fallbacks — Chrome Developers](https://developer.chrome.com/blog/framework-tools-font-fallback) (HIGH)
+
+**Dark theme mechanics (HIGH):**
+- [Improve dark mode default with color-scheme and a meta tag — web.dev](https://web.dev/articles/color-scheme)
+- [color-scheme — MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme)
+- [Native HTML light and dark color scheme switching — Vadim Makeev](https://pepelsbey.dev/articles/native-light-dark/) (MEDIUM — manual-class vs OS-preference trap)
+- [Tailwind autofill/scrollbar styling with shadcn dark mode — tailwindcss discussion #14031](https://github.com/tailwindlabs/tailwindcss/discussions/14031) (MEDIUM)
+
+*v1.0 pitfalls (PII/RLS/EXIF/caching/SMS-pumping etc.) are archived in `.planning/milestones/` planning docs and remain enforced as architectural invariants in CLAUDE.md; this file supersedes them for milestone v1.1.*
 
 ---
-*Pitfalls research for: privacy-first truck-parts marketplace (Next.js 15 + Supabase)*
-*Researched: 2026-06-01*
+*Pitfalls research for: v1.1 OG Rebrand & UI Redesign (Take-Off Parts → OG Truck Parts)*
+*Researched: 2026-06-12*
