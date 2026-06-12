@@ -1,4 +1,4 @@
-# Take-Off Parts — Truck Marketplace
+# OG Truck Parts (formerly Take-Off Parts) — Truck Marketplace
 
 ## What This Is
 
@@ -9,6 +9,18 @@ A privacy-first online marketplace for the North American trucking industry wher
 **Shipped:** v1.0 MVP (2026-06-12) — 11 phases, 57 plans, 67/67 v1 requirements, stakeholder-approved final UAT (24/24 walkthrough steps live on Staging).
 **Codebase:** ~33.7k LOC TypeScript/TSX + ~3.4k LOC SQL (24 migrations). Next.js 16 + React 19 + Supabase (Postgres 17, Auth, Realtime, Storage) + Tailwind v4 + shadcn/ui, hosted on Vercel (all envs → Supabase Staging).
 **Not yet launched:** runs entirely against Staging; pre-launch blockers are tracked in MILESTONES.md → Known gaps.
+
+## Current Milestone: v1.1 OG Rebrand & UI Redesign
+
+**Goal:** Rebrand the product to **OG Truck Parts** and apply a complete neon truck-stop visual identity across the entire app — functionality unchanged — plus close the three small UX fixes from v1.0 UAT.
+
+**Target features:**
+- Full rebrand: name "OG Truck Parts" everywhere (UI copy, titles, metadata, emails), new logo + icon assets (provided by stakeholder)
+- New visual identity applied app-wide: neon roadside/truck-stop aesthetic — dark night base, neon red/cyan signage, retro display typography, navy panels with neon borders, red neon CTAs (per stakeholder mockups)
+- Redesigned persistent header: logo, prominent search bar, icon nav (search, sell, messages, saved, alerts, account) — no cart/payments elements from mockups (out of scope)
+- Browse-as-signage: Make → Model → Category browse styled as neon sign grids
+- Equal mobile/desktop care (no breakpoint bias)
+- UAT fixes: sell entry point in header, freeze-notice realtime refresh, Staging data hygiene (vitest-* search terms)
 
 ## Core Value
 
@@ -30,16 +42,24 @@ A buyer can find the right part (through fitment, model, or trucker slang), inte
 - ✓ Contact→chat trust spine: form persists + admin copy BEFORE private realtime chat opens; block/report; abuse logging — v1.0
 - ✓ Admin: enforcement ladder, listing moderation, grouped report queue, audited message monitoring, fitment CRUD, CSV bulk import, analytics dashboard — v1.0
 
-### Active (candidates for next milestone)
+### Active (v1.1 — OG Rebrand & UI Redesign)
+
+- [ ] Rebrand to OG Truck Parts: name, logo/icon assets, all UI copy/titles/metadata/emails
+- [ ] Neon truck-stop visual identity applied across every surface (public, auth, app, admin) — visual-only, functionality unchanged
+- [ ] Redesigned header with sell entry point + icon nav (no cart/payments)
+- [ ] Browse-as-neon-signage for Make/Model/Category
+- [ ] Freeze-notice realtime refresh on stale tabs
+- [ ] Staging data hygiene: purge vitest-* search terms from analytics
+
+### Deferred (next milestones)
 
 **Pre-launch blockers**
-- [ ] Photo upload: signed-URL-direct-to-Storage (Vercel ~4.5MB prod body cap breaks the Server Action path) + staging-path orphan cleanup
-- [ ] Enable pg_cron on Supabase (LIST-09 auto-expiry flip) + CRON_SECRET on Vercel for the near-expiry notifier
-- [ ] Production Supabase project + per-env credentials; own-domain Resend SMTP; Twilio upgrade + Geo US/CA allowlist
+- Photo upload: signed-URL-direct-to-Storage (Vercel ~4.5MB prod body cap breaks the Server Action path) + staging-path orphan cleanup
+- Enable pg_cron on Supabase (LIST-09 auto-expiry flip) + CRON_SECRET on Vercel for the near-expiry notifier
+- Production Supabase project + per-env credentials; own-domain Resend SMTP; Twilio upgrade + Geo US/CA allowlist
 
 **Stakeholder-requested**
-- [ ] Professional UI/UX redesign phase (requested at Phase 9 UAT) — includes sell entry point in header, freeze-notice realtime refresh, Staging data hygiene (vitest-* search terms)
-- [ ] Part-category catalog (~600 lines, check.md) — pending stakeholder confirmation, seeds `part_categories`
+- Part-category catalog (~600 lines, check.md) — pending stakeholder confirmation, seeds `part_categories`
 
 ### Out of Scope
 
@@ -80,6 +100,8 @@ A buyer can find the right part (through fitment, model, or trucker slang), inte
 | Server Action photo upload | Simple v1 path | ⚠️ Revisit — Vercel ~4.5MB prod cap; pre-launch switch to signed-URL-direct |
 | Supabase Realtime Postgres Changes for chat | RLS-applied per-row; Broadcast-compatible schema | ✓ Good — realtime regression green at final UAT |
 | seller_type informational-only; username = opt-in display name | Stakeholder check.md review | ✓ Good |
+| Rebrand to "OG Truck Parts" | Stakeholder-provided brand identity (neon truck-stop logo + mockups) | — Pending |
+| v1.1 redesign is visual-only | Same functionality, new skin; mockup-only elements (cart, payments, phone) excluded | — Pending |
 
 ---
-*Last updated: 2026-06-12 after v1.0 milestone*
+*Last updated: 2026-06-12 after starting milestone v1.1*
