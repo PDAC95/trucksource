@@ -249,7 +249,7 @@ Plans:
 - [ ] 10-07-PLAN.md — Message monitoring: metadata threads list, report-justified audited content view, thread freeze, contact-log table
 - [ ] 10-08-PLAN.md — Reports queue: grouped per target with counters, Pending→Resolved/Dismissed + notes, enforcement wiring
 - [ ] 10-09-PLAN.md — CSV bulk import: Papa Parse + zod rows, real-seller ownership, photo URLs through the EXIF gate, results report
-- [ ] 10-10-PLAN.md — Automated gate sweep + stakeholder UAT checkpoint (closes Phase 10 and v1)
+- [x] 10-10-PLAN.md — Automated gate sweep + stakeholder UAT checkpoint (closes Phase 10 and v1) (completed 2026-06-12)
 
 ## Progress
 
@@ -270,7 +270,7 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 2 → 3 → 4 → 5 → 5.1
 | 7. Search, Feed & Public Profile | 4/4 | Complete | 2026-06-10 |
 | 8. Social Layer | 6/6 | Complete | 2026-06-10 |
 | 9. Contact → Private Chat | 7/7 | Complete | 2026-06-11 |
-| 10. Admin Operations & Analytics | 10/10 | Complete   | 2026-06-12 |
+| 10. Admin Operations & Analytics | 10/10 | Complete    | 2026-06-12 |
 
 ---
 *Roadmap created: 2026-06-01*
