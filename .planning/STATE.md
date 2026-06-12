@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
-status: defining_requirements
+status: roadmap_created
 last_updated: "2026-06-12"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,22 +18,53 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — defining requirements.
+**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — roadmap created, ready to plan Phase 11.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-06-12 — Milestone v1.1 started (rebrand to OG Truck Parts + neon truck-stop visual identity, visual-only, + 3 UAT fixes)
+Phase: 11 of 15 — Brand Foundation & Token System (v1.1 phases are 11–15; numbering continues from v1.0)
+Plan: — (not yet planned)
+Status: Roadmap created — next: `/gsd:plan-phase 11`
+Last activity: 2026-06-12 — v1.1 roadmap created (5 phases, 29/29 requirements mapped)
 
-**Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG). Reference mockups received in conversation 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
+Progress: [□□□□□] 0/5 v1.1 phases
+
+**Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
 Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`, `v1.0-REQUIREMENTS.md`). Phase history, decisions, and per-plan detail live in:
 
 - `.planning/MILESTONES.md` — accomplishments + known gaps
 - `.planning/RETROSPECTIVE.md` — lessons + patterns
 - `.planning/phases/` — raw execution history (PLAN/SUMMARY per plan; per-plan durations in each SUMMARY)
+
+## Performance Metrics
+
+**v1.1:** 0 plans executed.
+**v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
+
+## Accumulated Context
+
+### Decisions
+
+- Requirement count corrected during roadmap creation: v1.1 has **29** REQ-IDs (5 BRND + 4 THEM + 5 CHRM + 8 SURF + 3 A11Y + 2 FIX + 2 QA), not 27 as initially noted in REQUIREMENTS.md.
+- A11Y-01/02/03 mapped to Phase 15 as the formal audit gate; contrast/focus/motion discipline is still built in from Phase 11 tokens onward (cross-cutting gates in ROADMAP.md).
+- FIX-01/FIX-02 mapped to Phase 15 for verification; their isolated commits may land during any earlier phase without mixing with visual commits.
+- Rename sweep + e2e brand-assertion updates are atomic within Phase 11 (suite stays usable as behavior oracle throughout the milestone).
+
+### Research flags (from research/SUMMARY.md)
+
+- **Phase 13 (Signage grid):** confirm browse data queries + URL param coverage at plan time (`lib/search/params.ts`, `lib/listings/cascade.ts`); decide feed-empty-state vs dedicated `/browse` route.
+- **Phase 15 (FIX-01):** check `message_threads` membership in `supabase_realtime` publication before writing any migration.
+- **Phase 15 (dashboard sweep):** Twilio Verify SMS friendly name wording — verify in Twilio console; evidence-gated checklist (trigger real sends).
+- **Phase 11:** Tilt Neon accent font decision deferred to hi-fi mockup review during Phase 11 planning; confirm `npm ls tailwindcss` resolves >= 4.1 before relying on `text-shadow-*` utilities.
+
+### Todos
+
+- None.
+
+### Blockers
+
+- Stakeholder logo asset package (full logo + icon, PNG/SVG) not yet delivered — needed for Phase 11 BRND-02 (favicon/OG generation). Mockups exist; plan can proceed with asset-path contingency (sharp from PNG if no vector).
 
 ## Open Blockers (deferred — not in v1.1 scope)
 
@@ -42,6 +73,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 3. **Provider hygiene pre-launch** — Production Supabase project; own-domain Resend SMTP; Twilio upgrade + Geo US/CA allowlist.
 4. **Part-category catalog** (~600 lines, check.md) — pending stakeholder confirmation.
 
-## Accumulated Context
+## Session Continuity
 
-(Cleared at milestone close — decision log lives in PROJECT.md Key Decisions; operational gaps in MILESTONES.md Known gaps.)
+Last session: 2026-06-12 — roadmap created for v1.1 (Phases 11–15).
+Next action: `/gsd:plan-phase 11` (Brand Foundation & Token System).

@@ -92,13 +92,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| BRND-01 | Phase 11 | Pending |
+| BRND-02 | Phase 11 | Pending |
+| BRND-03 | Phase 11 | Pending |
+| THEM-01 | Phase 11 | Pending |
+| THEM-02 | Phase 11 | Pending |
+| THEM-03 | Phase 11 | Pending |
+| THEM-04 | Phase 11 | Pending |
+| CHRM-01 | Phase 12 | Pending |
+| CHRM-02 | Phase 12 | Pending |
+| CHRM-03 | Phase 12 | Pending |
+| CHRM-04 | Phase 12 | Pending |
+| CHRM-05 | Phase 12 | Pending |
+| SURF-01 | Phase 13 | Pending |
+| SURF-02 | Phase 13 | Pending |
+| SURF-03 | Phase 14 | Pending |
+| SURF-04 | Phase 14 | Pending |
+| SURF-05 | Phase 14 | Pending |
+| SURF-06 | Phase 14 | Pending |
+| SURF-07 | Phase 14 | Pending |
+| SURF-08 | Phase 14 | Pending |
+| BRND-04 | Phase 15 | Pending |
+| BRND-05 | Phase 15 | Pending |
+| FIX-01 | Phase 15 | Pending |
+| FIX-02 | Phase 15 | Pending |
+| A11Y-01 | Phase 15 | Pending |
+| A11Y-02 | Phase 15 | Pending |
+| A11Y-03 | Phase 15 | Pending |
+| QA-01 | Phase 15 | Pending |
+| QA-02 | Phase 15 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27 ⚠️ (roadmap pending)
+- v1.1 requirements: 29 total (count corrected from 27 during roadmap creation — 5 BRND + 4 THEM + 5 CHRM + 8 SURF + 3 A11Y + 2 FIX + 2 QA)
+- Mapped to phases: 29
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-12*
-*Last updated: 2026-06-12 after initial definition*
+*Last updated: 2026-06-12 after roadmap creation (traceability mapped to Phases 11–15)*
