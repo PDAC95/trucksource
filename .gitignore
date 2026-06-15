@@ -50,3 +50,6 @@ supabase/.branches/
 /test-results
 /playwright-report
 /playwright/.cache
+
+# Stakeholder source brand assets (originals only; processed copies live in /public)
+private/
