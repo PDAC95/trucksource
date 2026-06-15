@@ -123,3 +123,45 @@
     @apply font-sans;
   }
 }
+
+/* Signature neon flicker. Animate pseudo-element OPACITY only — never the
+   box/text-shadow itself (perf anti-pattern). ~1-2 dim blips per 2.5s cycle,
+   well under 3 flashes/sec (A11Y-03), and never fully off. */
+@keyframes flicker {
+  0%,
+  18%,
+  22%,
+  25%,
+  53%,
+  57%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  24%,
+  55% {
+    opacity: 0.55;
+  }
+}
+
+@layer components {
+  .neon-sign {
+    position: relative;
+  }
+  .neon-sign::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow: var(--shadow-glow-red);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: var(--animate-flicker);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-sign::after {
+    animation: none;
+    opacity: 1;
+  }
+}
