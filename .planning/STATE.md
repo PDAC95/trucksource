@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
 status: in_progress
-last_updated: "2026-06-15T13:33:48.393Z"
+last_updated: "2026-06-15T13:40:47.000Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — Phase 11 executing (Plan 01 of 4 done).
+**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — Phase 11 executing (Plan 02 of 4 done).
 
 ## Current Position
 
 Phase: 11 of 15 — Brand Foundation & Token System (v1.1 phases are 11–15; numbering continues from v1.0)
-Plan: 01 of 4 complete — next: execute 11-02 (font rewire)
-Status: In Progress — Plan 11-01 (dark-only neon token foundation) executed
-Last activity: 2026-06-15 — executed 11-01-PLAN.md (THEM-01/03/04, 3 tasks, contrast Gate 3 green)
+Plan: 02 of 4 complete — next: execute 11-03 (rename sweep)
+Status: In Progress — Plan 11-02 (brand typography + metadata + dark-only runtime) executed
+Last activity: 2026-06-15 — executed 11-02-PLAN.md (THEM-02/BRND-03 + THEM-04 runtime half, 3 tasks, build + 304 tests green)
 
-Progress: [■□□□□] Phase 11: 1/4 plans · v1.1: 0/5 phases complete
+Progress: [■■□□] Phase 11: 2/4 plans · v1.1: 0/5 phases complete
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -39,11 +39,12 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Performance Metrics
 
-**v1.1:** 1 plan executed.
+**v1.1:** 2 plans executed.
 
 | Phase | Plan | Duration | Tasks | Files |
 | ----- | ---- | -------- | ----- | ----- |
 | 11    | 01   | ~5 min   | 3     | 3     |
+| 11    | 02   | ~5 min   | 3     | 5     |
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 
@@ -56,6 +57,8 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - FIX-01/FIX-02 mapped to Phase 15 for verification; their isolated commits may land during any earlier phase without mixing with visual commits.
 - Rename sweep + e2e brand-assertion updates are atomic within Phase 11 (suite stays usable as behavior oracle throughout the milestone).
 - [Phase 11]: Plan 11-01: dark token values live on single :root; legacy dark: utils layer same values until Phase 12 (no separate light :root)
+- [Phase 11]: Plan 11-02: metadataBase = https://trucksource.vercel.app (Vercel project name); trivially swappable, user to confirm final public domain
+- [Phase 11]: Plan 11-02: Barlow Condensed (display) + Inter (body) via next/font; Geist_Mono kept for --font-mono; next-themes removed (dark-only, sonner pinned theme="dark")
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -81,5 +84,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-15 — executed 11-01-PLAN.md (dark-only neon token foundation). Stopped at: Completed 11-01-PLAN.md.
-Next action: `/gsd:execute-phase 11` to run remaining plans (11-02 fonts, 11-03 rename, 11-04 wordmark).
+Last session: 2026-06-15 — executed 11-02-PLAN.md (brand typography + metadata + dark-only runtime). Stopped at: Completed 11-02-PLAN.md.
+Next action: `/gsd:execute-phase 11` to run remaining plans (11-03 rename, 11-04 wordmark).

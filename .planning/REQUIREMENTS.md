@@ -11,14 +11,14 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [ ] **BRND-01**: User sees the product named "OG Truck Parts" everywhere — UI copy, auth pages, suspended screen, header wordmark, README/package.json (visible strings only; infra/repo slugs unchanged)
 - [ ] **BRND-02**: Stakeholder logo + icon integrated: header logo, favicon set (ico/png/apple-touch), and OG share image generated from brand assets
-- [ ] **BRND-03**: Every route serves correct metadata (title template, description, OpenGraph) — root no longer says "Create Next App"
+- [x] **BRND-03**: Every route serves correct metadata (title template, description, OpenGraph) — root no longer says "Create Next App"
 - [ ] **BRND-04**: All 4 in-repo email senders (enforcement, new-message, verify alert, near-expiry cron) send under the OG Truck Parts name with no stale brand strings or dead URLs
 - [ ] **BRND-05**: Supabase Auth dashboard email templates (confirm signup, reset password) rebranded to OG Truck Parts
 
 ### Theme Foundation (THEM)
 
 - [x] **THEM-01**: Dark-only neon token system in `globals.css` `@theme`: night-navy base, neon red/cyan scales (oklch), with dual tokens per neon (decorative glow vs lightened AA-passing text)
-- [ ] **THEM-02**: Brand typography loaded via `next/font`: condensed display face for headings/signage + readable body font; current broken `--font-sans` mapping fixed
+- [x] **THEM-02**: Brand typography loaded via `next/font`: condensed display face for headings/signage + readable body font; current broken `--font-sans` mapping fixed
 - [x] **THEM-03**: Reusable glow patterns (box-shadow/text-shadow tokens; animation via pseudo-element opacity, never animated shadows), all gated behind `prefers-reduced-motion`
 - [x] **THEM-04**: App is forced dark: `color-scheme: dark` (CSS + meta), light theme removed, native inputs/scrollbars/autofill render dark
 
@@ -94,9 +94,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | BRND-01 | Phase 11 | Pending |
 | BRND-02 | Phase 11 | Pending |
-| BRND-03 | Phase 11 | Pending |
+| BRND-03 | Phase 11 | Complete |
 | THEM-01 | Phase 11 | Complete |
-| THEM-02 | Phase 11 | Pending |
+| THEM-02 | Phase 11 | Complete |
 | THEM-03 | Phase 11 | Complete |
 | THEM-04 | Phase 11 | Complete |
 | CHRM-01 | Phase 12 | Pending |
