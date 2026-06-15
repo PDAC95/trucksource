@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
-status: roadmap_created
-last_updated: "2026-06-12"
+status: in_progress
+last_updated: "2026-06-15T13:33:48.393Z"
 progress:
-  total_phases: 5
+  total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — roadmap created, ready to plan Phase 11.
+**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — Phase 11 executing (Plan 01 of 4 done).
 
 ## Current Position
 
 Phase: 11 of 15 — Brand Foundation & Token System (v1.1 phases are 11–15; numbering continues from v1.0)
-Plan: — (not yet planned)
-Status: Roadmap created — next: `/gsd:plan-phase 11`
-Last activity: 2026-06-12 — v1.1 roadmap created (5 phases, 29/29 requirements mapped)
+Plan: 01 of 4 complete — next: execute 11-02 (font rewire)
+Status: In Progress — Plan 11-01 (dark-only neon token foundation) executed
+Last activity: 2026-06-15 — executed 11-01-PLAN.md (THEM-01/03/04, 3 tasks, contrast Gate 3 green)
 
-Progress: [□□□□□] 0/5 v1.1 phases
+Progress: [■□□□□] Phase 11: 1/4 plans · v1.1: 0/5 phases complete
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -39,7 +39,12 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Performance Metrics
 
-**v1.1:** 0 plans executed.
+**v1.1:** 1 plan executed.
+
+| Phase | Plan | Duration | Tasks | Files |
+| ----- | ---- | -------- | ----- | ----- |
+| 11    | 01   | ~5 min   | 3     | 3     |
+
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 
 ## Accumulated Context
@@ -50,6 +55,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - A11Y-01/02/03 mapped to Phase 15 as the formal audit gate; contrast/focus/motion discipline is still built in from Phase 11 tokens onward (cross-cutting gates in ROADMAP.md).
 - FIX-01/FIX-02 mapped to Phase 15 for verification; their isolated commits may land during any earlier phase without mixing with visual commits.
 - Rename sweep + e2e brand-assertion updates are atomic within Phase 11 (suite stays usable as behavior oracle throughout the milestone).
+- [Phase 11]: Plan 11-01: dark token values live on single :root; legacy dark: utils layer same values until Phase 12 (no separate light :root)
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -75,5 +81,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-12 — roadmap created for v1.1 (Phases 11–15).
-Next action: `/gsd:plan-phase 11` (Brand Foundation & Token System).
+Last session: 2026-06-15 — executed 11-01-PLAN.md (dark-only neon token foundation). Stopped at: Completed 11-01-PLAN.md.
+Next action: `/gsd:execute-phase 11` to run remaining plans (11-02 fonts, 11-03 rename, 11-04 wordmark).

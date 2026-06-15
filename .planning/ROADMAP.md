@@ -121,7 +121,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 0–10 (13 phases) | v1.0 | 57/57 | Complete | 2026-06-12 |
-| 11. Brand Foundation & Token System | v1.1 | 0/4 | Not started | - |
+| 11. Brand Foundation & Token System | 1/4 | In Progress|  | - |
 | 12. Shared Chrome | v1.1 | 0/TBD | Not started | - |
 | 13. Public Surfaces & Signage Browse | v1.1 | 0/TBD | Not started | - |
 | 14. Auth, App & Admin Surface Passes | v1.1 | 0/TBD | Not started | - |

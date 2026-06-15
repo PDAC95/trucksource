@@ -17,10 +17,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Theme Foundation (THEM)
 
-- [ ] **THEM-01**: Dark-only neon token system in `globals.css` `@theme`: night-navy base, neon red/cyan scales (oklch), with dual tokens per neon (decorative glow vs lightened AA-passing text)
+- [x] **THEM-01**: Dark-only neon token system in `globals.css` `@theme`: night-navy base, neon red/cyan scales (oklch), with dual tokens per neon (decorative glow vs lightened AA-passing text)
 - [ ] **THEM-02**: Brand typography loaded via `next/font`: condensed display face for headings/signage + readable body font; current broken `--font-sans` mapping fixed
-- [ ] **THEM-03**: Reusable glow patterns (box-shadow/text-shadow tokens; animation via pseudo-element opacity, never animated shadows), all gated behind `prefers-reduced-motion`
-- [ ] **THEM-04**: App is forced dark: `color-scheme: dark` (CSS + meta), light theme removed, native inputs/scrollbars/autofill render dark
+- [x] **THEM-03**: Reusable glow patterns (box-shadow/text-shadow tokens; animation via pseudo-element opacity, never animated shadows), all gated behind `prefers-reduced-motion`
+- [x] **THEM-04**: App is forced dark: `color-scheme: dark` (CSS + meta), light theme removed, native inputs/scrollbars/autofill render dark
 
 ### Shared Chrome (CHRM)
 
@@ -95,10 +95,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BRND-01 | Phase 11 | Pending |
 | BRND-02 | Phase 11 | Pending |
 | BRND-03 | Phase 11 | Pending |
-| THEM-01 | Phase 11 | Pending |
+| THEM-01 | Phase 11 | Complete |
 | THEM-02 | Phase 11 | Pending |
-| THEM-03 | Phase 11 | Pending |
-| THEM-04 | Phase 11 | Pending |
+| THEM-03 | Phase 11 | Complete |
+| THEM-04 | Phase 11 | Complete |
 | CHRM-01 | Phase 12 | Pending |
 | CHRM-02 | Phase 12 | Pending |
 | CHRM-03 | Phase 12 | Pending |
