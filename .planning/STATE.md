@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
 status: in_progress
-last_updated: "2026-06-15T13:40:47.000Z"
+last_updated: "2026-06-15T13:51:00.000Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — Phase 11 executing (Plan 02 of 4 done).
+**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — Phase 11 executing (Plan 03 of 4 done).
 
 ## Current Position
 
 Phase: 11 of 15 — Brand Foundation & Token System (v1.1 phases are 11–15; numbering continues from v1.0)
-Plan: 02 of 4 complete — next: execute 11-03 (rename sweep)
-Status: In Progress — Plan 11-02 (brand typography + metadata + dark-only runtime) executed
-Last activity: 2026-06-15 — executed 11-02-PLAN.md (THEM-02/BRND-03 + THEM-04 runtime half, 3 tasks, build + 304 tests green)
+Plan: 03 of 4 complete — next: execute 11-04 (header wordmark + logo)
+Status: In Progress — Plan 11-03 (brand-string sweep + e2e reconciliation) executed
+Last activity: 2026-06-15 — executed 11-03-PLAN.md (BRND-01, 3 tasks one atomic commit, build + 304 vitest green; one pre-existing e2e env failure deferred)
 
-Progress: [■■□□] Phase 11: 2/4 plans · v1.1: 0/5 phases complete
+Progress: [■■■□] Phase 11: 3/4 plans · v1.1: 0/5 phases complete
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -39,12 +39,13 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Performance Metrics
 
-**v1.1:** 2 plans executed.
+**v1.1:** 3 plans executed.
 
 | Phase | Plan | Duration | Tasks | Files |
 | ----- | ---- | -------- | ----- | ----- |
 | 11    | 01   | ~5 min   | 3     | 3     |
 | 11    | 02   | ~5 min   | 3     | 5     |
+| 11    | 03   | ~7 min   | 3     | 12    |
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 
@@ -59,6 +60,9 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 11]: Plan 11-01: dark token values live on single :root; legacy dark: utils layer same values until Phase 12 (no separate light :root)
 - [Phase 11]: Plan 11-02: metadataBase = https://trucksource.vercel.app (Vercel project name); trivially swappable, user to confirm final public domain
 - [Phase 11]: Plan 11-02: Barlow Condensed (display) + Inter (body) via next/font; Geist_Mono kept for --font-mono; next-themes removed (dark-only, sonner pinned theme="dark")
+- [Phase 11]: Plan 11-03: product renamed to "OG Truck Parts" everywhere user-visible (auth/header/suspended/README) + package name og-truck-parts; repo/Vercel/Supabase slugs unchanged (BRND-01); lib/* email senders + near-expiry cron URL still "Take-Off Parts" by design (Phase 15 deferral)
+- [Phase 11]: Plan 11-03: home.spec brand assertion reconciled from heading-role to link-role (home h1 is "Find your part"; brand is the header wordmark link) — Pitfall 4 fix
+- [Phase 11]: Plan 11-03: pre-existing e2e failure auth.spec:95 (unauth /->/login redirect) confirmed at HEAD pre-changes; logged to phases/11.../deferred-items.md, owner Phase 15
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -84,5 +88,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-15 — executed 11-02-PLAN.md (brand typography + metadata + dark-only runtime). Stopped at: Completed 11-02-PLAN.md.
-Next action: `/gsd:execute-phase 11` to run remaining plans (11-03 rename, 11-04 wordmark).
+Last session: 2026-06-15 — executed 11-03-PLAN.md (brand-string sweep + e2e reconciliation). Stopped at: Completed 11-03-PLAN.md.
+Next action: `/gsd:execute-phase 11` to run the last plan (11-04 header wordmark + logo).
