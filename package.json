@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "check:supabase": "node --env-file=.env.local scripts/check-supabase.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
+    "gen:icons": "node scripts/gen-icons.mjs",
     "grant:admin": "node --env-file=.env.local scripts/grant-admin.mjs",
     "prepare": "husky"
   },
@@ -67,6 +68,7 @@
     "jsdom": "^29.1.1",
     "lint-staged": "16.4.0",
     "piexifjs": "^1.0.6",
+    "png-to-ico": "^3.0.1",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "typescript": "^5",
