@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = {
-  title: "Create your account · Take-Off Parts",
+  title: "Create your account · OG Truck Parts",
 };
 
 export default function RegisterPage() {

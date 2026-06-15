@@ -4,7 +4,7 @@ import { MailCheckIcon } from "lucide-react";
 import { ResendConfirmation } from "@/components/auth/resend-confirmation";
 
 export const metadata: Metadata = {
-  title: "Check your email · Take-Off Parts",
+  title: "Check your email · OG Truck Parts",
 };
 
 export default async function CheckEmailPage({

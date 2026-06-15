@@ -32,7 +32,7 @@ export function SuspendedScreen({
     <div className="flex min-h-svh flex-col">
       <header className="border-b px-4 py-3 sm:px-6">
         <span className="text-lg font-semibold tracking-tight">
-          Take-Off Parts
+          OG Truck Parts
         </span>
       </header>
       <main className="flex flex-1 items-center justify-center px-4 py-10">

@@ -50,7 +50,7 @@ export default async function AppLayout({
         <header className="border-b px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">
             <span className="text-lg font-semibold tracking-tight">
-              Take-Off Parts
+              OG Truck Parts
             </span>
             <Link
               href="/suspended"

@@ -1,4 +1,4 @@
-# Take-Off Parts
+# OG Truck Parts
 
 Privacy-first marketplace for North-American heavy-truck parts. See `.planning/` for the product spec and roadmap.
 

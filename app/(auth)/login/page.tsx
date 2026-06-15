@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div className="grid gap-1.5 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
         <p className="text-muted-foreground text-sm">
-          Log in to your Take-Off Parts account
+          Log in to your OG Truck Parts account
         </p>
       </div>
 

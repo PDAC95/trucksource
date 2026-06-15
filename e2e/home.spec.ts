@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test("home page shows the brand heading", async ({ page }) => {
+test("home page shows the brand wordmark", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Take-Off Parts" }),
+    page.getByRole("link", { name: "OG Truck Parts" }),
   ).toBeVisible();
 });

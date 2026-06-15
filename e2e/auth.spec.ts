@@ -122,13 +122,13 @@ test.describe("login persists + logout", () => {
     await expect(page).toHaveURL(/\/$|\/(?!login)/);
     const userMenu = page.getByRole("button").filter({ hasText: /.+/ }).last();
     await expect(
-      page.getByRole("link", { name: "Take-Off Parts" }),
+      page.getByRole("link", { name: "OG Truck Parts" }),
     ).toBeVisible();
 
     // Session persists across a full reload (cookie-backed, not in-memory).
     await page.reload();
     await expect(
-      page.getByRole("link", { name: "Take-Off Parts" }),
+      page.getByRole("link", { name: "OG Truck Parts" }),
     ).toBeVisible();
     await expect(page).not.toHaveURL(/\/login/);
 

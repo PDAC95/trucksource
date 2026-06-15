@@ -3,7 +3,7 @@ import Link from "next/link";
 import { TriangleAlertIcon } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Link invalid · Take-Off Parts",
+  title: "Link invalid · OG Truck Parts",
 };
 
 export default function AuthCodeErrorPage() {
