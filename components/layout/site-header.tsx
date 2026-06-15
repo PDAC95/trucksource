@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,25 @@ export async function SiteHeader() {
 
   return (
     <header className="flex h-14 items-center justify-between border-b px-4 sm:px-6">
-      <Link href="/" className="font-semibold tracking-tight">
+      <Link
+        href="/"
+        className="flex items-center gap-2 font-semibold tracking-tight"
+      >
+        {/* Decorative logo mark beside the wordmark. alt="" keeps the link's
+            accessible name exactly "OG Truck Parts" (from the text) so the
+            Plan 03 e2e link-name assertions stay green. Explicit width/height
+            => no CLS. .neon-sign is this phase's single signature flicker
+            moment; it freezes static under prefers-reduced-motion. */}
+        <span className="neon-sign inline-flex">
+          <Image
+            src="/logo-mark.png"
+            alt=""
+            width={28}
+            height={28}
+            priority
+            className="size-6 sm:size-7"
+          />
+        </span>
         OG Truck Parts
       </Link>
       <div className="flex items-center gap-1">
