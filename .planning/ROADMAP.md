@@ -54,7 +54,11 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   3. The app renders dark-only end to end: night-navy base, `color-scheme: dark` (CSS + meta) so native inputs/scrollbars/autofill render dark, light theme removed, no white flash on load
   4. Headings render in the condensed display face and body text in the readable body font via `next/font` (the broken `--font-sans` self-reference fixed, no layout shift on headings)
   5. Neon glow exists only as reusable tokens with dual decorative/AA-text variants per neon color (no hardcoded hex outside `globals.css`, grep-gated), and all glow/motion is static under `prefers-reduced-motion`
-**Plans**: TBD
+**Plans**: 4 plans
+- [ ] 11-01-PLAN.md — Dark-only neon token system + glow tokens + contrast gate (THEM-01, THEM-03, THEM-04)
+- [ ] 11-02-PLAN.md — next/font typography + root metadata/viewport + remove next-themes (THEM-02, THEM-04, BRND-03)
+- [ ] 11-03-PLAN.md — Brand-string sweep + e2e assertion updates (atomic) (BRND-01)
+- [ ] 11-04-PLAN.md — Logo/favicon/OG/manifest + header logo render (asset-contingent) (BRND-02, BRND-03)
 
 ### Phase 12: Shared Chrome
 **Goal**: Every screen inherits the neon system automatically through restyled primitives and shared chrome — header, footer, and global error/loading surfaces set the visual quality bar.
@@ -117,7 +121,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 0–10 (13 phases) | v1.0 | 57/57 | Complete | 2026-06-12 |
-| 11. Brand Foundation & Token System | v1.1 | 0/TBD | Not started | - |
+| 11. Brand Foundation & Token System | v1.1 | 0/4 | Not started | - |
 | 12. Shared Chrome | v1.1 | 0/TBD | Not started | - |
 | 13. Public Surfaces & Signage Browse | v1.1 | 0/TBD | Not started | - |
 | 14. Auth, App & Admin Surface Passes | v1.1 | 0/TBD | Not started | - |
