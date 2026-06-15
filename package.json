@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "check:supabase": "node --env-file=.env.local scripts/check-supabase.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "grant:admin": "node --env-file=.env.local scripts/grant-admin.mjs",
     "prepare": "husky"
   },
