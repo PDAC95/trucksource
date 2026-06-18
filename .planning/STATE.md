@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
 status: in_progress
-last_updated: "2026-06-18T15:20:00.000Z"
+last_updated: "2026-06-18T16:05:00.000Z"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 Phase: 16 of 16 — Part Taxonomy & Guided Cascade (new functional scope; not v1.1 rebrand)
 Plan: 04 of 4 complete — Phase 16 done. Next: return to Phase 11 v1.1 rebrand (11-04 header wordmark + logo) when stakeholder logo assets arrive.
-Status: Phase 16 Complete — Plan 16-04 (/browse Category->Subcategory->Item facet cascade) executed and human-verified (approved)
-Last activity: 2026-06-18 — executed 16-04-PLAN.md (FITL-05/SRCH-03/FINT-03, 2 atomic commits + human-verify approved; tsc clean; one FacetControls edit covers desktop sidebar + mobile sheet; single `category` deepest-id contract + UI-only root/subcategory/item helper keys; context-bearing chip via resolveCategoryLabel)
+Status: Phase 16 Complete — all 4 plans executed and human-verified; 16-03 (welcome explorer cascade) SUMMARY now finalized alongside 16-04 (/browse facet cascade)
+Last activity: 2026-06-18 — finalized 16-03-PLAN.md SUMMARY (FITL-05/SRCH-03; welcome explorer reworked to Make->Model->(search now)->Category(root)->Advanced(sub->item+Condition); 2 feat commits b8434ab/e208557 + dd5b81e fix lifting Condition+See results out of the advanced step so Category is an optional refinement not a gate; runSearch emits a SINGLE deepest `category` id or omits it; single-deepest chip user-confirmed; Model->Category seam preserved for a future Year step). Earlier 2026-06-18: executed 16-04-PLAN.md (/browse facet cascade; human-verify approved)
 
 Progress: [■■■■] Phase 16: 4/4 plans COMPLETE · (Phase 11 v1.1 rebrand still has 11-04 pending)
 
@@ -79,6 +79,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 16]: Plan 16-01: Staging ids for Plans 03/04 (resolve by NAME in code, ids are Staging-specific): Fuel Tanks root=91, 'Fuel Tanks' subcat=96, 'Driver Side Fuel Tanks' leaf=111; 18 active roots, 172 total cats (128 active)
 - [Phase 16]: Plan 16-01: repaired remote migration history (0004-0024 marked applied) — pre-existing desync where remote schema_migrations only recorded 0001-0003 though objects existed; required before 0025 could push
 - [Phase 16]: Plan 16-02: added getChildCategories(parentId) + getRootCategories() single-level cascade readers to lib/listings/cascade.ts; exported local CategoryOption ({ id; name }) — Plans 03/04 import that symbol (NOT garage CascadeOption); getPartCategories left untouched for create-listing; readers mirror garage posture (is_active filter, order(name), [] on error, id+name only)
+- [Phase 16]: Plan 16-03: welcome explorer reworked to a guided drill (Step = make|model|category|advanced): Make -> Model -> (search now) -> Category(root) -> Advanced(Subcategory -> Item + Condition). Configuration step REMOVED from the welcome flow (still a /browse facet; getConfigs dropped). Category is an OPTIONAL refinement, not a gate — the dd5b81e fix lifted the Condition picker + "See results" out of the advanced step into shared elements rendered on BOTH the category and advanced steps, so Make + Model alone can search. runSearch emits a SINGLE deepest `category` id (item ?? subcategory ?? rootCategory) or OMITS the param; no subcategory/item params (subtree RPC expands one id). Single-deepest category chip (user-confirmed): one chip labels the deepest chosen level and updates as you narrow; removal (removeRootCategory) clears root+sub+item and rewinds to "category". Model -> Category hop kept isolated (no fused handler) so a future Year step slots in without rewriting siblings (Pitfall 7). page.tsx swapped getPartCategories() -> getRootCategories(), prop partCategories -> rootCategories. Human-verify checkpoint approved.
 - [Phase 16]: Plan 16-04: /browse Category facet reworked into three dependent selects (Category root -> Subcategory -> Item) in FacetControls — one edit covers desktop sidebar AND mobile sheet (browse-toolbar-mobile.tsx spreads the same body). URL contract: `category` = DEEPEST chosen id (RPC-facing, subtree-expanded by 16-01 RPC); `root`/`subcategory`/`item` are UI-only memory keys the RPC never reads. Parent change deletes dependent keys + recomputes deepest `category` (no stale URL combos). Chip label via resolveCategoryLabel walking up to 2 parents, deepest-LAST with " › " (Pitfall 6); chip removal clears all four category keys. active-filter-chips.tsx needed NO edit (keys array set on chip in page.tsx). Human-verify checkpoint approved.
 
 ### Research flags (from research/SUMMARY.md)
@@ -105,5 +106,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-18 — executed 16-04-PLAN.md (/browse Category->Subcategory->Item facet cascade; human-verify approved). Stopped at: Completed 16-04-PLAN.md — Phase 16 fully done (4/4 plans).
+Last session: 2026-06-18 — finalized 16-03-PLAN.md SUMMARY (welcome explorer guided cascade; human-verify approved). Stopped at: Completed 16-03-PLAN.md — Phase 16 fully done (4/4 plans, all SUMMARYs written).
 Next action: Phase 16 is complete. Return to Phase 11 v1.1 rebrand — `/gsd:execute-phase 11` to run 11-04 (header wordmark + logo) when stakeholder logo assets arrive.
