@@ -18,14 +18,17 @@ import type { FitsState } from "@/components/search/fits-my-truck-control";
 import type { BrandItem } from "@/components/welcome/brand-grid";
 
 // The web (sm+) visual filter explorer. The right side is a guided cascade that
-// goes general → specific: Make → Model → Category(root) → Advanced(Subcategory →
-// Item + Condition). The Category step lists taxonomy ROOTS; subcategories and
-// items load on demand one level at a time via getChildCategories. The Advanced
-// view is the forced final step; its "See results" navigates to /browse with the
-// chosen filters — the part category is emitted as a SINGLE deepest `category` id
-// (item, else subcategory, else root), which the subtree-match RPC expands. The
-// left side shows the three preset buttons until the user picks anything, then
-// swaps to the removable selected-filter chips.
+// goes general → specific: Make → Model → (search now) → Category(root) →
+// Advanced(Subcategory → Item + Condition). Category is an OPTIONAL refinement,
+// NOT a gate: as soon as a Make + Model are chosen the "See results" action is
+// live, so the user can search immediately or keep drilling to narrow. The
+// Category step lists taxonomy ROOTS; subcategories and items load on demand one
+// level at a time via getChildCategories. "See results" navigates to /browse with
+// the chosen filters — the part category is emitted as a SINGLE deepest `category`
+// id (item, else subcategory, else root), which the subtree-match RPC expands; if
+// no category was picked the param is omitted. The left side shows the three
+// preset buttons until the user picks anything, then swaps to the removable
+// selected-filter chips.
 //
 // SEAM (Pitfall 7): each step owns its own advance/reset; model → category is an
 // isolated hop so a future Year step can be inserted between them without
@@ -103,14 +106,6 @@ export function WelcomeExplorer({
     setItem(null);
     setItems([]);
     setSubcategories(await getChildCategories(c.id));
-    setStep("advanced");
-  }
-  function skipCategory() {
-    setRootCategory(null);
-    setSubcategory(null);
-    setItem(null);
-    setSubcategories([]);
-    setItems([]);
     setStep("advanced");
   }
   async function pickSubcategory(c: CategoryOption) {
@@ -210,6 +205,48 @@ export function WelcomeExplorer({
     else if (step === "category") removeModel();
     else if (step === "advanced") removeRootCategory();
   }
+
+  // Condition pills + "See results" — shared by the Category and Advanced steps so
+  // search is runnable the moment Make + Model are set (Category is optional).
+  const conditionPicker = (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Condition
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {conditions.map((c) => {
+          const active = condition?.id === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setCondition(active ? null : c)}
+              className={cn(
+                "rounded-full border-2 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide transition-all",
+                active
+                  ? "border-neon-cyan text-neon-cyan shadow-glow-cyan"
+                  : "border-foreground/25 text-muted-foreground hover:border-foreground/50 hover:text-foreground",
+              )}
+            >
+              {c.name}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const seeResults = (
+    <button
+      type="button"
+      onClick={runSearch}
+      style={{ fontFamily: "var(--ff-godsown)" }}
+      className="flex w-fit items-center gap-2 rounded-xl border-2 border-neon-cyan bg-neon-cyan/10 px-5 py-3 text-2xl tracking-wide text-neon-cyan uppercase transition-all hover:shadow-glow-cyan hover:[text-shadow:var(--text-shadow-neon-cyan)]"
+    >
+      <Search className="size-5" />
+      See results
+    </button>
+  );
 
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
@@ -345,28 +382,38 @@ export function WelcomeExplorer({
         )}
 
         {step === "category" && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {rootCategories.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => pickRootCategory(c)}
-                className={optionCard}
-              >
-                {c.name}
-              </button>
-            ))}
-            <button type="button" onClick={skipCategory} className={skipCard}>
-              Any category
-            </button>
+          <div className="flex flex-col gap-5">
+            <p className="text-sm text-muted-foreground">
+              Pick a category to narrow your search, or hit{" "}
+              <span className="text-neon-cyan">See results</span> now to browse
+              everything for your truck.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {rootCategories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => pickRootCategory(c)}
+                  className={optionCard}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+
+            {conditionPicker}
+
+            {seeResults}
           </div>
         )}
 
         {step === "advanced" && (
           <div className="flex flex-col gap-5">
             <p className="text-sm text-muted-foreground">
-              Narrow down your category, refine by condition, or skip straight
-              to your results.
+              Drill into a subcategory and item, refine by condition, or hit{" "}
+              <span className="text-neon-cyan">See results</span> with what you
+              have.
             </p>
 
             {/* Subcategory drill (only when a root was chosen and it has children) */}
@@ -427,43 +474,9 @@ export function WelcomeExplorer({
               </div>
             )}
 
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Condition
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {conditions.map((c) => {
-                  const active = condition?.id === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCondition(active ? null : c)}
-                      className={cn(
-                        "rounded-full border-2 px-3 py-1.5 text-sm font-semibold uppercase tracking-wide transition-all",
-                        active
-                          ? "border-neon-cyan text-neon-cyan shadow-glow-cyan"
-                          : "border-foreground/25 text-muted-foreground hover:border-foreground/50 hover:text-foreground",
-                      )}
-                    >
-                      {c.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {conditionPicker}
 
-            <button
-              type="button"
-              onClick={runSearch}
-              style={{ fontFamily: "var(--ff-godsown)" }}
-              className="flex w-fit items-center gap-2 rounded-xl border-2 border-neon-cyan bg-neon-cyan/10 px-5 py-3 text-2xl tracking-wide text-neon-cyan uppercase transition-all hover:shadow-glow-cyan hover:[text-shadow:var(--text-shadow-neon-cyan)]"
-            >
-              <Search className="size-5" />
-              {deepestCategory || condition
-                ? "See results"
-                : "Skip & see results"}
-            </button>
+            {seeResults}
           </div>
         )}
       </div>
