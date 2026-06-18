@@ -10,6 +10,12 @@
 // The param KEYS are the public contract the UI's router.push() uses — keep them
 // stable: q, make, model, config, category, condition, fits, fitsConfig, sort, page.
 // Pure, dependency-free, client+server safe (no "use server", no supabase import).
+import { isValidYear } from "@/lib/listings/years";
+
+// The feed/search/facets screen lives at /browse (the welcome landing owns "/").
+// Centralized here so every router.push / Link that targets the feed stays in
+// sync — change the route in ONE place.
+export const FEED_PATH = "/browse";
 
 export type SearchSort = "relevance" | "recent" | "price";
 
@@ -20,6 +26,7 @@ export type SearchQuery = {
   configId: number | null;
   categoryId: number | null;
   conditionId: number | null;
+  year: number | null;
   fitsModelId: number | null;
   fitsConfigId: number | null;
   sort: SearchSort;
@@ -35,6 +42,7 @@ const KEYS = {
   config: "config",
   category: "category",
   condition: "condition",
+  year: "year",
   fits: "fits",
   fitsConfig: "fitsConfig",
   sort: "sort",
@@ -55,6 +63,14 @@ function toId(value: string | string[] | undefined): number | null {
   if (raw === undefined || raw === "") return null;
   const n = Number(raw);
   return Number.isFinite(n) && Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/** Coerce a raw param to a valid model-year (1970..2027), or null otherwise. */
+function toYear(value: string | string[] | undefined): number | null {
+  const raw = first(value);
+  if (raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  return isValidYear(n) ? n : null;
 }
 
 /** Coerce a raw param to a non-empty trimmed string, or null. */
@@ -100,6 +116,7 @@ export function parseSearchParams(
     configId: toId(sp[KEYS.config]),
     categoryId: toId(sp[KEYS.category]),
     conditionId: toId(sp[KEYS.condition]),
+    year: toYear(sp[KEYS.year]),
     fitsModelId: toId(sp[KEYS.fits]),
     fitsConfigId: toId(sp[KEYS.fitsConfig]),
     sort,
@@ -128,6 +145,7 @@ export function serializeSearchQuery(query: SearchQuery): URLSearchParams {
     params.set(KEYS.category, String(query.categoryId));
   if (query.conditionId !== null)
     params.set(KEYS.condition, String(query.conditionId));
+  if (query.year !== null) params.set(KEYS.year, String(query.year));
   if (query.fitsModelId !== null)
     params.set(KEYS.fits, String(query.fitsModelId));
   if (query.fitsConfigId !== null)
@@ -155,6 +173,7 @@ export function hasCriteria(query: SearchQuery): boolean {
     query.configId !== null ||
     query.categoryId !== null ||
     query.conditionId !== null ||
+    query.year !== null ||
     query.fitsModelId !== null ||
     query.fitsConfigId !== null
   );

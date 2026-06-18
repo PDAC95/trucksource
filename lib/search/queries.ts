@@ -32,6 +32,7 @@ export type SearchCard = {
   conditionName: string;
   stateProvince: string | null;
   coverPhotoUrl: string | null;
+  photoUrls: string[]; // all photos, sort_order-ascending (cover first) — drives the card gallery
   fitmentChip: string | null; // "Make Model" of the first fit, or null
   sellerName: string; // coalesce(display_name, username) — PII-free
   sellerUsername: string;
@@ -66,6 +67,7 @@ export async function searchListings(
     p_config_id: query.configId,
     p_category_id: query.categoryId,
     p_condition_id: query.conditionId,
+    p_year: query.year,
     p_fits_model_id: query.fitsModelId,
     p_fits_config_id: query.fitsConfigId,
     p_limit: PAGE_SIZE,
@@ -91,19 +93,18 @@ export async function searchListings(
     .select("listing_id, storage_path, sort_order")
     .in("listing_id", ids)
     .order("sort_order", { ascending: true });
-  const coverByListing = new Map<number, string>();
+  // Collect ALL photos per listing (sort_order-ascending, so the cover is index 0).
+  // The card gallery swipes through these; coverPhotoUrl stays as photos[0].
+  const photosByListing = new Map<number, string[]>();
   for (const p of (photoData ?? []) as {
     listing_id: number;
     storage_path: string;
     sort_order: number;
   }[]) {
-    // Rows arrive sort_order-ascending; the first seen per listing is the cover.
-    if (!coverByListing.has(p.listing_id)) {
-      coverByListing.set(
-        p.listing_id,
-        listingPhotoPublicUrl(supabase, p.storage_path),
-      );
-    }
+    const url = listingPhotoPublicUrl(supabase, p.storage_path);
+    const arr = photosByListing.get(p.listing_id);
+    if (arr) arr.push(url);
+    else photosByListing.set(p.listing_id, [url]);
   }
 
   // 2) Fitment chip: the first fit's Make + Model per listing.
@@ -177,13 +178,15 @@ export async function searchListings(
   const cards: SearchCard[] = rows.map((r) => {
     const sellerId = sellerIdByListing.get(r.id);
     const seller = sellerId ? sellerById.get(sellerId) : undefined;
+    const photoUrls = photosByListing.get(r.id) ?? [];
     return {
       id: r.id,
       title: r.title,
       price: r.asking_price === null ? null : Number(r.asking_price),
       conditionName: conditionNameById.get(r.condition_id) ?? "",
       stateProvince: seller?.stateProvince ?? null,
-      coverPhotoUrl: coverByListing.get(r.id) ?? null,
+      coverPhotoUrl: photoUrls[0] ?? null,
+      photoUrls,
       fitmentChip: chipByListing.get(r.id) ?? null,
       sellerName: seller
         ? resolvePublicName(seller.displayName, seller.username)
@@ -273,6 +276,7 @@ export async function autocomplete(prefix: string): Promise<Autocomplete> {
     p_config_id: null,
     p_category_id: null,
     p_condition_id: null,
+    p_year: null,
     p_fits_model_id: null,
     p_fits_config_id: null,
     p_limit: 6,
