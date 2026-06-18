@@ -1,86 +1,78 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
 import { createClient } from "@/lib/supabase/server";
-import {
-  parseSearchParams,
-  hasCriteria,
-  type SearchQuery,
-} from "@/lib/search/params";
-import { searchListings, expandSlang } from "@/lib/search/queries";
-import { recordSearchEvent } from "@/lib/search/events";
-import { getSavedIds } from "@/lib/saves/queries";
-import { getConditions, getPartCategories } from "@/lib/listings/cascade";
-import { getModels, getConfigs } from "@/lib/garage/cascade";
 import { listMyTrucks } from "@/lib/garage/queries";
-import type { CascadeOption } from "@/lib/garage/cascade";
+import { getConditions, getRootCategories } from "@/lib/listings/cascade";
+import type { FitsState } from "@/components/search/fits-my-truck-control";
+import type { BrandItem } from "@/components/welcome/brand-grid";
+import { WelcomeExplorer } from "@/components/welcome/welcome-explorer";
 
-import { SearchBar } from "@/components/search/search-bar";
-import { FacetSidebar } from "@/components/search/facet-sidebar";
-import {
-  FitsMyTruckControl,
-  type FitsState,
-} from "@/components/search/fits-my-truck-control";
-import {
-  ActiveFilterChips,
-  type ActiveChip,
-} from "@/components/search/active-filter-chips";
-import { SlangBanner } from "@/components/search/slang-banner";
-import { FeedGrid } from "@/components/search/feed-grid";
-import { EmptyResults } from "@/components/search/empty-results";
-import { Toaster } from "@/components/ui/sonner";
-
-// The anon-open marketplace feed/search — the differentiator's payoff. LOCKED: the feed
-// and search are the SAME screen, fully open to anonymous visitors (no login gate). An
-// empty SearchQuery IS the feed (newest-first); adding a keyword/facet turns it into
-// results — same URL, same render path.
-//
-// force-dynamic so the per-request searchParams + the recordSearchEvent side-effect
-// always run. A statically cached render would (a) freeze the feed and (b) silently
-// undercount search events (Pitfall 4 — events are non-reconstructible).
+// The welcome landing at "/". NOT the feed (that lives at /browse now). It offers
+// the four ways in: browse by brand (neon signage grid), browse everything, save a
+// truck, and search by a saved truck. Reads auth (getClaims, never getSession) to
+// resolve the truck options, so it renders per-request.
 export const dynamic = "force-dynamic";
 
-export default async function FeedSearchPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  const query = parseSearchParams(sp);
+const PUBLIC_DIR = join(process.cwd(), "public");
+const LOGO_EXTS = ["svg", "png", "webp"] as const;
+const BG_CANDIDATES = [
+  "night-bg.jpg",
+  "night-bg.png",
+  "night-bg.webp",
+] as const;
 
-  const { cards, total } = await searchListings(query);
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
-  // Slang transparency: only when the query carries a keyword. expandSlang resolves the
-  // canonical term for the "Showing results for …" banner (never silently swaps).
-  // The `exact` escape hatch (from the banner) suppresses expansion entirely.
-  const isExact = first(sp.exact) === "1";
-  const slang = query.q && !isExact ? await expandSlang(query.q) : null;
-
-  // SRCH-05: log every criteria-bearing search (best-effort, never blocks render).
-  if (hasCriteria(query)) {
-    void recordSearchEvent({
-      rawTerm: query.q,
-      normalizedTerm: slang?.canonicalTerm ?? query.q,
-      facets: {
-        makeId: query.makeId,
-        modelId: query.modelId,
-        configId: query.configId,
-        categoryId: query.categoryId,
-        conditionId: query.conditionId,
-        fitsModelId: query.fitsModelId,
-      },
-      resultCount: total,
-    });
+// Resolve a committed brand logo at /brands/<slug>.(svg|png|webp), or null so the
+// card falls back to neon text. Stakeholder drops logos into public/brands/.
+function resolveLogo(name: string): string | null {
+  const slug = slugify(name);
+  for (const ext of LOGO_EXTS) {
+    if (existsSync(join(PUBLIC_DIR, "brands", `${slug}.${ext}`))) {
+      return `/brands/${slug}.${ext}`;
+    }
   }
+  return null;
+}
 
-  // --- Facet option data for the sidebar + chip labels ---
+function resolveNightBg(): string | null {
+  for (const file of BG_CANDIDATES) {
+    if (existsSync(join(PUBLIC_DIR, file))) return `/${file}`;
+  }
+  return null;
+}
+
+export default async function WelcomePage() {
   const supabase = await createClient();
+
   const { data: makesData } = await supabase
     .from("makes")
     .select("id, name")
     .order("name");
-  const makes = (makesData ?? []) as CascadeOption[];
-  const conditions = await getConditions();
-  const partCategories = await getPartCategories();
+  const brands: BrandItem[] = (makesData ?? []).map(
+    (m: { id: number; name: string }) => ({
+      id: m.id,
+      name: m.name,
+      logoSrc: resolveLogo(m.name),
+    }),
+  );
 
-  // --- Fits-my-truck three-state resolution (getClaims, never getSession) ---
+  // Cascade option data for the web visual explorer (small, static-ish lists;
+  // models/configs are fetched on demand client-side per selection).
+  const [rootCategories, conditions] = await Promise.all([
+    getRootCategories(),
+    getConditions(),
+  ]);
+
+  // Truck options state (getClaims, never getSession — invariant 6).
   const { data: claims } = await supabase.auth.getClaims();
   const isAuthenticated = !!claims?.claims;
   let fitsState: FitsState;
@@ -92,129 +84,36 @@ export default async function FeedSearchPage({
       trucks.length === 0 ? { variant: "empty" } : { variant: "has", trucks };
   }
 
-  // SOCL-02: initial heart state for the first page of cards — one batched
-  // owner-RLS read; anon viewers skip it (hearts render the login invite). Passed
-  // as an ARRAY (Sets don't serialize into client components).
-  const savedIds = isAuthenticated
-    ? Array.from(await getSavedIds(cards.map((c) => c.id)))
-    : [];
-
-  // --- Resolve active-filter chip labels (page has the names; chips own URL removal) ---
-  const chips = await buildChips(query, {
-    makes,
-    conditions,
-    partCategories,
-  });
-
-  // Slang banner: show when the canonical term differs from what the user typed.
-  const showSlangBanner =
-    !!query.q &&
-    !isExact &&
-    !!slang?.canonicalTerm &&
-    slang.canonicalTerm.toLowerCase() !== query.q.toLowerCase();
+  const nightBg = resolveNightBg();
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-      <div className="mb-6 flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Find your part
-        </h1>
-        <SearchBar />
+    <main
+      className={
+        nightBg
+          ? "night-bg flex flex-1 flex-col"
+          : "night-bg night-stars flex flex-1 flex-col"
+      }
+      style={
+        nightBg
+          ? {
+              backgroundImage: `linear-gradient(to bottom, oklch(0.1 0.02 264 / 0.45), oklch(0.06 0.01 264 / 0.8)), url(${nightBg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }
+          : undefined
+      }
+    >
+      <div className="relative z-10 mx-auto my-auto w-full max-w-7xl px-4 py-10 sm:px-6">
+        {/* The visual filter explorer (cascade + chips) — responsive: single
+            column on mobile, two columns on web. */}
+        <WelcomeExplorer
+          brands={brands}
+          rootCategories={rootCategories}
+          conditions={conditions}
+          fitsState={fitsState}
+        />
       </div>
-
-      <div className="grid gap-6 lg:grid-cols-[16rem_1fr]">
-        <div className="flex flex-col gap-4">
-          <FitsMyTruckControl state={fitsState} />
-          <FacetSidebar
-            makes={makes}
-            conditions={conditions}
-            partCategories={partCategories}
-          />
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {showSlangBanner && query.q && (
-            <SlangBanner raw={query.q} canonical={slang?.canonicalTerm} />
-          )}
-
-          <ActiveFilterChips chips={chips} total={total} />
-
-          {cards.length === 0 ? (
-            <EmptyResults />
-          ) : (
-            <FeedGrid
-              cards={cards}
-              total={total}
-              initialSavedIds={savedIds}
-              isAuthenticated={isAuthenticated}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* SaveButton reports toggle failures via sonner — needs a mounted Toaster. */}
-      <Toaster />
     </main>
   );
-}
-
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-// Resolve each active filter into a removable chip with a human label. The chip's
-// `keys` list is what ActiveFilterChips deletes on removal (dependents included so the
-// URL never lands in an impossible combination).
-async function buildChips(
-  query: SearchQuery,
-  refs: {
-    makes: CascadeOption[];
-    conditions: { id: number; name: string }[];
-    partCategories: { id: number; name: string }[];
-  },
-): Promise<ActiveChip[]> {
-  const chips: ActiveChip[] = [];
-
-  if (query.q) {
-    chips.push({ keys: ["q", "exact"], label: `"${query.q}"` });
-  }
-
-  if (query.makeId !== null) {
-    const name = refs.makes.find((m) => m.id === query.makeId)?.name ?? "Make";
-    // Removing Make clears its dependent Model + Config.
-    chips.push({ keys: ["make", "model", "config"], label: name });
-  }
-
-  if (query.modelId !== null && query.makeId !== null) {
-    const models = await getModels(query.makeId);
-    const name = models.find((m) => m.id === query.modelId)?.name ?? "Model";
-    chips.push({ keys: ["model", "config"], label: name });
-  }
-
-  if (query.configId !== null && query.modelId !== null) {
-    const configs = await getConfigs(query.modelId);
-    const name =
-      configs.find((c) => c.id === query.configId)?.name ?? "Configuration";
-    chips.push({ keys: ["config"], label: name });
-  }
-
-  if (query.categoryId !== null) {
-    const name =
-      refs.partCategories.find((c) => c.id === query.categoryId)?.name ??
-      "Category";
-    chips.push({ keys: ["category"], label: name });
-  }
-
-  if (query.conditionId !== null) {
-    const name =
-      refs.conditions.find((c) => c.id === query.conditionId)?.name ??
-      "Condition";
-    chips.push({ keys: ["condition"], label: name });
-  }
-
-  if (query.fitsModelId !== null) {
-    chips.push({ keys: ["fits", "fitsConfig"], label: "Fits my truck" });
-  }
-
-  return chips;
 }
