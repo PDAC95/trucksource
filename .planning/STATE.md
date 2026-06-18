@@ -8,7 +8,7 @@ progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — Plan 01 of 4 done (data + subtree-search foundation landed on Staging). Phase 11 (v1.1 rebrand) has 11-04 still pending.
+**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — Plans 01-02 of 4 done (taxonomy data + single-level cascade readers landed). Phase 11 (v1.1 rebrand) has 11-04 still pending.
 
 ## Current Position
 
 Phase: 16 of 16 — Part Taxonomy & Guided Cascade (new functional scope; not v1.1 rebrand)
-Plan: 01 of 4 complete — next: execute 16-02 (getChildCategories reader + cascade plumbing)
-Status: In Progress — Plan 16-01 (migration 0025 subtree RPC + taxonomy v2 re-seed) executed and applied to Staging
-Last activity: 2026-06-18 — executed 16-01-PLAN.md (FITL-05/SRCH-03/FINT-03, 2 atomic commits; 0025 pushed to Staging after a migration-history repair; subtree + contract gates 3/3 green live)
+Plan: 02 of 4 complete — next: execute 16-03 (welcome explorer guided cascade UI)
+Status: In Progress — Plan 16-02 (getChildCategories + getRootCategories single-level cascade readers) executed
+Last activity: 2026-06-18 — executed 16-02-PLAN.md (FITL-05/SRCH-03, 1 atomic commit; tsc clean; readers mirror garage CascadeOption posture, expose CategoryOption type)
 
-Progress: [■□□□] Phase 16: 1/4 plans · (Phase 11 v1.1 rebrand still has 11-04 pending)
+Progress: [■■□□] Phase 16: 2/4 plans · (Phase 11 v1.1 rebrand still has 11-04 pending)
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -47,6 +47,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 | 11    | 02   | ~5 min   | 3     | 5     |
 | 11    | 03   | ~7 min   | 3     | 12    |
 | 16    | 01   | ~8 min   | 2     | 3     |
+| 16    | 02   | ~2 min   | 1     | 1     |
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 | Phase 16 P01 | ~8min | 2 tasks | 3 files |
@@ -75,6 +76,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 16]: Plan 16-01: Staging forward-migrated (NOT reset) via db push; old tree deactivated, affected listings re-tagged onto leaf 'Driver Side Fuel Tanks' (0 stale tags)
 - [Phase 16]: Plan 16-01: Staging ids for Plans 03/04 (resolve by NAME in code, ids are Staging-specific): Fuel Tanks root=91, 'Fuel Tanks' subcat=96, 'Driver Side Fuel Tanks' leaf=111; 18 active roots, 172 total cats (128 active)
 - [Phase 16]: Plan 16-01: repaired remote migration history (0004-0024 marked applied) — pre-existing desync where remote schema_migrations only recorded 0001-0003 though objects existed; required before 0025 could push
+- [Phase 16]: Plan 16-02: added getChildCategories(parentId) + getRootCategories() single-level cascade readers to lib/listings/cascade.ts; exported local CategoryOption ({ id; name }) — Plans 03/04 import that symbol (NOT garage CascadeOption); getPartCategories left untouched for create-listing; readers mirror garage posture (is_active filter, order(name), [] on error, id+name only)
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -100,5 +102,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-18 — executed 16-01-PLAN.md (taxonomy v2 + subtree-search foundation; 0025 applied to Staging). Stopped at: Completed 16-01-PLAN.md.
-Next action: `/gsd:execute-phase 16` to run 16-02 (getChildCategories cascade reader). Phase 11 still has 11-04 (header wordmark + logo) pending — `/gsd:execute-phase 11` when returning to the v1.1 rebrand.
+Last session: 2026-06-18 — executed 16-02-PLAN.md (getChildCategories + getRootCategories cascade readers). Stopped at: Completed 16-02-PLAN.md.
+Next action: `/gsd:execute-phase 16` to run 16-03 (welcome explorer guided cascade UI consuming the new readers). Phase 11 still has 11-04 (header wordmark + logo) pending — `/gsd:execute-phase 11` when returning to the v1.1 rebrand.
