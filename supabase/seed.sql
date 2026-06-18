@@ -143,70 +143,187 @@ join public.configurations cf on cf.name = v.config
 on conflict (model_id, configuration_id) do nothing;
 
 -- ===========================================================================
--- L5) part_categories (FITL-05) — 2-level heavy-truck tree.
+-- L5) part_categories (FITL-05) — 3-level heavy-truck tree (Phase 16 taxonomy v2).
+-- Mirrors migration 0025 Section B EXACTLY so a fresh `db reset` (migrations then
+-- this seed) yields ONE taxonomy: the new tree only (Pitfall 1). The old 12-root
+-- flat tree is GONE from this seed and is never reintroduced.
 -- Top levels have parent_id NULL; because NULLs are not "equal" in a unique index,
 -- `on conflict (parent_id, name)` will NOT dedupe them — so top-levels use a guarded
--- `where not exists`. Children resolve their parent by name and use on-conflict.
+-- `where not exists`. Subcategories/items resolve their parent by name + on-conflict.
 -- ===========================================================================
+
+-- ROOTS (18 unique roots from 16-CONTEXT.md, as-listed).
 insert into public.part_categories (parent_id, name)
 select null, v.name
 from (values
-  ('Hoods & Fenders'),
+  ('Grill & Accessories'),
+  ('Battery, Tool, DPF Covers & Boxes'),
+  ('Fuel Tanks, Straps & Accessories'),
+  ('Air Cleaners, Screens, Light Brackets & Accessories'),
+  ('Mud Flaps, Hangers, Weights & Accessories'),
+  ('Exhaust & Accessories'),
+  ('Body Parts, Cab & Sleeper'),
+  ('Bumpers and Accessories'),
+  ('Tires & Rims'),
+  ('Power Train & Running Gear'),
+  ('Mirrors, Brackets & Accessories'),
+  ('Front Windshield Sunvisor'),
+  ('Interior & Seating'),
+  ('Cab & Sleeper Light Panels'),
+  ('Rear Fenders'),
   ('Lighting'),
-  ('Mirrors'),
-  ('Exhaust & Stacks'),
-  ('Bumpers'),
-  ('Grilles'),
-  ('Interior'),
-  ('Drivetrain'),
-  ('Suspension'),
-  ('Electrical'),
-  ('Glass'),
-  ('Body & Cab')
+  ('Light Brackets & Accessories'),
+  ('Tail Light Panels')
 ) v(name)
 where not exists (
   select 1 from public.part_categories pc
   where pc.parent_id is null and pc.name = v.name
 );
 
+-- SUBCATEGORIES under "Fuel Tanks, Straps & Accessories" (14 subcategories).
 insert into public.part_categories (parent_id, name)
 select p.id, v.child
 from (values
-  ('Hoods & Fenders', 'Hoods'),
-  ('Hoods & Fenders', 'Fenders'),
-  ('Hoods & Fenders', 'Hood Hinges & Latches'),
-  ('Lighting', 'Headlights'),
-  ('Lighting', 'Marker Lights'),
-  ('Lighting', 'Tail Lights'),
-  ('Lighting', 'Cab Lights'),
-  ('Mirrors', 'Door Mirrors'),
-  ('Mirrors', 'Hood Mirrors'),
-  ('Exhaust & Stacks', 'Stacks'),
-  ('Exhaust & Stacks', 'Mufflers'),
-  ('Exhaust & Stacks', 'Elbows & Clamps'),
-  ('Bumpers', 'Steel Bumpers'),
-  ('Bumpers', 'Chrome Bumpers'),
-  ('Grilles', 'Grille Inserts'),
-  ('Grilles', 'Grille Surrounds'),
-  ('Interior', 'Seats'),
-  ('Interior', 'Dash & Gauges'),
-  ('Interior', 'Steering Wheels'),
-  ('Drivetrain', 'Transmissions'),
-  ('Drivetrain', 'Differentials'),
-  ('Drivetrain', 'Driveshafts'),
-  ('Suspension', 'Air Bags'),
-  ('Suspension', 'Leaf Springs'),
-  ('Suspension', 'Shocks'),
-  ('Electrical', 'Alternators'),
-  ('Electrical', 'Starters'),
-  ('Electrical', 'Wiring Harnesses'),
-  ('Glass', 'Windshields'),
-  ('Glass', 'Door Glass'),
-  ('Body & Cab', 'Doors'),
-  ('Body & Cab', 'Cab Panels'),
-  ('Body & Cab', 'Sleeper Panels')
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tanks'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Straps'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Strap Covers'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Mounting Components'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Steps'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank End Caps'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Fairings & Covers'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Lighting'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Light Brackets & Accessories'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Filler Components'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Protection'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Accessories'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel System Components'),
+  ('Fuel Tanks, Straps & Accessories', 'Fuel Tank Repair Components')
 ) v(parent, child)
 join public.part_categories p on p.parent_id is null and p.name = v.parent
+on conflict (parent_id, name) do nothing;
+
+-- ITEMS under each Fuel Tanks subcategory. Duplicate item names under DIFFERENT
+-- subcategories are intentional (unique is per-parent) and kept as-is.
+insert into public.part_categories (parent_id, name)
+select sub.id, v.item
+from (values
+  -- Fuel Tanks
+  ('Fuel Tanks', 'Fuel Tank Assemblies'),
+  ('Fuel Tanks', 'Driver Side Fuel Tanks'),
+  ('Fuel Tanks', 'Passenger Side Fuel Tank'),
+  ('Fuel Tanks', 'Aluminum Fuel Tanks'),
+  ('Fuel Tanks', 'Stainless Steel Fuel Tanks'),
+  ('Fuel Tanks', 'Replacement Fuel Tanks'),
+  ('Fuel Tanks', 'Custom Fuel Tanks'),
+  -- Fuel Tank Straps
+  ('Fuel Tank Straps', 'Fuel Tank Straps'),
+  ('Fuel Tank Straps', 'Stainless Fuel Tank Straps'),
+  ('Fuel Tank Straps', 'Aluminum Fuel Tank Straps'),
+  ('Fuel Tank Straps', 'OEM Replacement Straps'),
+  ('Fuel Tank Straps', 'Aftermarket Straps'),
+  -- Fuel Tank Strap Covers
+  ('Fuel Tank Strap Covers', 'Stainless Strap Covers'),
+  ('Fuel Tank Strap Covers', 'Chrome Strap Covers'),
+  ('Fuel Tank Strap Covers', 'Smooth Strap Covers'),
+  ('Fuel Tank Strap Covers', 'Bead Rolled Strap Covers'),
+  ('Fuel Tank Strap Covers', 'Lighted Strap Covers'),
+  ('Fuel Tank Strap Covers', 'Custom Strap Covers'),
+  ('Fuel Tank Strap Covers', 'Fuel Tank Strap Light Brackets'),
+  -- Fuel Tank Mounting Components
+  ('Fuel Tank Mounting Components', 'Tank Mount Brackets'),
+  ('Fuel Tank Mounting Components', 'Tank Saddles'),
+  ('Fuel Tank Mounting Components', 'Tank Mount Kits'),
+  ('Fuel Tank Mounting Components', 'Tank Supports'),
+  ('Fuel Tank Mounting Components', 'Tank Isolators'),
+  ('Fuel Tank Mounting Components', 'Mounting Hardware'),
+  ('Fuel Tank Mounting Components', 'Crossmembers'),
+  ('Fuel Tank Mounting Components', 'Tank Cradles'),
+  ('Fuel Tank Mounting Components', 'Fuel Tank Light Brackets'),
+  -- Fuel Tank Steps
+  ('Fuel Tank Steps', 'Fuel Tank Steps'),
+  ('Fuel Tank Steps', 'Tank Mounted Steps'),
+  ('Fuel Tank Steps', 'Stainless Tank Steps'),
+  ('Fuel Tank Steps', 'Aluminum Tank Steps'),
+  ('Fuel Tank Steps', 'Lighted Tank Steps'),
+  ('Fuel Tank Steps', 'Grip Steps'),
+  ('Fuel Tank Steps', 'Replacement Step Treads'),
+  -- Fuel Tank End Caps
+  ('Fuel Tank End Caps', 'Stainless End Caps'),
+  ('Fuel Tank End Caps', 'Aluminum End Caps'),
+  ('Fuel Tank End Caps', 'Custom End Caps'),
+  ('Fuel Tank End Caps', 'Decorative End Caps'),
+  -- Fuel Tank Fairings & Covers
+  ('Fuel Tank Fairings & Covers', 'Fuel Tank Fairings'),
+  ('Fuel Tank Fairings & Covers', 'Tank Wraps'),
+  ('Fuel Tank Fairings & Covers', 'Tank Skins'),
+  ('Fuel Tank Fairings & Covers', 'Tank Covers'),
+  ('Fuel Tank Fairings & Covers', 'Stainless Tank Wraps'),
+  -- Fuel Tank Lighting
+  ('Fuel Tank Lighting', 'Fuel Tank Light Brackets'),
+  ('Fuel Tank Lighting', 'Tank Mounted Light Bars'),
+  ('Fuel Tank Lighting', 'Under Tank Lighting'),
+  ('Fuel Tank Lighting', 'Accent Lighting'),
+  ('Fuel Tank Lighting', 'LED Strip Lighting'),
+  ('Fuel Tank Lighting', 'Courtesy Lights'),
+  ('Fuel Tank Lighting', 'Ground Lighting'),
+  ('Fuel Tank Lighting', 'Rock Lights'),
+  ('Fuel Tank Lighting', 'Marker Lights'),
+  -- Fuel Tank Light Brackets & Accessories
+  ('Fuel Tank Light Brackets & Accessories', 'Tank Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', 'Single Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', 'Dual Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', 'Multi-Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', 'Watermelon Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', '2" Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', '4" Light Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', 'LED Mounting Brackets'),
+  ('Fuel Tank Light Brackets & Accessories', 'Light Bezels'),
+  ('Fuel Tank Light Brackets & Accessories', 'Light Grommets'),
+  ('Fuel Tank Light Brackets & Accessories', 'Wiring Kits'),
+  -- Fuel Tank Filler Components
+  ('Fuel Tank Filler Components', 'Fuel Filler Necks'),
+  ('Fuel Tank Filler Components', 'Fuel Filler Extensions'),
+  ('Fuel Tank Filler Components', 'Fuel Caps'),
+  ('Fuel Tank Filler Components', 'Chrome Fuel Caps'),
+  ('Fuel Tank Filler Components', 'Locking Fuel Caps'),
+  ('Fuel Tank Filler Components', 'Fuel Doors'),
+  ('Fuel Tank Filler Components', 'Fuel Fill Guards'),
+  ('Fuel Tank Filler Components', 'Fuel Fill Trim Rings'),
+  -- Fuel Tank Protection
+  ('Fuel Tank Protection', 'Tank Guards'),
+  ('Fuel Tank Protection', 'Stone Guards'),
+  ('Fuel Tank Protection', 'Mud Guards'),
+  ('Fuel Tank Protection', 'Tank Shields'),
+  ('Fuel Tank Protection', 'Protective Covers'),
+  ('Fuel Tank Protection', 'Impact Guards'),
+  -- Fuel Tank Accessories
+  ('Fuel Tank Accessories', 'Tank Tool Trays'),
+  ('Fuel Tank Accessories', 'Storage Mounts'),
+  ('Fuel Tank Accessories', 'Air Line Holders'),
+  ('Fuel Tank Accessories', 'Hose Holders'),
+  ('Fuel Tank Accessories', 'Strap Accessories'),
+  ('Fuel Tank Accessories', 'Mounting Accessories'),
+  ('Fuel Tank Accessories', 'Hardware Kits'),
+  -- Fuel System Components
+  ('Fuel System Components', 'Fuel Sending Units'),
+  ('Fuel System Components', 'Fuel Pickups'),
+  ('Fuel System Components', 'Fuel Lines'),
+  ('Fuel System Components', 'Fuel Fittings'),
+  ('Fuel System Components', 'Fuel Tank Sensors'),
+  ('Fuel System Components', 'Fuel Level Components'),
+  -- Fuel Tank Repair Components
+  ('Fuel Tank Repair Components', 'Repair Panels'),
+  ('Fuel Tank Repair Components', 'Weld-In Bungs'),
+  ('Fuel Tank Repair Components', 'Replacement Mounts'),
+  ('Fuel Tank Repair Components', 'Replacement Hardware'),
+  ('Fuel Tank Repair Components', 'Tank Repair Kits')
+) v(subname, item)
+join public.part_categories sub
+  on sub.name = v.subname
+  and sub.parent_id = (
+    select id from public.part_categories
+    where parent_id is null and name = 'Fuel Tanks, Straps & Accessories'
+  )
 on conflict (parent_id, name) do nothing;
 
 -- ===========================================================================
