@@ -51,6 +51,10 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- Phase 16 added (2026-06-18): **Part Taxonomy & Guided Cascade** — new *functional* scope from a stakeholder taxonomy review (3-level part taxonomy + hierarchical category search + guided cascade rework on welcome & /browse). NOT part of the v1.1 rebrand. **Year deferred** to its own later phase. Full scope + the Fuel Tanks subtree captured in `.planning/phases/16-part-taxonomy-guided-cascade/16-CONTEXT.md`.
+
 ### Decisions
 
 - Requirement count corrected during roadmap creation: v1.1 has **29** REQ-IDs (5 BRND + 4 THEM + 5 CHRM + 8 SURF + 3 A11Y + 2 FIX + 2 QA), not 27 as initially noted in REQUIREMENTS.md.
