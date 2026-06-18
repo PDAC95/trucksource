@@ -12,6 +12,8 @@
 //     Ownership of staged uploads is verified server-side in the action.
 import { z } from "zod";
 
+import { YEAR_MIN, YEAR_MAX } from "@/lib/listings/years";
+
 /**
  * One fitment combination attached to a listing (multi-fit: a listing may carry
  * several). modelId is required (Make is implied by the model row); configId is
@@ -76,13 +78,107 @@ export const listingSchema = z
       .prefault([]),
     categoryIds: z.array(z.coerce.number().int().positive()).default([]),
     searchTermIds: z.array(z.coerce.number().int().positive()).default([]),
+    // ── YEAR COMPATIBILITY (FITL-05 / FINT-03) ───────────────────────────────
+    // Which truck YEARS this listing fits. The seller picks a MODE; the actual
+    // DB columns (listings.year_start / year_end, migration 0026) are derived
+    // from it via toYearColumns() below — never written raw from these fields.
+    //   - universal: the part fits ALL years           → both columns null
+    //   - specific: one year                           → year_start = year_end
+    //   - range:    a start..end pair                  → year_start <= year_end
+    // yearStart/yearEnd are coerced (Radix Selects emit strings) and bounded to
+    // the SINGLE source range (YEAR_MIN..YEAR_MAX from lib/listings/years), the
+    // same bounds the listings_year_bounds CHECK enforces in the DB.
+    yearMode: z.enum(["universal", "specific", "range"]).default("universal"),
+    yearStart: z.coerce
+      .number()
+      .int()
+      .min(YEAR_MIN)
+      .max(YEAR_MAX)
+      .nullable()
+      .optional(),
+    yearEnd: z.coerce
+      .number()
+      .int()
+      .min(YEAR_MIN)
+      .max(YEAR_MAX)
+      .nullable()
+      .optional(),
   })
   .refine((v) => v.isBarnyard || v.fitment.length >= 1, {
     message: "Add at least one fitment, or mark The Barnyard.",
     path: ["fitment"],
+  })
+  // Cross-field year rules — the SAME rules the Server Action re-validates
+  // (trust boundary) and the form surfaces inline. superRefine so each failure
+  // attaches to the precise field. Universal ignores any stray year values; the
+  // normaliser (toYearColumns) is what actually drops them to null on write.
+  .superRefine((v, ctx) => {
+    if (v.yearMode === "specific") {
+      if (v.yearStart == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Pick a year.",
+          path: ["yearStart"],
+        });
+      } else if (v.yearEnd != null && v.yearEnd !== v.yearStart) {
+        // A specific year stores year_start = year_end; a mismatched end is
+        // a client bug. (The form keeps yearEnd in sync; this is the guard.)
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A specific year must match its single value.",
+          path: ["yearEnd"],
+        });
+      }
+    } else if (v.yearMode === "range") {
+      if (v.yearStart == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Pick a start year.",
+          path: ["yearStart"],
+        });
+      }
+      if (v.yearEnd == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Pick an end year.",
+          path: ["yearEnd"],
+        });
+      }
+      if (v.yearStart != null && v.yearEnd != null && v.yearStart > v.yearEnd) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "End year must be on or after the start year.",
+          path: ["yearEnd"],
+        });
+      }
+    }
   });
 
 export type ListingInput = z.infer<typeof listingSchema>;
+
+/**
+ * Map the validated form's year MODE + values onto the DB column pair
+ * { year_start, year_end } (migration 0026 semantics):
+ *   - universal → { null, null }
+ *   - specific  → { y, y }   (year_start = year_end)
+ *   - range     → { start, end }
+ * Called by createListing/updateListing AFTER the schema validates, so the
+ * cross-field rules above already guarantee the required values are present and
+ * ordered. The single place form-shape → DB-shape happens (client + server).
+ */
+export function toYearColumns(v: {
+  yearMode: ListingInput["yearMode"];
+  yearStart?: number | null;
+  yearEnd?: number | null;
+}): { year_start: number | null; year_end: number | null } {
+  if (v.yearMode === "specific" && v.yearStart != null) {
+    return { year_start: v.yearStart, year_end: v.yearStart };
+  }
+  if (v.yearMode === "range" && v.yearStart != null && v.yearEnd != null) {
+    return { year_start: v.yearStart, year_end: v.yearEnd };
+  }
+  return { year_start: null, year_end: null };
+}
 
 // The RHF working type — the schema's INPUT side (before z.coerce/defaults run).
 // Selects/number inputs hand RHF strings; the resolver coerces them to ListingInput.
