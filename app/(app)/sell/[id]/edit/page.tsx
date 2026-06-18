@@ -33,6 +33,8 @@ type EditableRow = {
   shipping_option: string;
   damage_notes: string | null;
   is_barnyard: boolean;
+  year_start: number | null;
+  year_end: number | null;
   listing_photos: { storage_path: string; sort_order: number }[] | null;
   listing_fitment:
     | {
@@ -75,7 +77,7 @@ export default async function EditListingPage({
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, seller_id, title, part_number, asking_price, condition_id, shipping_option, damage_notes, is_barnyard, " +
+      "id, seller_id, title, part_number, asking_price, condition_id, shipping_option, damage_notes, is_barnyard, year_start, year_end, " +
         "listing_photos ( storage_path, sort_order ), " +
         "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) ), " +
         "listing_categories ( category_id ), " +
@@ -130,6 +132,16 @@ export default async function EditListingPage({
       name: t.search_terms!.term,
     }));
 
+  // Year compatibility (FITL-05) pre-fill — derive the form MODE from the stored
+  // pair (0026 semantics): both null = universal; equal = specific; start < end =
+  // range. The form's yearStart/yearEnd selects pre-fill from the same pair.
+  const yearMode: ListingInput["yearMode"] =
+    row.year_start == null
+      ? "universal"
+      : row.year_start === row.year_end
+        ? "specific"
+        : "range";
+
   const defaults: ListingFormDefaults = {
     title: row.title,
     partNumber: row.part_number ?? "",
@@ -142,6 +154,9 @@ export default async function EditListingPage({
     photos,
     categoryIds,
     searchTerms,
+    yearMode,
+    yearStart: row.year_start,
+    yearEnd: row.year_end,
   };
 
   // Account contact preference (added in 05-05) — DISPLAY-ONLY, defaulted defensively.

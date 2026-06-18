@@ -3,7 +3,7 @@
 import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { listingSchema } from "@/lib/listings/schema";
+import { listingSchema, toYearColumns } from "@/lib/listings/schema";
 import { stripAndReencode } from "@/lib/images/strip";
 import { LISTING_PHOTOS_BUCKET } from "@/lib/listings/storage";
 
@@ -239,6 +239,10 @@ export async function createListing(
       shipping_option: v.shippingOption,
       damage_notes: v.damageNotes || null,
       is_barnyard: v.isBarnyard,
+      // Year compatibility (FITL-05): mode → DB columns via the shared normaliser.
+      // The schema already validated the pair; the listings_year_pairing CHECK is
+      // the DB-level backstop. universal → null/null; specific → y/y; range → pair.
+      ...toYearColumns(v),
     })
     .select("id")
     .single();
@@ -438,6 +442,9 @@ export async function updateListing(
       shipping_option: v.shippingOption,
       damage_notes: v.damageNotes || null,
       is_barnyard: v.isBarnyard,
+      // Year compatibility (FITL-05): re-derive the columns from the validated
+      // mode on every edit (an edit may switch universal ⇄ specific ⇄ range).
+      ...toYearColumns(v),
     })
     .eq("id", id)
     .eq("seller_id", userId)

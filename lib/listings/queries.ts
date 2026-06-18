@@ -40,6 +40,10 @@ export type ListingDetail = {
   status: string;
   dateListed: string;
   expiresAt: string | null; // 90-day clock (LIST-09); null = never set / sold
+  // Year compatibility (FITL-05). Both null = universal (fits all years); equal =
+  // a specific year; start < end = an inclusive range. Migration 0026 semantics.
+  yearStart: number | null;
+  yearEnd: number | null;
   seller: {
     username: string;
     stateProvince: string | null;
@@ -65,6 +69,8 @@ type ListingDetailRow = {
   status: string;
   date_listed: string;
   expires_at: string | null;
+  year_start: number | null;
+  year_end: number | null;
   seller_id: string;
   conditions: { name: string } | null;
   listing_photos: { storage_path: string; sort_order: number }[] | null;
@@ -110,7 +116,7 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
   const { data, error } = await supabase
     .from("listings")
     .select(
-      "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, expires_at, seller_id, " +
+      "id, title, part_number, asking_price, shipping_option, damage_notes, is_barnyard, status, date_listed, expires_at, year_start, year_end, seller_id, " +
         "conditions:condition_id ( name ), " +
         "listing_photos ( storage_path, sort_order ), " +
         "listing_fitment ( model_id, config_id, models:model_id ( name, makes:make_id ( name ) ), configurations:config_id ( name ) ), " +
@@ -176,6 +182,8 @@ export async function getListing(id: number): Promise<ListingDetail | null> {
     status: row.status,
     dateListed: row.date_listed,
     expiresAt: row.expires_at,
+    yearStart: row.year_start,
+    yearEnd: row.year_end,
     seller: {
       username: seller?.username ?? "",
       stateProvince: seller?.state_province ?? null,

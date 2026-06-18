@@ -43,6 +43,18 @@ function fitmentLabel(f: ListingDetail["fitment"][number]): string {
   return [f.makeName, f.modelName, f.configName].filter(Boolean).join(" ");
 }
 
+// Year compatibility (FITL-05) display. Both null = universal = no block (returns
+// null); equal start/end = a single year ("2012"); a true range = "2008–2015" with
+// an en dash. Migration 0026 guarantees the pairing, so an asymmetric null is
+// impossible — but tolerate it defensively (treat a lone value as that year).
+function yearLabel(start: number | null, end: number | null): string | null {
+  if (start == null && end == null) return null;
+  const a = start ?? end;
+  const b = end ?? start;
+  if (a == null) return null;
+  return a === b ? String(a) : `${a}–${b}`;
+}
+
 export function ListingDetail({
   listing,
   isOwner = false,
@@ -67,6 +79,7 @@ export function ListingDetail({
   const sellerLocation = [listing.seller.stateProvince, listing.seller.country]
     .filter(Boolean)
     .join(", ");
+  const yearFits = yearLabel(listing.yearStart, listing.yearEnd);
 
   return (
     <article className="grid gap-8 lg:grid-cols-2">
@@ -202,6 +215,18 @@ export function ListingDetail({
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* YEAR COMPATIBILITY (FITL-05) — "Fits years: 2008–2015" for a range,
+            a single year when start === end, and NOTHING when universal (both
+            null). Sits right under the fitment combos. */}
+        {yearFits && (
+          <div className="grid gap-2">
+            <h2 className="text-muted-foreground text-sm font-medium">
+              Fits years
+            </h2>
+            <p className="text-sm font-medium">{yearFits}</p>
           </div>
         )}
 
