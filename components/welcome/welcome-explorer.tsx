@@ -8,6 +8,7 @@ import { ChevronLeft, Search, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { FEED_PATH } from "@/lib/search/params";
+import { yearOptions } from "@/lib/listings/years";
 import { getModels } from "@/lib/garage/cascade";
 import type { CascadeOption } from "@/lib/garage/cascade";
 import { getChildCategories } from "@/lib/listings/cascade";
@@ -36,7 +37,7 @@ import type { BrandItem } from "@/components/welcome/brand-grid";
 // (config remains a /browse facet, just not a welcome step).
 
 type Condition = { id: number; name: string };
-type Step = "make" | "model" | "category" | "advanced";
+type Step = "make" | "model" | "year" | "category" | "advanced";
 
 const optionCard =
   "group flex h-20 items-center justify-center rounded-xl border-2 border-neon-cyan/50 bg-black/40 px-4 text-center font-godsown text-xl uppercase tracking-wide text-neon-cyan transition-all hover:border-neon-cyan hover:shadow-glow-cyan hover:[text-shadow:var(--text-shadow-neon-cyan)] sm:h-24 sm:text-2xl";
@@ -60,7 +61,12 @@ export function WelcomeExplorer({
   const [step, setStep] = React.useState<Step>("make");
   const [make, setMake] = React.useState<BrandItem | null>(null);
   const [model, setModel] = React.useState<CascadeOption | null>(null);
+  // The buyer's truck year — OPTIONAL and independent of model (static list from
+  // lib/listings/years). null = "Any year". Slots into the reserved Model→Category seam.
+  const [year, setYear] = React.useState<number | null>(null);
   const [condition, setCondition] = React.useState<Condition | null>(null);
+
+  const years = React.useMemo(() => yearOptions(), []);
 
   const [models, setModels] = React.useState<CascadeOption[]>([]);
 
@@ -90,14 +96,26 @@ export function WelcomeExplorer({
     setStep("model");
     setModels(await getModels(m.id));
   }
-  // Model → Category seam. No config load here (Configuration was dropped from
-  // the welcome flow). A future Year step slots in right after this hop.
+  // Model → Year seam. No config load here (Configuration was dropped from the
+  // welcome flow). The optional Year step fills the reserved hop before Category.
+  // Changing the model clears any previously chosen year (start the year pick fresh).
   function pickModel(m: CascadeOption) {
     setModel(m);
-    setStep("category");
+    setYear(null);
+    setStep("year");
   }
   function skipModel() {
     setModel(null);
+    setYear(null);
+    setStep("year");
+  }
+  // Year → Category. Optional: picking a year and "Any year" both advance to Category.
+  function pickYear(y: number) {
+    setYear(y);
+    setStep("category");
+  }
+  function skipYear() {
+    setYear(null);
     setStep("category");
   }
   async function pickRootCategory(c: CategoryOption) {
@@ -121,6 +139,7 @@ export function WelcomeExplorer({
   function removeMake() {
     setMake(null);
     setModel(null);
+    setYear(null);
     setRootCategory(null);
     setSubcategory(null);
     setItem(null);
@@ -132,13 +151,19 @@ export function WelcomeExplorer({
   }
   function removeModel() {
     setModel(null);
+    setYear(null);
     setRootCategory(null);
     setSubcategory(null);
     setItem(null);
     setCondition(null);
     setSubcategories([]);
     setItems([]);
-    setStep("category");
+    setStep("year");
+  }
+  // Removing the Year chip rewinds to the year step and clears the year only.
+  function removeYear() {
+    setYear(null);
+    setStep("year");
   }
   function removeRootCategory() {
     setRootCategory(null);
@@ -164,6 +189,8 @@ export function WelcomeExplorer({
     const params = new URLSearchParams();
     if (make) params.set("make", String(make.id));
     if (model) params.set("model", String(model.id));
+    // The buyer's truck year (optional) — single `year` param; omitted when skipped.
+    if (year !== null) params.set("year", String(year));
     // SINGLE deepest category id — the subtree-match RPC expands it. No separate
     // subcategory/item keys (params.ts has none).
     if (deepestCategory) params.set("category", String(deepestCategory.id));
@@ -176,6 +203,8 @@ export function WelcomeExplorer({
   if (make) chips.push({ key: "make", label: make.name, onRemove: removeMake });
   if (model)
     chips.push({ key: "model", label: model.name, onRemove: removeModel });
+  if (year !== null)
+    chips.push({ key: "year", label: String(year), onRemove: removeYear });
   // ONE category chip labeled with the deepest chosen level; removing it clears
   // the whole category selection.
   if (deepestCategory)
@@ -196,13 +225,16 @@ export function WelcomeExplorer({
       ? "Browse by brand"
       : step === "model"
         ? `Pick a ${make?.name ?? ""} model`.trim()
-        : step === "category"
-          ? "Pick a category"
-          : "Refine your search";
+        : step === "year"
+          ? "Pick your truck year"
+          : step === "category"
+            ? "Pick a category"
+            : "Refine your search";
 
   function back() {
     if (step === "model") removeMake();
-    else if (step === "category") removeModel();
+    else if (step === "year") removeModel();
+    else if (step === "category") removeYear();
     else if (step === "advanced") removeRootCategory();
   }
 
@@ -378,6 +410,42 @@ export function WelcomeExplorer({
             <button type="button" onClick={skipModel} className={skipCard}>
               Any model
             </button>
+          </div>
+        )}
+
+        {step === "year" && (
+          <div className="flex flex-col gap-5">
+            <p className="text-sm text-muted-foreground">
+              Pick your truck&rsquo;s year to narrow your search, or hit{" "}
+              <span className="text-neon-cyan">Any year</span> /{" "}
+              <span className="text-neon-cyan">See results</span> to skip it.
+            </p>
+
+            <div className="grid max-h-80 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4 sm:gap-4">
+              {years.map((y) => {
+                const active = year === y;
+                return (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => (active ? removeYear() : pickYear(y))}
+                    className={cn(
+                      optionCard,
+                      active &&
+                        "border-neon-cyan shadow-glow-cyan [text-shadow:var(--text-shadow-neon-cyan)]",
+                    )}
+                  >
+                    {y}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button type="button" onClick={skipYear} className={skipCard}>
+              Any year
+            </button>
+
+            {seeResults}
           </div>
         )}
 
