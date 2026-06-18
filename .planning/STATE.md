@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
 status: in_progress
-last_updated: "2026-06-18T14:40:28.895Z"
+last_updated: "2026-06-18T15:20:00.000Z"
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — Plans 01-02 of 4 done (taxonomy data + single-level cascade readers landed). Phase 11 (v1.1 rebrand) has 11-04 still pending.
+**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — COMPLETE (4/4 plans: taxonomy data + subtree RPC, cascade readers, welcome explorer cascade, /browse facet cascade). Phase 11 (v1.1 rebrand) has 11-04 still pending.
 
 ## Current Position
 
 Phase: 16 of 16 — Part Taxonomy & Guided Cascade (new functional scope; not v1.1 rebrand)
-Plan: 02 of 4 complete — next: execute 16-03 (welcome explorer guided cascade UI)
-Status: In Progress — Plan 16-02 (getChildCategories + getRootCategories single-level cascade readers) executed
-Last activity: 2026-06-18 — executed 16-02-PLAN.md (FITL-05/SRCH-03, 1 atomic commit; tsc clean; readers mirror garage CascadeOption posture, expose CategoryOption type)
+Plan: 04 of 4 complete — Phase 16 done. Next: return to Phase 11 v1.1 rebrand (11-04 header wordmark + logo) when stakeholder logo assets arrive.
+Status: Phase 16 Complete — Plan 16-04 (/browse Category->Subcategory->Item facet cascade) executed and human-verified (approved)
+Last activity: 2026-06-18 — executed 16-04-PLAN.md (FITL-05/SRCH-03/FINT-03, 2 atomic commits + human-verify approved; tsc clean; one FacetControls edit covers desktop sidebar + mobile sheet; single `category` deepest-id contract + UI-only root/subcategory/item helper keys; context-bearing chip via resolveCategoryLabel)
 
-Progress: [■■□□] Phase 16: 2/4 plans · (Phase 11 v1.1 rebrand still has 11-04 pending)
+Progress: [■■■■] Phase 16: 4/4 plans COMPLETE · (Phase 11 v1.1 rebrand still has 11-04 pending)
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -39,7 +39,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Performance Metrics
 
-**v1.1:** 3 plans executed. **Phase 16:** 1 plan executed.
+**v1.1:** 3 plans executed. **Phase 16:** 4 plans executed (COMPLETE).
 
 | Phase | Plan | Duration | Tasks | Files |
 | ----- | ---- | -------- | ----- | ----- |
@@ -48,6 +48,8 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 | 11    | 03   | ~7 min   | 3     | 12    |
 | 16    | 01   | ~8 min   | 2     | 3     |
 | 16    | 02   | ~2 min   | 1     | 1     |
+| 16    | 03   | ~6 min   | 2     | 2     |
+| 16    | 04   | ~12 min  | 2     | 3     |
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 | Phase 16 P01 | ~8min | 2 tasks | 3 files |
@@ -77,6 +79,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 16]: Plan 16-01: Staging ids for Plans 03/04 (resolve by NAME in code, ids are Staging-specific): Fuel Tanks root=91, 'Fuel Tanks' subcat=96, 'Driver Side Fuel Tanks' leaf=111; 18 active roots, 172 total cats (128 active)
 - [Phase 16]: Plan 16-01: repaired remote migration history (0004-0024 marked applied) — pre-existing desync where remote schema_migrations only recorded 0001-0003 though objects existed; required before 0025 could push
 - [Phase 16]: Plan 16-02: added getChildCategories(parentId) + getRootCategories() single-level cascade readers to lib/listings/cascade.ts; exported local CategoryOption ({ id; name }) — Plans 03/04 import that symbol (NOT garage CascadeOption); getPartCategories left untouched for create-listing; readers mirror garage posture (is_active filter, order(name), [] on error, id+name only)
+- [Phase 16]: Plan 16-04: /browse Category facet reworked into three dependent selects (Category root -> Subcategory -> Item) in FacetControls — one edit covers desktop sidebar AND mobile sheet (browse-toolbar-mobile.tsx spreads the same body). URL contract: `category` = DEEPEST chosen id (RPC-facing, subtree-expanded by 16-01 RPC); `root`/`subcategory`/`item` are UI-only memory keys the RPC never reads. Parent change deletes dependent keys + recomputes deepest `category` (no stale URL combos). Chip label via resolveCategoryLabel walking up to 2 parents, deepest-LAST with " › " (Pitfall 6); chip removal clears all four category keys. active-filter-chips.tsx needed NO edit (keys array set on chip in page.tsx). Human-verify checkpoint approved.
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -102,5 +105,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-18 — executed 16-02-PLAN.md (getChildCategories + getRootCategories cascade readers). Stopped at: Completed 16-02-PLAN.md.
-Next action: `/gsd:execute-phase 16` to run 16-03 (welcome explorer guided cascade UI consuming the new readers). Phase 11 still has 11-04 (header wordmark + logo) pending — `/gsd:execute-phase 11` when returning to the v1.1 rebrand.
+Last session: 2026-06-18 — executed 16-04-PLAN.md (/browse Category->Subcategory->Item facet cascade; human-verify approved). Stopped at: Completed 16-04-PLAN.md — Phase 16 fully done (4/4 plans).
+Next action: Phase 16 is complete. Return to Phase 11 v1.1 rebrand — `/gsd:execute-phase 11` to run 11-04 (header wordmark + logo) when stakeholder logo assets arrive.
