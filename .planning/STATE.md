@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
 status: in_progress
-last_updated: "2026-06-15T13:51:00.000Z"
+last_updated: "2026-06-18T14:40:28.895Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 1
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Milestone v1.1 OG Rebrand & UI Redesign — Phase 11 executing (Plan 03 of 4 done).
+**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — Plan 01 of 4 done (data + subtree-search foundation landed on Staging). Phase 11 (v1.1 rebrand) has 11-04 still pending.
 
 ## Current Position
 
-Phase: 11 of 15 — Brand Foundation & Token System (v1.1 phases are 11–15; numbering continues from v1.0)
-Plan: 03 of 4 complete — next: execute 11-04 (header wordmark + logo)
-Status: In Progress — Plan 11-03 (brand-string sweep + e2e reconciliation) executed
-Last activity: 2026-06-15 — executed 11-03-PLAN.md (BRND-01, 3 tasks one atomic commit, build + 304 vitest green; one pre-existing e2e env failure deferred)
+Phase: 16 of 16 — Part Taxonomy & Guided Cascade (new functional scope; not v1.1 rebrand)
+Plan: 01 of 4 complete — next: execute 16-02 (getChildCategories reader + cascade plumbing)
+Status: In Progress — Plan 16-01 (migration 0025 subtree RPC + taxonomy v2 re-seed) executed and applied to Staging
+Last activity: 2026-06-18 — executed 16-01-PLAN.md (FITL-05/SRCH-03/FINT-03, 2 atomic commits; 0025 pushed to Staging after a migration-history repair; subtree + contract gates 3/3 green live)
 
-Progress: [■■■□] Phase 11: 3/4 plans · v1.1: 0/5 phases complete
+Progress: [■□□□] Phase 16: 1/4 plans · (Phase 11 v1.1 rebrand still has 11-04 pending)
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -39,15 +39,17 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Performance Metrics
 
-**v1.1:** 3 plans executed.
+**v1.1:** 3 plans executed. **Phase 16:** 1 plan executed.
 
 | Phase | Plan | Duration | Tasks | Files |
 | ----- | ---- | -------- | ----- | ----- |
 | 11    | 01   | ~5 min   | 3     | 3     |
 | 11    | 02   | ~5 min   | 3     | 5     |
 | 11    | 03   | ~7 min   | 3     | 12    |
+| 16    | 01   | ~8 min   | 2     | 3     |
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
+| Phase 16 P01 | ~8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +69,12 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 11]: Plan 11-03: product renamed to "OG Truck Parts" everywhere user-visible (auth/header/suspended/README) + package name og-truck-parts; repo/Vercel/Supabase slugs unchanged (BRND-01); lib/* email senders + near-expiry cron URL still "Take-Off Parts" by design (Phase 15 deferral)
 - [Phase 11]: Plan 11-03: home.spec brand assertion reconciled from heading-role to link-role (home h1 is "Find your part"; brand is the header wordmark link) — Pitfall 4 fix
 - [Phase 11]: Plan 11-03: pre-existing e2e failure auth.spec:95 (unauth /->/login redirect) confirmed at HEAD pre-changes; logged to phases/11.../deferred-items.md, owner Phase 15
+- [Phase 16]: Plan 16-01: root set = the 18 unique roots from 16-CONTEXT.md as-listed (Task 0 checkpoint resolved: context-18); admin editor can add/rename roots later
+- [Phase 16]: Plan 16-01: "Lighting" kept as a root despite collision with the old flat tree — deactivate in Section C then explicit reactivate in Section B so on-conflict-do-nothing doesn't swallow the kept name (Pitfall 5); on Staging Lighting = id 1, active, root
+- [Phase 16]: Plan 16-01: search_listings signature + return columns byte-identical to 0024 (diff-verified); only the part-category facet arm body changed to a recursive subtree CTE
+- [Phase 16]: Plan 16-01: Staging forward-migrated (NOT reset) via db push; old tree deactivated, affected listings re-tagged onto leaf 'Driver Side Fuel Tanks' (0 stale tags)
+- [Phase 16]: Plan 16-01: Staging ids for Plans 03/04 (resolve by NAME in code, ids are Staging-specific): Fuel Tanks root=91, 'Fuel Tanks' subcat=96, 'Driver Side Fuel Tanks' leaf=111; 18 active roots, 172 total cats (128 active)
+- [Phase 16]: Plan 16-01: repaired remote migration history (0004-0024 marked applied) — pre-existing desync where remote schema_migrations only recorded 0001-0003 though objects existed; required before 0025 could push
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -92,5 +100,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-15 — executed 11-03-PLAN.md (brand-string sweep + e2e reconciliation). Stopped at: Completed 11-03-PLAN.md.
-Next action: `/gsd:execute-phase 11` to run the last plan (11-04 header wordmark + logo).
+Last session: 2026-06-18 — executed 16-01-PLAN.md (taxonomy v2 + subtree-search foundation; 0025 applied to Staging). Stopped at: Completed 16-01-PLAN.md.
+Next action: `/gsd:execute-phase 16` to run 16-02 (getChildCategories cascade reader). Phase 11 still has 11-04 (header wordmark + logo) pending — `/gsd:execute-phase 11` when returning to the v1.1 rebrand.

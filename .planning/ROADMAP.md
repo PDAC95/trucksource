@@ -132,7 +132,7 @@ Full phase details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Goal:** A buyer can drill the stakeholder-approved 3-level part taxonomy (root category → subcategory → item) and have category search match a whole subtree. Seed the 20 root categories + the full "Fuel Tanks, Straps & Accessories" subtree (other 19 subtrees added later as data arrives); make `search_listings` match a category's whole descendant subtree (recursive CTE over `listing_categories`); add a `getChildCategories(parentId)` cascade reader; rework the welcome explorer cascade to Make → Model → (search now) → Category(root) → Advanced(subcategory → item + Condition); rework `/browse` filters to Category → Subcategory → Item dependent selects + Condition; reorganize/replace the existing app-seeded categories and re-tag/clear staging test listings. **YEAR is explicitly OUT of scope** (deferred to its own later phase: a from–to year range on listings + create-listing form + search RPC + a Year cascade step between Model and Category). NOT part of the v1.1 rebrand — new functional scope captured after a stakeholder taxonomy review. Full Fuel Tanks subtree + scope detail live in `.planning/phases/16-part-taxonomy-guided-cascade/16-CONTEXT.md`.
 **Requirements**: FITL-05, SRCH-03, FINT-03 (extends shipped v1.0 — no new IDs; this phase materially changes how these behave)
 **Depends on:** existing fitment taxonomy (v1.0 Phase 3) + search (v1.0 Phase 7); independent of the v1.1 rebrand phases
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
 - [ ] 16-01-PLAN.md — Migration 0025: recursive-CTE subtree match in search_listings (frozen signature) + re-seed roots + Fuel Tanks subtree + forward-migrate old tags + seed.sql swap (FITL-05, SRCH-03, FINT-03)
