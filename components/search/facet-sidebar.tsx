@@ -21,6 +21,7 @@ import {
 import { SlidersHorizontal } from "lucide-react";
 import { getModels, getConfigs } from "@/lib/garage/cascade";
 import { getChildCategories } from "@/lib/listings/cascade";
+import { yearOptions } from "@/lib/listings/years";
 import { FEED_PATH } from "@/lib/search/params";
 import { cn } from "@/lib/utils";
 import type { CascadeOption } from "@/lib/garage/cascade";
@@ -76,6 +77,9 @@ export function FacetControls({
   const modelId = searchParams.get("model");
   const configId = searchParams.get("config");
   const conditionId = searchParams.get("condition");
+  // Buyer's truck year — independent of Make/Model (static list, no cascade).
+  const yearParam = searchParams.get("year");
+  const years = React.useMemo(() => yearOptions(), []);
 
   // Part-category cascade state. Per the contract, `category` holds the DEEPEST chosen
   // id (the RPC-facing one); `root`/`subcategory`/`item` are UI-only memory of which
@@ -295,6 +299,28 @@ export function FacetControls({
             {models.map((m) => (
               <SelectItem key={m.id} value={String(m.id)}>
                 {m.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Year — the buyer's truck year. Static options, always enabled
+          (independent of Make/Model), no dependents to clear. */}
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-muted-foreground">Year</label>
+        <Select
+          value={yearParam ?? NONE}
+          onValueChange={(v) => applyFacet((p) => setOrDelete(p, "year", v))}
+        >
+          <SelectTrigger className="w-full border-white/10 bg-white/[0.03] focus-visible:border-neon-cyan/50">
+            <SelectValue placeholder="All years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>All years</SelectItem>
+            {years.map((y) => (
+              <SelectItem key={y} value={String(y)}>
+                {y}
               </SelectItem>
             ))}
           </SelectContent>

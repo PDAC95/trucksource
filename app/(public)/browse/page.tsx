@@ -208,6 +208,11 @@ async function buildChips(
     chips.push({ keys: ["config"], label: name });
   }
 
+  if (query.year !== null) {
+    // The buyer's truck year — single param, no dependents.
+    chips.push({ keys: ["year"], label: `Year: ${query.year}` });
+  }
+
   if (query.categoryId !== null) {
     // `category` is now the DEEPEST chosen node; label it with parent context so a
     // shared URL is unambiguous (Pitfall 6). Removing it clears ALL category levels.
