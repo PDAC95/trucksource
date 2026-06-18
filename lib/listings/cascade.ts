@@ -58,3 +58,41 @@ export async function getPartCategories(): Promise<PartCategoryOption[]> {
     (c) => ({ id: c.id, name: c.name, parentId: c.parent_id }),
   );
 }
+
+// Single-level cascade readers (Phase 16). The welcome explorer and /browse
+// facets walk the 3-level taxonomy one level at a time (root -> subcategory ->
+// item) instead of consuming the flat getPartCategories() list. Same posture as
+// the garage cascade (CascadeOption): cookie-bound server client, is_active-only
+// picker filter, .order("name"), id+name only, [] on error. Resolve roots by
+// NAME in calling code — category ids are environment-specific.
+export type CategoryOption = { id: number; name: string };
+
+/** Direct child categories of a parent (root -> subcategory -> item), is_active only. */
+export async function getChildCategories(
+  parentId: number,
+): Promise<CategoryOption[]> {
+  if (!Number.isInteger(parentId) || parentId <= 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("part_categories")
+    .select("id, name")
+    .eq("parent_id", parentId)
+    // ADMO-05: picker-only inactive filter, same as getModels/getConditions.
+    .eq("is_active", true)
+    .order("name");
+  if (error || !data) return [];
+  return data as CategoryOption[];
+}
+
+/** Root categories (parent_id null), is_active only, alphabetical. */
+export async function getRootCategories(): Promise<CategoryOption[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("part_categories")
+    .select("id, name")
+    .is("parent_id", null)
+    .eq("is_active", true)
+    .order("name");
+  if (error || !data) return [];
+  return data as CategoryOption[];
+}
