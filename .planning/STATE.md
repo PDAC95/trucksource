@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: OG Rebrand & UI Redesign
 status: in_progress
-last_updated: "2026-06-18T15:45:22.343Z"
+last_updated: "2026-06-18T16:33:25Z"
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 8
-  completed_plans: 7
+  total_plans: 9
+  completed_plans: 8
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-12 after v1.0 milestone)
 
 **Core value:** A buyer can find the right part (fitment/model/slang), interact publicly, and contact the seller privately — and the seller's personal identity (name, phone, email, address) is never exposed.
-**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — COMPLETE (4/4 plans: taxonomy data + subtree RPC, cascade readers, welcome explorer cascade, /browse facet cascade). Phase 11 (v1.1 rebrand) has 11-04 still pending.
+**Current focus:** Phase 16 Part Taxonomy & Guided Cascade — the original 4 plans done; the YEAR dimension was reopened as 3 new plans (16-05 data+search foundation DONE, 16-06 search year UI, 16-07 create/edit year inputs). Phase 11 (v1.1 rebrand) has 11-04 still pending.
 
 ## Current Position
 
 Phase: 16 of 16 — Part Taxonomy & Guided Cascade (new functional scope; not v1.1 rebrand)
-Plan: 04 of 4 complete — Phase 16 done. Next: return to Phase 11 v1.1 rebrand (11-04 header wordmark + logo) when stakeholder logo assets arrive.
-Status: Phase 16 Complete — all 4 plans executed and human-verified; 16-03 (welcome explorer cascade) SUMMARY now finalized alongside 16-04 (/browse facet cascade)
-Last activity: 2026-06-18 — finalized 16-03-PLAN.md SUMMARY (FITL-05/SRCH-03; welcome explorer reworked to Make->Model->(search now)->Category(root)->Advanced(sub->item+Condition); 2 feat commits b8434ab/e208557 + dd5b81e fix lifting Condition+See results out of the advanced step so Category is an optional refinement not a gate; runSearch emits a SINGLE deepest `category` id or omits it; single-deepest chip user-confirmed; Model->Category seam preserved for a future Year step). Earlier 2026-06-18: executed 16-04-PLAN.md (/browse facet cascade; human-verify approved)
+Plan: 05 of 7 complete — Year foundation shipped. Next: 16-06 (search year UI) then 16-07 (create/edit year inputs); both import lib/listings/years.ts.
+Status: 16-05 COMPLETE — listing year columns + search p_year arm + URL param + integration test, all on Staging. 16-06 / 16-07 are the remaining UI plans for the Year dimension.
+Last activity: 2026-06-18 — executed 16-05-PLAN.md (Year data + search foundation): migration 0026 (listings.year_start/year_end + bounds/pairing CHECKs + search_listings recreated with p_year, all 0025 arms preserved), lib/listings/years.ts shared helper, `year` URL param + p_year RPC forwarding, search.year.test.ts. 3 feat commits f7ba0f0/9692507/ab67fce. tsc clean; 14 existing search tests + new year test pass on Staging.
 
-Progress: [■■■■] Phase 16: 4/4 plans COMPLETE · (Phase 11 v1.1 rebrand still has 11-04 pending)
+Progress: [■■■■■] Phase 16: 5/7 plans complete (4 taxonomy + 16-05 year foundation) · (Phase 11 v1.1 rebrand still has 11-04 pending)
 
 **Milestone dependency:** stakeholder will provide original logo asset files (full logo + icon, PNG/SVG) — blocks BRND-02 asset generation in Phase 11. Reference mockups received 2026-06-12 (home/make browse, model browse, category browse, create-listing + buyer search).
 
@@ -39,7 +39,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Performance Metrics
 
-**v1.1:** 3 plans executed. **Phase 16:** 4 plans executed (COMPLETE).
+**v1.1:** 3 plans executed. **Phase 16:** 5 plans executed (4 taxonomy + Year foundation; 16-06/16-07 remain).
 
 | Phase | Plan | Duration | Tasks | Files |
 | ----- | ---- | -------- | ----- | ----- |
@@ -50,6 +50,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 | 16    | 02   | ~2 min   | 1     | 1     |
 | 16    | 03   | ~6 min   | 2     | 2     |
 | 16    | 04   | ~12 min  | 2     | 3     |
+| 16    | 05   | ~6 min   | 3     | 5     |
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 | Phase 16 P01 | ~8min | 2 tasks | 3 files |
@@ -80,6 +81,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 16]: Plan 16-01: repaired remote migration history (0004-0024 marked applied) — pre-existing desync where remote schema_migrations only recorded 0001-0003 though objects existed; required before 0025 could push
 - [Phase 16]: Plan 16-02: added getChildCategories(parentId) + getRootCategories() single-level cascade readers to lib/listings/cascade.ts; exported local CategoryOption ({ id; name }) — Plans 03/04 import that symbol (NOT garage CascadeOption); getPartCategories left untouched for create-listing; readers mirror garage posture (is_active filter, order(name), [] on error, id+name only)
 - [Phase 16]: Plan 16-03: welcome explorer reworked to a guided drill (Step = make|model|category|advanced): Make -> Model -> (search now) -> Category(root) -> Advanced(Subcategory -> Item + Condition). Configuration step REMOVED from the welcome flow (still a /browse facet; getConfigs dropped). Category is an OPTIONAL refinement, not a gate — the dd5b81e fix lifted the Condition picker + "See results" out of the advanced step into shared elements rendered on BOTH the category and advanced steps, so Make + Model alone can search. runSearch emits a SINGLE deepest `category` id (item ?? subcategory ?? rootCategory) or OMITS the param; no subcategory/item params (subtree RPC expands one id). Single-deepest category chip (user-confirmed): one chip labels the deepest chosen level and updates as you narrow; removal (removeRootCategory) clears root+sub+item and rewinds to "category". Model -> Category hop kept isolated (no fused handler) so a future Year step slots in without rewriting siblings (Pitfall 7). page.tsx swapped getPartCategories() -> getRootCategories(), prop partCategories -> rootCategories. Human-verify checkpoint approved.
+- [Phase 16]: Plan 16-05: YEAR dimension added to listings + search. listings.year_start/year_end smallint nullable — both null = UNIVERSAL (fits all years), specific year = year_start = year_end, range = year_start <= year_end. Two CHECKs: listings_year_bounds (1970..2027, mirrors garage 0005) + listings_year_pairing (both-null or both-set ordered). Listing year is OPTIONAL (no backfill, no NOT NULL) — existing listings stay universal + findable; contrast garage year which is mandatory. Buyer filters by a SINGLE year; match arm `p_year is null or l.year_start is null or (p_year between l.year_start and l.year_end)`. search_listings signature INTENTIONALLY changed to 0025+p_year (p_year after p_condition_id, before p_fits_model_id) — no longer byte-identical to 0024/0025; ALL five 0025 arms reproduced unchanged. CRITICAL migration detail: adding a parameter mid-signature makes `create or replace` a NEW overload, so 0026 DROPs the exact old 9-arg signature first, then creates the single 10-arg fn (else ambiguous named calls). lib/listings/years.ts = single source of truth for the 1970..2027 range (YEAR_MIN/MAX, yearOptions() descending, isValidYear) — 16-06 search UI + 16-07 form both import it. `year` wired into lib/search/params.ts (SearchQuery+KEYS+parse clamp+serialize+hasCriteria) and forwarded as p_year in lib/search/queries.ts (both searchListings + autocomplete calls). search.year.test.ts: universal-matches-any arm runs on existing Staging listings; range inside/outside arm self-skips until 16-07 seeds ranged listings. Migration 0026 pushed to Staging cleanly (no history desync). tsc clean; 14 existing search tests + new year test pass.
 - [Phase 16]: Plan 16-04: /browse Category facet reworked into three dependent selects (Category root -> Subcategory -> Item) in FacetControls — one edit covers desktop sidebar AND mobile sheet (browse-toolbar-mobile.tsx spreads the same body). URL contract: `category` = DEEPEST chosen id (RPC-facing, subtree-expanded by 16-01 RPC); `root`/`subcategory`/`item` are UI-only memory keys the RPC never reads. Parent change deletes dependent keys + recomputes deepest `category` (no stale URL combos). Chip label via resolveCategoryLabel walking up to 2 parents, deepest-LAST with " › " (Pitfall 6); chip removal clears all four category keys. active-filter-chips.tsx needed NO edit (keys array set on chip in page.tsx). Human-verify checkpoint approved.
 
 ### Research flags (from research/SUMMARY.md)
@@ -106,5 +108,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ## Session Continuity
 
-Last session: 2026-06-18 — finalized 16-03-PLAN.md SUMMARY (welcome explorer guided cascade; human-verify approved). Stopped at: Completed 16-03-PLAN.md — Phase 16 fully done (4/4 plans, all SUMMARYs written).
-Next action: Phase 16 is complete. Return to Phase 11 v1.1 rebrand — `/gsd:execute-phase 11` to run 11-04 (header wordmark + logo) when stakeholder logo assets arrive.
+Last session: 2026-06-18 — executed 16-05-PLAN.md (Year data + search foundation). Stopped at: Completed 16-05-PLAN.md — migration 0026 on Staging, lib/listings/years.ts + `year` URL param + p_year RPC + integration test; 3 feat commits.
+Next action: execute 16-06 (search year UI: a year `<select>` from yearOptions() that sets the `year` URL param on welcome explorer + /browse), then 16-07 (create/edit listing year inputs writing year_start/year_end). Phase 11 v1.1 rebrand 11-04 still pending stakeholder logo assets.
