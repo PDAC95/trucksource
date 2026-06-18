@@ -11,6 +11,7 @@ import {
   type ListingInput,
   type ListingFormValues,
 } from "@/lib/listings/schema";
+import { yearOptions } from "@/lib/listings/years";
 import type { CascadeOption } from "@/lib/garage/cascade";
 import type {
   ConditionOption,
@@ -131,6 +132,13 @@ export type ListingFormDefaults = {
   // removable confirmed chips and survive re-save. Ids alone aren't enough: the
   // form needs the name to display them and the kind to de-dupe.
   searchTerms?: SuggestedTag[];
+  // Year compatibility (FITL-05) edit pre-fill. The edit page derives yearMode
+  // from the stored row (universal when both null; specific when start === end;
+  // range otherwise) and passes the persisted year pair. Optional so the create
+  // path (no pre-fill) defaults to universal.
+  yearMode?: ListingInput["yearMode"];
+  yearStart?: number | null;
+  yearEnd?: number | null;
 };
 
 export function ListingForm({
@@ -232,8 +240,30 @@ export function ListingForm({
       photoPaths: defaults?.photos
         ?.filter((p) => p.status === "ready" && p.path)
         .map((p) => p.path as string),
+      // Year compatibility — default to universal on create; edit pre-fill passes
+      // the derived mode + stored pair. RHF holds the raw select strings; the
+      // resolver coerces them to the schema's nullable ints (toYearColumns maps
+      // mode → DB columns server-side).
+      yearMode: defaults?.yearMode ?? "universal",
+      yearStart: defaults?.yearStart ?? null,
+      yearEnd: defaults?.yearEnd ?? null,
     },
   });
+
+  // Year compatibility (FITL-05): the mode drives which select(s) show. Watch it
+  // so the section re-renders on toggle. Switching mode clears the stale year
+  // values (universal => none; specific => single; range => pair) so a half-
+  // filled previous mode can't leak through the resolver.
+  const yearMode = form.watch("yearMode");
+  const yearOpts = React.useMemo(() => yearOptions(), []);
+
+  function onYearModeChange(next: ListingInput["yearMode"]) {
+    form.setValue("yearMode", next, {
+      shouldValidate: form.formState.isSubmitted,
+    });
+    form.setValue("yearStart", null, { shouldValidate: false });
+    form.setValue("yearEnd", null, { shouldValidate: false });
+  }
 
   // ── FINT-02 accept handlers — the ONLY path into confirmed state ──────────
   // Every one of these runs ONLY from an explicit click (chip body / "Add all").
@@ -665,6 +695,153 @@ export function ListingForm({
           />
           {fitmentError && (
             <p className="text-destructive text-sm">{fitmentError}</p>
+          )}
+        </section>
+
+        {/* ── SECTION 2b: YEAR COMPATIBILITY (FITL-05) ───────────── */}
+        <section className="grid gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Year compatibility</h2>
+            <p className="text-muted-foreground text-sm">
+              Which truck years does this part fit? Leave it universal if it
+              fits all years.
+            </p>
+          </div>
+
+          {/* Mode toggle — Universal / Specific year / Year range. Switching
+              mode clears the year values so a stale pick can't survive. */}
+          <FormField
+            control={form.control}
+            name="yearMode"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <RadioGroup
+                    value={field.value ?? "universal"}
+                    onValueChange={(v) =>
+                      onYearModeChange(v as ListingInput["yearMode"])
+                    }
+                    className="grid gap-2"
+                  >
+                    {(
+                      [
+                        ["universal", "Universal (fits all years)"],
+                        ["specific", "Specific year"],
+                        ["range", "Year range"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <div key={value} className="flex items-center gap-2">
+                        <RadioGroupItem value={value} id={`year-${value}`} />
+                        <FormLabel
+                          htmlFor={`year-${value}`}
+                          className="font-normal"
+                        >
+                          {label}
+                        </FormLabel>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {/* SPECIFIC — one select. yearEnd is kept equal to yearStart so the
+              schema's "specific => start === end" check passes (toYearColumns
+              also collapses it server-side). */}
+          {yearMode === "specific" && (
+            <FormField
+              control={form.control}
+              name="yearStart"
+              render={({ field }) => (
+                <FormItem className="max-w-xs">
+                  <FormLabel>Year</FormLabel>
+                  <Select
+                    value={field.value != null ? String(field.value) : ""}
+                    onValueChange={(v) => {
+                      const n = Number(v);
+                      field.onChange(n);
+                      form.setValue("yearEnd", n, { shouldValidate: true });
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a year" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {yearOpts.map((y) => (
+                        <SelectItem key={y} value={String(y)}>
+                          {y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {/* RANGE — start + end selects. The schema enforces start <= end and
+              surfaces the error on yearEnd. */}
+          {yearMode === "range" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="yearStart"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start year</FormLabel>
+                    <Select
+                      value={field.value != null ? String(field.value) : ""}
+                      onValueChange={(v) => field.onChange(Number(v))}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="From" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {yearOpts.map((y) => (
+                          <SelectItem key={y} value={String(y)}>
+                            {y}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="yearEnd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End year</FormLabel>
+                    <Select
+                      value={field.value != null ? String(field.value) : ""}
+                      onValueChange={(v) => field.onChange(Number(v))}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="To" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {yearOpts.map((y) => (
+                          <SelectItem key={y} value={String(y)}>
+                            {y}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           )}
         </section>
 
