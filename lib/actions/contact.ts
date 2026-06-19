@@ -9,6 +9,7 @@ import {
   sendNewMessageEmail,
 } from "@/lib/messaging/notify";
 import { resolvePublicName } from "@/lib/seller/badge";
+import { requirePhoneVerified } from "@/lib/verify/gate";
 
 // submitContact — the invariant-#5 spine (MSG-02/03/05).
 //
@@ -39,6 +40,7 @@ export type SubmitContactResult =
       ok: false;
       error:
         | "unauthenticated"
+        | "not_verified"
         | "invalid"
         | "rate_limited"
         | "contacts_closed"
@@ -78,6 +80,14 @@ export async function submitContact(
   const parsed = contactSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
   const v = parsed.data;
+
+  // 1.5) TRUST BOUNDARY (Phase 17): contacting requires a phone-verified buyer
+  //      (phone ONLY — buyers don't accept selling terms). Fails fast, BEFORE
+  //      the rate-limit count and BEFORE the invariant-#5 contact_log write, so
+  //      an unverified buyer creates nothing. The anon key is public, so the
+  //      server is the authority (CLAUDE.md #2/#3); the /verify redirect is UX.
+  if (!(await requirePhoneVerified(supabase, buyerId)))
+    return { ok: false, error: "not_verified" };
 
   // 3) RATE LIMIT — head-count of the buyer's own contacts in the window.
   const windowStart = new Date(Date.now() - CONTACT_WINDOW_MS).toISOString();
