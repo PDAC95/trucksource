@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
+milestone: v1.0
 milestone_name: OG Rebrand & UI Redesign
-status: in_progress
-last_updated: "2026-06-18T18:46:26.537Z"
+status: unknown
+last_updated: "2026-06-19T13:52:59.857Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 1
-  total_plans: 11
-  completed_plans: 10
+  total_plans: 18
+  completed_plans: 12
 ---
 
 # Project State
@@ -56,6 +56,8 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 **v1.0 reference:** 57 plans across 13 phases in 12 days (see MILESTONES.md).
 | Phase 16 P01 | ~8min | 2 tasks | 3 files |
+| Phase 17 P02 | 3 min | 2 tasks | 1 files |
+| Phase 17 P03 | ~3 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -88,6 +90,8 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 16]: Plan 16-06: Year surfaced in BOTH buyer search surfaces. Welcome explorer machine is now `Make -> Model -> Year(optional) -> Category -> Advanced` — the Year step lands in the reserved Model->Category seam (Pitfall 7 paid off: pickModel just advances to "year", no sibling rewrite). Year is OPTIONAL everywhere: the welcome step offers "Any year" + the shared "See results" so search runs without a year; /browse Year defaults to "All years". A SINGLE `year` URL param (the buyer's truck year) is independent of Make/Model — no cascade, no dependents, always-enabled select. Year `<Select>` added to FacetControls after Model (one edit covers desktop sidebar + mobile Filters sheet). Year chip sits between Model and Category in the welcome summary (removal rewinds to the year step, clears year only); /browse gets a `Year: <n>` active-filter chip (removal key ["year"], no active-filter-chips edit). Year options come from lib/listings/years.ts (16-05) — no re-hardcoded range. tsc clean; human-verify approved. No deviations.
 - [Phase 16]: Plan 16-07: SELLER Year capture (create/edit listing) — completes the Year dimension end-to-end. `lib/listings/schema.ts` gained `yearMode` enum (universal/specific/range, default universal) + bounded coerced `yearStart`/`yearEnd` (YEAR_MIN..YEAR_MAX from lib/listings/years.ts) + a `superRefine` cross-field guard (specific=>yearEnd equals yearStart; range=>both set & start<=end with the error on yearEnd; universal=>stray values ignored). `toYearColumns()` is the SINGLE form-shape->DB-shape mapper (specific: y/y; range: pair; universal/incomplete: null/null), called by createListing/updateListing AFTER the shared-schema re-validation (trust boundary, CLAUDE.md). DB stays the two-column year_start/year_end pair (16-05 migration 0026) — yearMode is a UI/validation construct RECONSTRUCTED from the pair on edit pre-fill (both null=universal; start===end=specific; else range). Form: "Year compatibility" section after Fitment with a RadioGroup mode toggle; Specific shows one select (yearEnd kept synced to yearStart) and Range shows Start+End, both from yearOptions(); `onYearModeChange` clears stale year values on toggle. listing-detail shows "Fits years: 2008–2015" / single year / nothing for universal. Year is non-PII public listing data — columns on the public listings table, no RLS change. 3 feat commits b44e77e/2dbcebd/b57b44b. DEVIATION (recovered): the parallel-wave husky/lint-staged stash/restore put the schema.ts commit on a dangling commit (5b42a1e); recovered schema.ts from it and recommitted clean as b44e77e — `git show --stat b44e77e` confirms schema.ts ONLY, no 16-06 files mis-attributed (memory: precommit-hook-parallel-attribution). tsc clean; human-verify approved.
 - [Phase 16]: Plan 16-04: /browse Category facet reworked into three dependent selects (Category root -> Subcategory -> Item) in FacetControls — one edit covers desktop sidebar AND mobile sheet (browse-toolbar-mobile.tsx spreads the same body). URL contract: `category` = DEEPEST chosen id (RPC-facing, subtree-expanded by 16-01 RPC); `root`/`subcategory`/`item` are UI-only memory keys the RPC never reads. Parent change deletes dependent keys + recomputes deepest `category` (no stale URL combos). Chip label via resolveCategoryLabel walking up to 2 parents, deepest-LAST with " › " (Pitfall 6); chip removal clears all four category keys. active-filter-chips.tsx needed NO edit (keys array set on chip in page.tsx). Human-verify checkpoint approved.
+- [Phase 17]: Plan 17-02: RLS WITH CHECK backstops added — listings owner-insert requires is_verified_seller(), contact buyer-insert requires phone_verified_at (phone-only EXISTS). Gated contact_log (first write, invariant #5) not message_threads to avoid orphan rows (Pitfall 1). Exact policy names from repo: 'listings owner-insert' (0006) + 'contact buyer-insert' (0016 — plan interface guessed 'contact_log buyer-insert' wrong). Migration 0027 pushed to Staging cleanly. Defense-in-depth backstop to Plan 01 server-action gate.
+- [Phase 17]: Plan 17-03: parameterized /verify with ?next (safe internal bounce-back via safeNext: starts with / not // no scheme) + ?require (phone-only contact gate skips terms; default/seller require phone+terms). done-redirect runs before step-branching, unsafe/absent next falls to the existing panel. TermsStep branch guarded to (requireTerms && phoneVerified && !termsAccepted). OTP Change-number push carries next/require via URLSearchParams; phone-step untouched (router.refresh preserves URL). Wizard step internals + anti-abuse unchanged. commits 571c18a/906bba4.
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -115,3 +119,5 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 Last session: 2026-06-18 — executed 16-07-PLAN.md (seller Year capture in create/edit listing). Stopped at: Completed 16-07-PLAN.md — Year Compatibility section (universal/specific/range), shared-schema client+server validation, toYearColumns() normaliser onto listings.year_start/year_end, detail "Fits years" display, edit pre-fill; 3 feat commits b44e77e/2dbcebd/b57b44b (b44e77e recovered from a parallel-wave dangling commit, recommitted clean); human-verify approved. Phase 16 now COMPLETE (7/7).
 Next action: Phase 11 v1.1 rebrand 11-04 (still pending stakeholder logo assets). The full Year dimension is shipped end-to-end; ranged listings can now be seeded on Staging to activate the range arm of 16-05's search.year.test.ts.
+
+**Phase 17 (wave 1, in progress):** 17-02 COMPLETE — RLS trust-gate backstops (migration 0027 on Staging): listings owner-insert now requires is_verified_seller(); contact buyer-insert now requires phone_verified_at (phone-only EXISTS); message_threads untouched (Pitfall 1). Defense-in-depth backstop to the Plan 01 server-action gate. Commit b969615 (single migration file, parallel-wave attribution verified clean). Plans 17-01/03/06 running concurrently.

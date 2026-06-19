@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import type { ContactPreference } from "@/lib/account/schema";
 import type { SellerType } from "@/lib/seller/badge";
@@ -38,7 +41,9 @@ export default async function AccountPage() {
       .maybeSingle(),
     supabase
       .from("profiles_private")
-      .select("message_email_opt_out")
+      .select(
+        "message_email_opt_out, phone_verified_at, marketplace_terms_accepted_at",
+      )
       .eq("id", userId)
       .maybeSingle(),
   ]);
@@ -51,6 +56,12 @@ export default async function AccountPage() {
   const username = profile?.username ?? "";
   // Column default is false (= emails ON); absent row reads as the default.
   const messageEmailEnabled = !(priv?.message_email_opt_out ?? false);
+  // VERF-02/03: a verified seller has BOTH the phone-OTP timestamp and the
+  // marketplace-terms acceptance (the publish gate's two prerequisites). These
+  // are non-PII verification flags on the owner's own profiles_private row.
+  const isVerifiedSeller =
+    Boolean(priv?.phone_verified_at) &&
+    Boolean(priv?.marketplace_terms_accepted_at);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -62,6 +73,32 @@ export default async function AccountPage() {
           Manage how you appear to buyers and how they can reach you.
         </p>
       </div>
+
+      {!isVerifiedSeller && (
+        <div className="mt-8 rounded-xl border border-neon-cyan/30 bg-card p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted ring-1 ring-neon-cyan/30">
+              <ShieldCheck className="size-5 text-neon-cyan" />
+            </span>
+            <div className="grid gap-1.5">
+              <h2 className="text-lg font-semibold tracking-tight">
+                Become a verified seller
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Verify your phone and accept the marketplace terms to publish
+                listings and build buyer trust.
+              </p>
+              <div className="mt-2">
+                <Button asChild>
+                  <Link href="/verify?require=seller">
+                    Become a verified seller
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 grid gap-10">
         <DisplayNameForm current={{ displayName, username }} />
