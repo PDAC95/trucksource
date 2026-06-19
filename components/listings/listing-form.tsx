@@ -155,6 +155,7 @@ export function ListingForm({
   contactPreference,
   defaults,
   isVerifiedSeller = true,
+  phoneVerified = true,
 }: {
   mode: "create" | "edit";
   listingId?: number;
@@ -170,6 +171,10 @@ export function ListingForm({
   // The server action's not_verified (Plan 01) is the real boundary; this drives
   // the banner + draft-preserving redirect.
   isVerifiedSeller?: boolean;
+  // Whether the caller's phone is already verified. Lets the gate banner name the
+  // actual outstanding step — phone vs. marketplace terms — rather than always
+  // saying "verify your phone". Only meaningful when isVerifiedSeller is false.
+  phoneVerified?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
@@ -626,7 +631,9 @@ export function ListingForm({
           <div className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
             <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
             <p className="text-foreground">
-              Verify your phone to publish. Fill it out — your work is saved.
+              {phoneVerified
+                ? "Accept the marketplace terms to publish. Fill it out — your work is saved."
+                : "Verify your phone to publish. Fill it out — your work is saved."}
             </p>
           </div>
         )}

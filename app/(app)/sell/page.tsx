@@ -61,15 +61,18 @@ export default async function SellPage() {
   // trust boundary; this only drives the UX gate (banner + draft-preserving
   // redirect) in the form.
   let isVerifiedSeller = false;
+  // Track phone separately so the banner can name the ACTUAL missing step
+  // (phone vs. marketplace terms) instead of always saying "verify your phone".
+  let phoneVerified = false;
   try {
     const { data: priv } = await supabase
       .from("profiles_private")
       .select("phone_verified_at, marketplace_terms_accepted_at")
       .eq("id", data.claims.sub)
       .maybeSingle();
+    phoneVerified = Boolean(priv?.phone_verified_at);
     isVerifiedSeller =
-      Boolean(priv?.phone_verified_at) &&
-      Boolean(priv?.marketplace_terms_accepted_at);
+      phoneVerified && Boolean(priv?.marketplace_terms_accepted_at);
   } catch {
     // Columns/row not present — treat as unverified (safe default; the banner
     // shows and the server action backstops regardless).
@@ -93,6 +96,7 @@ export default async function SellPage() {
         partCategories={partCategories}
         contactPreference={contactPreference}
         isVerifiedSeller={isVerifiedSeller}
+        phoneVerified={phoneVerified}
       />
 
       <Toaster />
