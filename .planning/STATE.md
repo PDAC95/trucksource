@@ -62,6 +62,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 ### Roadmap Evolution
 
 - Phase 16 added (2026-06-18): **Part Taxonomy & Guided Cascade** — new *functional* scope from a stakeholder taxonomy review (3-level part taxonomy + hierarchical category search + guided cascade rework on welcome & /browse). NOT part of the v1.1 rebrand. **Year deferred** to its own later phase. Full scope + the Fuel Tanks subtree captured in `.planning/phases/16-part-taxonomy-guided-cascade/16-CONTEXT.md`.
+- Phase 17 added (2026-06-19): **Seller Activation & Transaction Trust Gates** — wire the just-in-time phone-verification gates designed in Phase 2 but never connected (publish gate = phone + marketplace terms; contact gate = phone only), parameterize `/verify` with next/require, add functional nav entries + verify prompts, listing-draft preservation + contact early-gate. Extends VERF-02/03/04, LIST-01, MSG-01/05 (behavioral, no new IDs); anticipates CHRM-02/03. Approved design: `docs/superpowers/specs/2026-06-18-seller-activation-trust-gates-design.md`.
 
 ### Decisions
 

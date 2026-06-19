@@ -140,5 +140,27 @@ Plans:
 - [ ] 16-03-PLAN.md — Welcome explorer rework: Make → Model → Category(root) → Advanced(subcategory → item + Condition) (FITL-05, SRCH-03)
 - [ ] 16-04-PLAN.md — /browse Category → Subcategory → Item dependent selects (desktop + mobile) + context-bearing chip (FITL-05, SRCH-03, FINT-03)
 
+### Phase 17: Seller Activation & Transaction Trust Gates
+
+**Goal:** Wire the just-in-time phone-verification trust gates that were designed in Phase 2 but never connected. Verification infra (`/verify` wizard, `is_verified_seller()`, badge) and the selling/contact flows already exist — this phase connects them: gate publishing a listing (phone + marketplace terms) and contacting a seller (phone only) at the server boundary, parameterize the `/verify` wizard with `next`/`require`, and add the functional navigation entries (Sell, My Listings, Account) plus the verify prompts, so selling and contacting actually require a real, contactable identity.
+
+**Requirements**: Extends shipped v1.0 IDs (behavioral change, no new IDs) — VERF-02/03/04 (verification now actually gates), LIST-01 (publish gated), MSG-01/05 (contact gated). Anticipates CHRM-02/03 (nav entry points) without owning the final header design. Design doc: `docs/superpowers/specs/2026-06-18-seller-activation-trust-gates-design.md`.
+
+**Depends on:** Phase 16
+
+**Success criteria:**
+- An unverified user who tries to publish a listing is routed to `/verify` (require=seller: phone + marketplace terms); their listing draft (text/selection fields) is preserved and rehydrated on return (photos re-attached).
+- An unverified user who tries to contact a seller is routed to `/verify` (require=phone) before the contact modal opens; on return the modal opens normally.
+- `createListing` rejects server-side when phone/terms flags are missing; `submitContact` rejects server-side when the phone flag is missing (the trust boundary holds even if the UI is bypassed).
+- The `/verify` wizard honors `?next=` and `?require=phone|seller` (phone-level returns without forcing selling terms).
+- Logged-in users have discoverable nav entries: Sell → `/sell`, My Listings → `/sell/listings`, Account → `/account`.
+- OTP anti-abuse defenses (BotID + rate-limit + geo +1 + spend cap, Phase 2) are confirmed to cover the now-wider buyer+seller audience; spend-cap threshold reviewed.
+- e2e covers: unverified→publish blocked→verify→publish; unverified→contact blocked→verify (phone only)→contact; verified-seller end-to-end.
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 17 to break down)
+
 ---
 *v1.0 archived 2026-06-12. v1.1 roadmap created 2026-06-12 — 29/29 requirements mapped across Phases 11–15.*
