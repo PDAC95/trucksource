@@ -17,8 +17,16 @@ caused by Phase 17's changes; see the GSD scope boundary).
 - **Owner / fix:** Pre-launch — verify own domain on Resend and point Supabase
   Staging SMTP at it. Tracked in STATE.md Open Blockers (#3 provider hygiene).
 
-## 2. `e2e/home.spec.ts:22` — stale `/browse` heading assertion (Phase 16 drift)
+## 2. `e2e/home.spec.ts:22` — stale `/browse` heading assertion (Phase 16 drift) — ✅ RESOLVED 2026-06-19
 
+- **Resolution (commit `22c7ec1`):** Re-pointed the assertion from the removed
+  `/find your part/i` heading to the always-present `/\d+ results?/i` count that
+  `ActiveFilterChips` renders on `/browse` (viewport- and data-independent).
+  Verified live against the running server (`/browse` showed "5 results"). The
+  commit also bundled the previously-uncommitted v1.1 brand-rework edits to this
+  spec. Could not run the full Playwright harness (the dev-lock conflict with the
+  running `next dev` on :3000 blocks Playwright's :3100 server); validated the
+  assertion target via a live browser snapshot instead.
 - **Found during:** Plan 17-07, Task 2 (full-suite regression gate).
 - **What:** The working-tree-modified (uncommitted) `home.spec.ts` adds a
   `browse all parts routes to the /browse feed` test asserting a `/browse`
