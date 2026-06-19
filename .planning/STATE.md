@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: OG Rebrand & UI Redesign
 status: unknown
-last_updated: "2026-06-19T13:54:28.632Z"
+last_updated: "2026-06-19T13:56:20.701Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 18
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -59,6 +59,8 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 | Phase 17 P02 | 3 min | 2 tasks | 1 files |
 | Phase 17 P03 | ~3 min | 2 tasks | 2 files |
 | Phase 17 P03 | ~3 min | 2 tasks | 2 files |
+| Phase 17-seller-activation-transaction-trust-gates P06 | ~6 min | 3 tasks | 4 files |
+| Phase 17 P01 | ~12 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -93,6 +95,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 - [Phase 16]: Plan 16-04: /browse Category facet reworked into three dependent selects (Category root -> Subcategory -> Item) in FacetControls — one edit covers desktop sidebar AND mobile sheet (browse-toolbar-mobile.tsx spreads the same body). URL contract: `category` = DEEPEST chosen id (RPC-facing, subtree-expanded by 16-01 RPC); `root`/`subcategory`/`item` are UI-only memory keys the RPC never reads. Parent change deletes dependent keys + recomputes deepest `category` (no stale URL combos). Chip label via resolveCategoryLabel walking up to 2 parents, deepest-LAST with " › " (Pitfall 6); chip removal clears all four category keys. active-filter-chips.tsx needed NO edit (keys array set on chip in page.tsx). Human-verify checkpoint approved.
 - [Phase 17]: Plan 17-02: RLS WITH CHECK backstops added — listings owner-insert requires is_verified_seller(), contact buyer-insert requires phone_verified_at (phone-only EXISTS). Gated contact_log (first write, invariant #5) not message_threads to avoid orphan rows (Pitfall 1). Exact policy names from repo: 'listings owner-insert' (0006) + 'contact buyer-insert' (0016 — plan interface guessed 'contact_log buyer-insert' wrong). Migration 0027 pushed to Staging cleanly. Defense-in-depth backstop to Plan 01 server-action gate.
 - [Phase 17]: Plan 17-03: parameterized /verify with ?next (safe internal bounce-back via safeNext: starts with / not // no scheme) + ?require (phone-only contact gate skips terms; default/seller require phone+terms). done-redirect runs before step-branching, unsafe/absent next falls to the existing panel. TermsStep branch guarded to (requireTerms && phoneVerified && !termsAccepted). OTP Change-number push carries next/require via URLSearchParams; phone-step untouched (router.refresh preserves URL). Wizard step internals + anti-abuse unchanged. commits 571c18a/906bba4.
+- [Phase 17-seller-activation-transaction-trust-gates]: Plan 17-06: Sell/My Listings/Account nav entries added to header (NavIconLink, exact-active) + dropdown + mobile menu; /account Become-a-verified-seller CTA derived from phone_verified_at AND marketplace_terms_accepted_at (non-PII, owner-scoped) linking /verify?require=seller. Functional entries with CURRENT tokens — rebrand restyles later. DEVIATION: Task-3 account-page commit cross-attributed into 7a56f27 by the parallel-wave lint-staged race; code byte-correct in HEAD, commit NOT rewritten (shared history).
 
 ### Research flags (from research/SUMMARY.md)
 
@@ -122,3 +125,5 @@ Last session: 2026-06-18 — executed 16-07-PLAN.md (seller Year capture in crea
 Next action: Phase 11 v1.1 rebrand 11-04 (still pending stakeholder logo assets). The full Year dimension is shipped end-to-end; ranged listings can now be seeded on Staging to activate the range arm of 16-05's search.year.test.ts.
 
 **Phase 17 (wave 1, in progress):** 17-02 COMPLETE — RLS trust-gate backstops (migration 0027 on Staging): listings owner-insert now requires is_verified_seller(); contact buyer-insert now requires phone_verified_at (phone-only EXISTS); message_threads untouched (Pitfall 1). Defense-in-depth backstop to the Plan 01 server-action gate. Commit b969615 (single migration file, parallel-wave attribution verified clean). Plans 17-01/03/06 running concurrently.
+
+**17-06 COMPLETE** — seller/verify nav discoverability. Sell action in the desktop header (NavIconLink + Tag, `exact`-active so /sell/listings doesn't keep it lit) + My Listings/Account in the user-menu dropdown + Sell/My Listings/Account rows in the mobile menu; /account renders a token-styled "Become a verified seller" CTA (border-neon-cyan/30, ShieldCheck, no hex) to unverified users only, linking /verify?require=seller. isVerifiedSeller = phone_verified_at AND marketplace_terms_accepted_at, read owner-scoped from profiles_private (non-PII). Tasks 1+2 clean commits 016a64d/e31c1c3 (attribution verified). DEVIATION: Task-3 account-page commit hit `cannot lock ref HEAD` (17-01 advanced HEAD mid-commit); lint-staged swept app/(app)/account/page.tsx into 7a56f27 (labelled 17-01, also carrying STATE/ROADMAP/17-03-SUMMARY). Code is byte-correct in HEAD; commit deliberately NOT rewritten (shared parallel-wave history). tsc clean.

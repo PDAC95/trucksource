@@ -157,7 +157,7 @@ Plans:
 - OTP anti-abuse defenses (BotID + rate-limit + geo +1 + spend cap, Phase 2) are confirmed to cover the now-wider buyer+seller audience; spend-cap threshold reviewed.
 - e2e covers: unverified→publish blocked→verify→publish; unverified→contact blocked→verify (phone only)→contact; verified-seller end-to-end.
 
-**Plans:** 2/7 plans executed
+**Plans:** 4/7 plans executed
 
 Plans:
 - [ ] 17-01-PLAN.md — Server-action trust-boundary gates (createListing phone+terms; submitContact phone) + lib/verify/gate.ts (LIST-01, MSG-05, VERF-02, VERF-04)
