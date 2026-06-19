@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { autocompleteAction } from "@/lib/search/autocomplete-action";
+import { FEED_PATH } from "@/lib/search/params";
 
 // Keyword input that drives the `q` URL param (all-state-in-URL, LOCKED). On submit (or
 // suggestion select) it router.replace-es "/?q=…" preserving the other facet params. A
@@ -49,7 +50,7 @@ export function SearchBar() {
     params.delete("page");
     setOpen(false);
     const qs = params.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+    router.replace(qs ? `${FEED_PATH}?${qs}` : FEED_PATH, { scroll: false });
   }
 
   function onChange(next: string) {
@@ -113,7 +114,7 @@ export function SearchBar() {
             placeholder="Search a part, model, or term…"
             aria-label="Search"
             autoComplete="off"
-            className="pl-8"
+            className="border-white/10 bg-white/[0.03] pl-8 focus-visible:border-neon-cyan/50"
           />
         </div>
         <Button type="submit" variant="default">

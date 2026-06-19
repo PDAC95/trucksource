@@ -117,7 +117,7 @@ export function FeedGrid({
 
   return (
     <div>
-      <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+      <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {cards.map((card) => (
           <li key={card.id}>
             <ListingCard
@@ -135,11 +135,11 @@ export function FeedGrid({
         <div
           ref={sentinelRef}
           aria-hidden="true"
-          className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4"
+          className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
         >
           {loading &&
-            Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-4/3 w-full rounded-xl" />
+            Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-5/4 w-full rounded-2xl" />
             ))}
         </div>
       )}

@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { MessageSquare } from "lucide-react";
 
 import { unreadThreadCount } from "@/lib/messaging/queries";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { NavIconLink } from "@/components/layout/nav-icon-link";
 
 // The global Messages nav entry + unread badge (MSG-05). Server component:
 // one non-PII count read per request — the badge updates on navigation, NOT
@@ -17,16 +16,13 @@ export async function MessagesBadge({ userId }: { userId: string }) {
   const count = await unreadThreadCount(userId);
 
   return (
-    <Button asChild variant="ghost" size="sm" className="relative gap-2">
-      <Link href="/messages">
-        <MessageSquare className="size-4" />
-        <span className="hidden sm:inline">Messages</span>
-        {count > 0 && (
-          <Badge className="h-4 min-w-4 rounded-full px-1 text-[10px] leading-none">
-            {count > 9 ? "9+" : count}
-          </Badge>
-        )}
-      </Link>
-    </Button>
+    <NavIconLink href="/messages" label="Messages">
+      <MessageSquare className="size-7" />
+      {count > 0 && (
+        <Badge className="absolute top-1.5 right-1.5 h-4 min-w-4 rounded-full px-1 text-[10px] leading-none">
+          {count > 9 ? "9+" : count}
+        </Badge>
+      )}
+    </NavIconLink>
   );
 }

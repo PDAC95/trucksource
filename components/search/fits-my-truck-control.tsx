@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Truck } from "lucide-react";
 import type { GarageTruck } from "@/lib/garage/queries";
+import { FEED_PATH } from "@/lib/search/params";
 
 // The STAR feature — prominent, NOT buried in the facet list. The page server-resolves
 // the viewer's state (getClaims, never getSession) and passes the matching variant:
@@ -40,9 +41,9 @@ function truckLabel(t: GarageTruck): string {
 // Module-level so it isn't re-created on every render (lint: components-during-render).
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <Truck className="size-4 text-primary" />
+    <div className="flex flex-col gap-2 rounded-xl border-2 border-neon-red/40 bg-neon-red/5 p-3">
+      <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-neon-red uppercase">
+        <Truck className="size-4 text-neon-red" />
         Fits my truck
       </div>
       {children}
@@ -109,7 +110,7 @@ export function FitsMyTruckControl({ state }: { state: FitsState }) {
       }
     }
     const qs = params.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+    router.replace(qs ? `${FEED_PATH}?${qs}` : FEED_PATH, { scroll: false });
   }
 
   return (

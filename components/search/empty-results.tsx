@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { SearchX } from "lucide-react";
+import { FEED_PATH } from "@/lib/search/params";
 
-// LOCKED: empty results are NEVER a dead-end. A friendly message + a "Limpiar filtros"
-// action that router.replace-es to "/" (clearing every param → back to the open feed).
+// LOCKED: empty results are NEVER a dead-end. A friendly message + a "Clear filters"
+// action that router.replace-es to FEED_PATH (clearing every param → back to the open feed).
 export function EmptyResults() {
   const router = useRouter();
 
@@ -19,7 +20,7 @@ export function EmptyResults() {
           Try another word or remove some filters.
         </p>
       </div>
-      <Button variant="outline" onClick={() => router.replace("/")}>
+      <Button variant="outline" onClick={() => router.replace(FEED_PATH)}>
         Clear filters
       </Button>
     </div>

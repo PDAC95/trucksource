@@ -1,6 +1,29 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Inter, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+// Decorative neon display faces (self-hosted, woff2/otf from private/fonts → committed
+// app/fonts). Display/signage ONLY — never body. Exposed as CSS vars; @theme maps them
+// to font-neon-shine / font-modern-neon / font-godsown utilities.
+const neonShine = localFont({
+  src: "./fonts/neon-shine.woff2",
+  variable: "--ff-neonshine",
+  display: "swap",
+});
+
+const modernNeon = localFont({
+  src: "./fonts/modern-neon.woff2",
+  variable: "--ff-modernneon",
+  display: "swap",
+});
+
+const godsown = localFont({
+  src: "./fonts/godsown.otf",
+  variable: "--ff-godsown",
+  display: "swap",
+});
 
 const display = Barlow_Condensed({
   subsets: ["latin"],
@@ -52,9 +75,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`dark ${display.variable} ${body.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${display.variable} ${body.variable} ${geistMono.variable} ${neonShine.variable} ${modernNeon.variable} ${godsown.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <TooltipProvider delayDuration={150}>{children}</TooltipProvider>
+      </body>
     </html>
   );
 }

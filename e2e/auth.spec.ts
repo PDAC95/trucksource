@@ -92,11 +92,13 @@ test.describe("registration → check-email gate", () => {
 });
 
 test.describe("confirmation gate", () => {
-  test("visiting the (app) home while unauthenticated redirects to /login", async ({
+  test("visiting a guarded (app) route while unauthenticated redirects to /login", async ({
     page,
   }) => {
-    // The guarded (app) layout calls getClaims(); no session => redirect.
-    await page.goto("/");
+    // "/" is the public welcome landing (anon-open). The guarded surfaces live
+    // under (app) — e.g. /account — whose layout calls getClaims(); no session
+    // => redirect to /login.
+    await page.goto("/account");
     await expect(page).toHaveURL(/\/login/);
     await expect(
       page.getByRole("heading", { name: /welcome back/i }),

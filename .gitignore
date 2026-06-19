@@ -50,6 +50,11 @@ supabase/.branches/
 /test-results
 /playwright-report
 /playwright/.cache
+/.playwright-mcp/
+
+# Scratch / internal notes (not shipped)
+/app/fonttest/
+/check.md
 
 # Stakeholder source brand assets (originals only; processed copies live in /public)
 private/

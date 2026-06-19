@@ -64,22 +64,33 @@ async function removeWhiteBackground(src, threshold) {
 }
 
 async function run() {
+  // The square icon source also ships on a near-white background. Knock it out
+  // to transparency once, then reuse for every icon-derived asset — otherwise a
+  // white box sits behind the OG shield on the navy header (and on navy tabs).
+  // The neon shield art is dark/saturated, so the >=245 luminance threshold
+  // cleanly targets only the background.
+  const iconKnocked = await removeWhiteBackground(SRC_ICON, 245);
+
   // app/icon.png — 512x512 from the square icon mark, transparency preserved.
-  await sharp(SRC_ICON)
+  await sharp(iconKnocked)
     .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toFile(out("app/icon.png"));
 
   // app/apple-icon.png — 180x180, FLATTENED onto opaque navy (iOS quirk).
-  await sharp(SRC_ICON)
+  await sharp(iconKnocked)
     .resize(180, 180, { fit: "contain", background: NAVY })
     .flatten({ background: NAVY })
     .png()
     .toFile(out("app/apple-icon.png"));
 
-  // public/logo-mark.png — header-sized icon mark (96px square, transparent).
-  await sharp(SRC_ICON)
-    .resize(96, 96, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  // public/logo-mark.png — header logo mark, TRIMMED tight to the shield so the
+  // mark can render at full header height with no transparent padding box. We
+  // trim the transparent border (corners are alpha:0 after knockout), then size
+  // to ~2x the largest header height (h-20 = 80px) for crisp retina rendering.
+  await sharp(iconKnocked)
+    .trim()
+    .resize({ height: 160, fit: "inside", withoutEnlargement: false })
     .png()
     .toFile(out("public/logo-mark.png"));
 
@@ -139,14 +150,36 @@ async function run() {
     .png()
     .toFile(out("app/opengraph-image.png"));
 
+  // public/truck-icon.png — OPTIONAL custom UI icon for the Account menu, from
+  // the git-ignored private/icons/truck.png source. Re-encoded at 2x (96px) for
+  // crisp retina rendering at the 44px header size. Skipped if absent so the
+  // brand pipeline never hard-depends on it.
+  const truckSrc = resolve(root, "private/icons/truck.png");
+  if (existsSync(truckSrc)) {
+    await sharp(truckSrc)
+      .resize(96, 96, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toFile(out("public/truck-icon.png"));
+    console.log("  public/truck-icon.png — generated from private/icons/truck.png");
+  }
+
+  // public/hero-logo.png — the FULL neon sign with its white background knocked
+  // out and trimmed tight, for the welcome-page hero on the night background.
+  // ~1100px wide for crisp large rendering.
+  await sharp(knockedOut)
+    .trim()
+    .resize({ width: 1100, fit: "inside", withoutEnlargement: false })
+    .png()
+    .toFile(out("public/hero-logo.png"));
+
   // app/favicon.ico — 32 + 48 px PNG buffers fed to png-to-ico (REPLACES the
   // create-next-app default). Flattened onto navy so the tab glyph reads.
-  const fav32 = await sharp(SRC_ICON)
+  const fav32 = await sharp(iconKnocked)
     .resize(32, 32, { fit: "contain", background: NAVY })
     .flatten({ background: NAVY })
     .png()
     .toBuffer();
-  const fav48 = await sharp(SRC_ICON)
+  const fav48 = await sharp(iconKnocked)
     .resize(48, 48, { fit: "contain", background: NAVY })
     .flatten({ background: NAVY })
     .png()

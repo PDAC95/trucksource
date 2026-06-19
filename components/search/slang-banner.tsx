@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
+import { FEED_PATH } from "@/lib/search/params";
 
 // Transparency banner (LOCKED: never silently swap the query). Two modes:
 //  - "slang": the query was expanded/corrected — show "Showing results for
@@ -32,7 +33,7 @@ export function SlangBanner({
     params.set("q", raw);
     params.set("exact", "1");
     params.delete("page");
-    router.replace(`/?${params.toString()}`, { scroll: false });
+    router.replace(`${FEED_PATH}?${params.toString()}`, { scroll: false });
   }
 
   return (

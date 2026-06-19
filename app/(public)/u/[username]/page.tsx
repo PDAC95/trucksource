@@ -194,6 +194,7 @@ async function hydrateProfileCards(
     conditionName: conditionNameById.get(r.condition_id) ?? "",
     stateProvince,
     coverPhotoUrl: coverByListing.get(r.id) ?? null,
+    photoUrls: [coverByListing.get(r.id)].filter(Boolean) as string[],
     fitmentChip: chipByListing.get(r.id) ?? null,
     sellerName,
     sellerUsername,

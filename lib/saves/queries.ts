@@ -181,6 +181,7 @@ export async function getMySavedListings(): Promise<SavedCard[]> {
       conditionName: conditionNameById.get(row.condition_id) ?? "",
       stateProvince: seller?.stateProvince ?? null,
       coverPhotoUrl: coverByListing.get(row.id) ?? null,
+      photoUrls: [coverByListing.get(row.id)].filter(Boolean) as string[],
       fitmentChip: chipByListing.get(row.id) ?? null,
       sellerName: seller
         ? resolvePublicName(seller.displayName, seller.username)
