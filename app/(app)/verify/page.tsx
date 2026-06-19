@@ -14,6 +14,14 @@ import { TermsStep } from "./terms-step";
 // it here too so caching can never resume the WRONG user's wizard state.
 export const dynamic = "force-dynamic";
 
+// Open-redirect guard (17-RESEARCH Pattern 2): a ?next is safe only if it is an
+// internal, scheme-less path. `next` is attacker-controllable (it rides in the
+// URL the gate built), so it is NEVER trusted raw — an unsafe value falls back
+// to the in-page panel rather than redirecting off-site.
+function safeNext(n?: string): string | null {
+  return n && n.startsWith("/") && !n.startsWith("//") ? n : null;
+}
+
 // The resume-on-abandon wizard (02-RESEARCH Pattern 5). The single source of truth
 // for "which step is the user on" is their own profiles_private row — the same
 // columns the verified badge reads — so progress survives navigation and reload.
@@ -22,9 +30,9 @@ export const dynamic = "force-dynamic";
 export default async function VerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ change?: string }>;
+  searchParams: Promise<{ change?: string; next?: string; require?: string }>;
 }) {
-  const { change } = await searchParams;
+  const { change, next, require } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) {
@@ -41,13 +49,27 @@ export default async function VerifyPage({
   const phoneVerified = Boolean(row?.phone_verified_at);
   const termsAccepted = Boolean(row?.marketplace_terms_accepted_at);
 
+  // Required level: ?require=phone (contact gate) needs only a verified phone;
+  // anything else — including the default/absent (seller gate) — also needs the
+  // marketplace terms. `done` is the level-aware completion signal.
+  const requireTerms = require !== "phone";
+  const done = phoneVerified && (!requireTerms || termsAccepted);
+
+  // Completion redirect: when the required level is satisfied and a safe ?next
+  // was supplied, bounce the user back to where the gate sent them from. An
+  // unsafe/absent next falls through to the existing in-page panel below.
+  if (done) {
+    const target = safeNext(next);
+    if (target) redirect(target);
+  }
+
   let step: React.ReactNode;
   let heading: string;
   let subhead: string;
 
-  if (phoneVerified && termsAccepted) {
-    // All three signals present (email confirmed by the gate + phone + terms) —
-    // the badge is live. Brief confirmation with a forward link.
+  if (done) {
+    // Required level satisfied (terms too, unless require=phone) but no safe
+    // ?next to bounce to — show the confirmation panel with a forward link.
     heading = "You're a verified seller";
     subhead = "Your phone and marketplace terms are confirmed.";
     step = (
@@ -57,8 +79,9 @@ export default async function VerifyPage({
         </Button>
       </div>
     );
-  } else if (phoneVerified) {
-    // Phone verified, terms outstanding — last step.
+  } else if (requireTerms && phoneVerified && !termsAccepted) {
+    // Phone verified, terms outstanding, and this level requires them — last
+    // step. Under require=phone this branch is skipped (done is already true).
     heading = "One last step";
     subhead = "Accept the marketplace terms to finish verifying.";
     step = <TermsStep />;
