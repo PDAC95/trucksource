@@ -3,7 +3,21 @@
 Out-of-scope discoveries logged during execution (NOT fixed here — they are not
 caused by Phase 17's changes; see the GSD scope boundary).
 
-## 1. `e2e/home.spec.ts:22` — stale `/browse` heading assertion (Phase 16 drift)
+## 1. Auth email send failure on Staging (Resend custom SMTP)
+
+- **Found during:** Plan 17-07, Task 3 (live UAT — registering the unverified
+  test account).
+- **What:** `supabase.auth.signUp` returns `500 unexpected_failure: Error
+  sending confirmation email` on Staging (Resend custom SMTP). Normal
+  self-service registration on Staging is blocked; the UAT test account had to
+  be created via service-role `admin.createUser`.
+- **Why deferred:** Provider/infra config, not Phase 17 application code. Relates
+  to the existing `phase1-email-deferred-smtp` memory item (built-in cap was
+  2/h, moved to Resend custom SMTP). Did not block the gate verification itself.
+- **Owner / fix:** Pre-launch — verify own domain on Resend and point Supabase
+  Staging SMTP at it. Tracked in STATE.md Open Blockers (#3 provider hygiene).
+
+## 2. `e2e/home.spec.ts:22` — stale `/browse` heading assertion (Phase 16 drift)
 
 - **Found during:** Plan 17-07, Task 2 (full-suite regression gate).
 - **What:** The working-tree-modified (uncommitted) `home.spec.ts` adds a
