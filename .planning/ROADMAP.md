@@ -157,10 +157,16 @@ Plans:
 - OTP anti-abuse defenses (BotID + rate-limit + geo +1 + spend cap, Phase 2) are confirmed to cover the now-wider buyer+seller audience; spend-cap threshold reviewed.
 - e2e covers: unverified→publish blocked→verify→publish; unverified→contact blocked→verify (phone only)→contact; verified-seller end-to-end.
 
-**Plans:** 0 plans
+**Plans:** 7 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 17 to break down)
+- [ ] 17-01-PLAN.md — Server-action trust-boundary gates (createListing phone+terms; submitContact phone) + lib/verify/gate.ts (LIST-01, MSG-05, VERF-02, VERF-04)
+- [ ] 17-02-PLAN.md — Migration 0027: RLS WITH CHECK backstops (listings is_verified_seller; contact_log phone-only) (LIST-01, MSG-05, VERF-04)
+- [ ] 17-03-PLAN.md — Parameterize /verify with ?next/?require (level-aware completion + safe redirect) (VERF-02, VERF-03, VERF-04)
+- [ ] 17-04-PLAN.md — Sell-gate UI: unverified banner + Publish interception + sessionStorage draft preserve/rehydrate (LIST-01, VERF-04)
+- [ ] 17-05-PLAN.md — Contact-gate UI: unverified route to /verify(require=phone) + contact=1 auto-open on return (MSG-01, MSG-05, VERF-02)
+- [ ] 17-06-PLAN.md — Functional nav entries (Sell/My Listings/Account) + Become-a-verified-seller CTA on /account (VERF-02/03/04)
+- [ ] 17-07-PLAN.md — e2e trust-gate routing + nav presence; confirm OTP spend cap + Twilio alert + BotID (live checkpoint) (LIST-01, MSG-01/05, VERF-02/03/04)
 
 ---
 *v1.0 archived 2026-06-12. v1.1 roadmap created 2026-06-12 — 29/29 requirements mapped across Phases 11–15.*
