@@ -54,7 +54,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { ShieldAlert, X } from "lucide-react";
 
 import {
   FitmentMultiSelect,
@@ -107,6 +107,11 @@ const SHIPPING_OPTIONS: {
   { value: "shipping_assistance", label: "Shipping Assistance Requested" },
 ];
 
+// Phase-17 sell-draft sessionStorage key — create mode ONLY, never edit. Versioned
+// (:v1) so a future shape change can be invalidated cleanly. Cleared only on a
+// successful publish (survives /verify round-trips — CONTEXT).
+const SELL_DRAFT_KEY = "sell-draft:v1";
+
 const CONTACT_PREFERENCE_LABEL: Record<string, string> = {
   email_only: "Email Only",
   email_and_phone: "Email + Phone",
@@ -149,6 +154,7 @@ export function ListingForm({
   partCategories = [],
   contactPreference,
   defaults,
+  isVerifiedSeller = true,
 }: {
   mode: "create" | "edit";
   listingId?: number;
@@ -159,6 +165,11 @@ export function ListingForm({
   partCategories?: PartCategoryOption[];
   contactPreference?: string;
   defaults?: ListingFormDefaults;
+  // Phase-17 publish gate UX. Defaults to true so edit mode and any other caller
+  // that doesn't pass it are unaffected (the gate only engages in create mode).
+  // The server action's not_verified (Plan 01) is the real boundary; this drives
+  // the banner + draft-preserving redirect.
+  isVerifiedSeller?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
@@ -265,6 +276,94 @@ export function ListingForm({
     form.setValue("yearEnd", null, { shouldValidate: false });
   }
 
+  // ── Phase-17 publish-gate REHYDRATE (create mode only, once on mount) ──────
+  // On return from /verify (or any later /sell visit), silently restore the
+  // preserved draft into RHF + the component-managed state (fitment chips,
+  // categories, search-terms, year). Photos are NOT restored (File objects
+  // aren't serializable) — the seller re-attaches; the loss is COMMUNICATED via
+  // the toast, never silent (CONTEXT). The draft is NOT cleared here — only a
+  // successful publish retires it, so it survives multiple verify round-trips.
+  // Separately: if the return URL carries ?verified=1 (Task 2's next= marker),
+  // fire the return-confirmation toast and strip the marker so a refresh won't
+  // re-toast.
+  React.useEffect(() => {
+    if (mode !== "create") return;
+
+    // Return-confirmation toast + marker strip (only when explicitly arriving
+    // from a completed verify, never on a plain stale-draft visit).
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("verified") === "1") {
+        toast("Phone verified — you're all set");
+        router.replace("/sell");
+      }
+    } catch {
+      // window/URL unavailable — skip the confirmation, the rehydrate still runs.
+    }
+
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(SELL_DRAFT_KEY);
+    } catch {
+      // storage unavailable — nothing to restore.
+    }
+    if (!raw) return;
+
+    try {
+      const d = JSON.parse(raw) as {
+        title?: string;
+        partNumber?: string;
+        askingPrice?: number;
+        conditionId?: number;
+        shippingOption?: ListingInput["shippingOption"];
+        damageNotes?: string;
+        isBarnyard?: boolean;
+        yearMode?: ListingInput["yearMode"];
+        yearStart?: number | null;
+        yearEnd?: number | null;
+        fitment?: FitmentSelection[];
+        categoryIds?: number[];
+        searchTerms?: SuggestedTag[];
+      };
+
+      form.reset({
+        title: d.title ?? "",
+        partNumber: d.partNumber ?? "",
+        askingPrice: d.askingPrice,
+        conditionId: d.conditionId,
+        shippingOption: d.shippingOption ?? "shipping_available",
+        damageNotes: d.damageNotes ?? "",
+        isBarnyard: d.isBarnyard ?? false,
+        yearMode: d.yearMode ?? "universal",
+        yearStart: d.yearStart ?? null,
+        yearEnd: d.yearEnd ?? null,
+        fitment: (d.fitment ?? []).map((f) => ({
+          modelId: f.modelId,
+          configId: f.configId ?? null,
+        })),
+        // Photos sacrificed — start empty so the min-3 rule re-applies and the
+        // seller re-attaches.
+        photoPaths: [],
+      });
+
+      // Component-managed state (outside RHF) — restore so chips/selects re-render.
+      setFitment(d.fitment ?? []);
+      setCategoryIds(d.categoryIds ?? []);
+      setCategoryId(d.categoryIds?.[0] ?? null);
+      setSearchTerms(d.searchTerms ?? []);
+      setIsBarnyard(d.isBarnyard ?? false);
+
+      // Re-attach notice (English; CONTEXT: a small notice, NOT a "restore?"
+      // prompt). This is the draft-restored message; the verify-return toast
+      // above (if any) is a separate confirmation conveying a different thing.
+      toast("Restored your draft — re-attach photos to publish");
+    } catch {
+      // Corrupt draft — ignore; the form stays on its empty defaults.
+    }
+    // Mount-once: rehydration must run exactly once, before user edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── FINT-02 accept handlers — the ONLY path into confirmed state ──────────
   // Every one of these runs ONLY from an explicit click (chip body / "Add all").
   // No effect calls them. onAcceptFitment uses EXACTLY the FitmentMultiSelect
@@ -349,7 +448,51 @@ export function ListingForm({
     }))
     .filter((g) => g.fitments.length > 0 || g.tags.length > 0);
 
+  // ── Phase-17 publish-gate draft preservation (create mode only) ───────────
+  // Serialize the SERIALIZABLE form state (RHF values + the component-managed
+  // fitment / categories / search-terms) to sessionStorage so an unverified
+  // seller's effort survives the /verify round-trip. Photos (File objects /
+  // UploadedPhoto) are intentionally NOT saved — they aren't serializable; the
+  // seller re-attaches on return (loss is communicated, not silent — CONTEXT).
+  // Field set mirrors the ACTUAL listingSchema (RESEARCH Q5), not CONTEXT's stale
+  // list (there is no "description"/"location" — it's damageNotes; no location).
+  function saveDraft() {
+    const v = form.getValues();
+    const draft = {
+      title: v.title,
+      partNumber: v.partNumber,
+      askingPrice: v.askingPrice,
+      conditionId: v.conditionId,
+      shippingOption: v.shippingOption,
+      damageNotes: v.damageNotes,
+      isBarnyard,
+      yearMode: v.yearMode,
+      yearStart: v.yearStart,
+      yearEnd: v.yearEnd,
+      fitment,
+      categoryIds,
+      searchTerms,
+    };
+    try {
+      sessionStorage.setItem(SELL_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // sessionStorage unavailable (private mode / quota) — degrade silently;
+      // the server action still gates publish.
+    }
+  }
+
   function onSubmit(values: ListingInput) {
+    // Phase-17 publish gate (UX layer). An unverified seller in create mode never
+    // hits createListing here: save the draft SYNCHRONOUSLY (Pitfall 3 — never
+    // lose the work), then bounce to /verify. The next= carries verified=1 so /sell
+    // can fire the return-confirmation toast on the way back (CONTEXT). The server
+    // action's not_verified still backstops if this prop is stale.
+    if (mode === "create" && !isVerifiedSeller) {
+      saveDraft();
+      router.push("/verify?require=seller&next=/sell?verified=1");
+      return;
+    }
+
     // Compose the parts the schema validated (part data + shipping) with the
     // component-managed fitment / photos / barnyard.
     const readyPaths = photos
@@ -422,6 +565,14 @@ export function ListingForm({
   async function runCreate(payload: ListingInput) {
     const result = await createListing(payload);
     if (result.ok) {
+      // Successful publish is the ONLY thing that clears the preserved draft
+      // (Phase-17 — it must survive verify round-trips, only the real publish
+      // retires it).
+      try {
+        sessionStorage.removeItem(SELL_DRAFT_KEY);
+      } catch {
+        // ignore — nothing to clear / storage unavailable
+      }
       toast.success("Listing published");
       router.push(`/listings/${result.id}`); // CONTEXT: redirect to the listing
     } else {
@@ -468,6 +619,18 @@ export function ListingForm({
         onSubmit={form.handleSubmit(onSubmit, onInvalid)}
         className="grid gap-10"
       >
+        {/* ── PHASE-17 PUBLISH GATE BANNER (create mode, unverified only) ──
+            Persistent notice: the form stays fully usable; Publish saves the
+            draft + bounces to /verify (CONTEXT). Token classes only, no hex. */}
+        {mode === "create" && !isVerifiedSeller && (
+          <div className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+            <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p className="text-foreground">
+              Verify your phone to publish. Fill it out — your work is saved.
+            </p>
+          </div>
+        )}
+
         {/* ── SECTION 1: PART DATA ───────────────────────────────── */}
         <section className="grid gap-4">
           <div>
