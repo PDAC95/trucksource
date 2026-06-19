@@ -30,9 +30,14 @@ function safeNext(n?: string): string | null {
 export default async function VerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ change?: string; next?: string; require?: string }>;
+  searchParams: Promise<{
+    change?: string;
+    next?: string;
+    require?: string;
+    sent?: string;
+  }>;
 }) {
-  const { change, next, require } = await searchParams;
+  const { change, next, require, sent } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims) {
@@ -85,16 +90,20 @@ export default async function VerifyPage({
     heading = "One last step";
     subhead = "Accept the marketplace terms to finish verifying.";
     step = <TermsStep />;
-  } else if (phone && change !== "1") {
-    // A phone is on file but unverified — resume on OTP entry (resend allowed).
-    // `?change=1` from the OTP step forces back to phone entry to change number.
+  } else if (phone && sent === "1" && change !== "1") {
+    // A code was actually dispatched (`?sent=1`, set by phone-step on a
+    // successful send) and the phone is still unverified — show OTP entry
+    // (resend allowed). We gate on `sent=1`, NOT merely "a phone is on file":
+    // registration persists the phone, so phone-on-file is NOT evidence that an
+    // OTP was sent. `?change=1` from the OTP step forces back to phone entry.
     heading = "Enter your code";
     subhead = "We sent a 6-digit code to your phone.";
     step = <OtpStep initialPhone={phone} />;
   } else {
-    // Fresh start (or "change number") — phone entry. Pre-fill from any phone
-    // already on file (registration phone or the number being changed) for UX;
-    // the user can edit it and OTP is mandatory regardless.
+    // Fresh start (no code dispatched yet, or "change number") — phone entry.
+    // Pre-fill from any phone already on file (registration phone or the number
+    // being changed) for UX; the user clicks "Send code" to dispatch, and OTP is
+    // mandatory regardless. This is the entry the trust gates land users on.
     heading = "Verify your phone";
     subhead = "Verified sellers earn a badge buyers trust.";
     step = <PhoneStep initialPhone={phone ?? undefined} />;
