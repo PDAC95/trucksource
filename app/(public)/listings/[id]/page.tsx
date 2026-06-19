@@ -100,11 +100,17 @@ export default async function ListingDetailPage({
   //    resolves to the existing thread, never a second form).
   let prefill: { name: string; email: string; phone?: string } | null = null;
   let existingThreadId: number | null = null;
+  // CONTACT GATE (VERF-02, Plan 17-05): does the VIEWER'S OWN private row carry a
+  // phone_verified_at? Read from the SAME prefill select (no extra round-trip),
+  // owner RLS. Drives the unverified contact-gate branch in ContactSellerButton.
+  // Default false for anon/owner. The server not_verified gate (Plan 17-01) is the
+  // authority — this flag only shapes the pre-click UX.
+  let isPhoneVerified = false;
   if (userId && !isOwner) {
     const [{ data: privateRow }, threadId] = await Promise.all([
       supabase
         .from("profiles_private")
-        .select("first_name, last_name, email, phone")
+        .select("first_name, last_name, email, phone, phone_verified_at")
         .eq("id", userId)
         .maybeSingle(),
       getExistingThreadId(listing.id, userId),
@@ -114,6 +120,7 @@ export default async function ListingDetailPage({
       last_name: string | null;
       email: string | null;
       phone: string | null;
+      phone_verified_at: string | null;
     } | null;
     prefill = {
       name: [p?.first_name, p?.last_name].filter(Boolean).join(" "),
@@ -121,6 +128,7 @@ export default async function ListingDetailPage({
       phone: p?.phone ?? undefined,
     };
     existingThreadId = threadId;
+    isPhoneVerified = Boolean(p?.phone_verified_at);
   }
   // Comments close when the listing is not active (sold — LOCKED; the thread
   // itself stays visible, only posting stops).
@@ -137,6 +145,7 @@ export default async function ListingDetailPage({
         listingActive={listing.status === "active"}
         existingThreadId={existingThreadId}
         prefill={prefill}
+        isPhoneVerified={isPhoneVerified}
       />
 
       {/* COMMENTS (SOCL-01) — thread below the detail; composer only while the

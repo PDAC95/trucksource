@@ -64,6 +64,7 @@ export function ListingDetail({
   listingActive = false,
   existingThreadId = null,
   prefill = null,
+  isPhoneVerified = false,
 }: {
   listing: ListingDetail;
   isOwner?: boolean;
@@ -73,6 +74,7 @@ export function ListingDetail({
   listingActive?: boolean;
   existingThreadId?: number | null;
   prefill?: { name: string; email: string; phone?: string } | null;
+  isPhoneVerified?: boolean;
 }) {
   const cover = listing.photos[0];
   const rest = listing.photos.slice(1);
@@ -297,6 +299,7 @@ export function ListingDetail({
             listingActive={listingActive}
             existingThreadId={existingThreadId}
             prefill={prefill}
+            isPhoneVerified={isPhoneVerified}
           />
         </div>
       </div>
