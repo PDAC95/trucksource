@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listingSchema, toYearColumns } from "@/lib/listings/schema";
 import { stripAndReencode } from "@/lib/images/strip";
 import { LISTING_PHOTOS_BUCKET } from "@/lib/listings/storage";
+import { requireVerifiedSeller } from "@/lib/verify/gate";
 
 // Listing trust boundary (LIST-01 create / LIST-05 edit / LIST-02 photos).
 //
@@ -154,6 +155,7 @@ export type CreateListingResult =
       ok: false;
       error:
         | "unauthenticated"
+        | "not_verified"
         | "invalid"
         | "invalid_combo"
         | "invalid_photo_path"
@@ -183,6 +185,13 @@ export async function createListing(
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
   if (!userId) return { ok: false, error: "unauthenticated" };
+
+  // STEP 0 — TRUST BOUNDARY (Phase 17): publishing requires a verified seller
+  // (phone + marketplace terms). The UI redirects to /verify first, but the
+  // anon key is public so the server is the authority (CLAUDE.md #2/#3). Runs
+  // before schema parse and before any insert.
+  if (!(await requireVerifiedSeller(supabase, userId)))
+    return { ok: false, error: "not_verified" };
 
   const parsed = listingSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalid" };
