@@ -116,7 +116,7 @@ Previous milestone v1.0 MVP is archived (`.planning/milestones/v1.0-ROADMAP.md`,
 
 ### Todos
 
-- None.
+- **Candidate Phase 18 — Public Display Name (decided 2026-06-19, stakeholder-driven):** split a free-text public `display_name` (spaces ok, business/real names) from the URL-safe unique `@username` handle. Scope: migration adding `profiles_public.display_name` (+ owner-update policy + length CHECK); register optional "Display name" field + `handle_new_user` mapping; edit on `/account`; `publicName = display_name ?? username` helper applied at every public render site (feed cards, listing detail, comments, `/u/[username]` header). Plan + verify via GSD — do NOT hack ad-hoc (prod auto-deploys to the live stakeholder link). Supersedes the "username = display name" framing. Workaround until shipped: register with a no-space username.
 
 ### Blockers
 
