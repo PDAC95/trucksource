@@ -4,7 +4,7 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { checkOtpSchema, type CheckOtpInput } from "@/lib/verify/schema";
 import {
@@ -73,6 +73,7 @@ function sendMessageFor(
 
 export function OtpStep({ initialPhone }: { initialPhone: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const form = useForm<CheckOtpInput>({
     resolver: zodResolver(checkOtpSchema),
     defaultValues: { code: "" },
@@ -127,7 +128,16 @@ export function OtpStep({ initialPhone }: { initialPhone: string }) {
   // navigate with a query flag the page reads to force the phone step even though
   // a phone is on file.
   const onChangeNumber = () => {
-    router.push("/verify?change=1");
+    // Carry the gate params forward so changing the number doesn't drop the
+    // return target/level (Pitfall 2 — finishing OTP would otherwise land on "/"
+    // instead of bouncing back to the listing or /sell). router.refresh() in the
+    // other actions already preserves them; only this explicit push must re-add.
+    const params = new URLSearchParams({ change: "1" });
+    const next = searchParams.get("next");
+    const require = searchParams.get("require");
+    if (next) params.set("next", next);
+    if (require) params.set("require", require);
+    router.push(`/verify?${params.toString()}`);
   };
 
   return (
