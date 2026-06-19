@@ -53,6 +53,28 @@ export default async function SellPage() {
     // Column not present yet (pre-05-05) — keep the default.
   }
 
+  // Verified-seller flag (Phase 17 publish gate). Read the caller's OWN
+  // profiles_private flags (owner RLS, auth.uid() = id) — these are non-PII
+  // status timestamps (NOT name/email/phone), so invariant 1's "no PII on the
+  // server response" posture holds. Defensive maybeSingle so a missing row can't
+  // hard-fail the page. The server action's not_verified (Plan 01) remains the
+  // trust boundary; this only drives the UX gate (banner + draft-preserving
+  // redirect) in the form.
+  let isVerifiedSeller = false;
+  try {
+    const { data: priv } = await supabase
+      .from("profiles_private")
+      .select("phone_verified_at, marketplace_terms_accepted_at")
+      .eq("id", data.claims.sub)
+      .maybeSingle();
+    isVerifiedSeller =
+      Boolean(priv?.phone_verified_at) &&
+      Boolean(priv?.marketplace_terms_accepted_at);
+  } catch {
+    // Columns/row not present — treat as unverified (safe default; the banner
+    // shows and the server action backstops regardless).
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-8 grid gap-1.5">
@@ -70,6 +92,7 @@ export default async function SellPage() {
         conditions={conditions}
         partCategories={partCategories}
         contactPreference={contactPreference}
+        isVerifiedSeller={isVerifiedSeller}
       />
 
       <Toaster />
