@@ -222,7 +222,7 @@ export function WelcomeExplorer({
 
   const stepHeading =
     step === "make"
-      ? "Browse by brand"
+      ? "Pick your truck's make"
       : step === "model"
         ? `Pick a ${make?.name ?? ""} model`.trim()
         : step === "year"
@@ -351,6 +351,12 @@ export function WelcomeExplorer({
 
       {/* RIGHT: the guided cascade */}
       <div className="flex flex-col gap-4">
+        {/* Make is step 1 — a small lead-in signals the cascade starts here. */}
+        {step === "make" && (
+          <p className="text-xs font-semibold uppercase tracking-wide text-neon-cyan">
+            Start here
+          </p>
+        )}
         <div className="flex items-center gap-3">
           {step !== "make" && (
             <button

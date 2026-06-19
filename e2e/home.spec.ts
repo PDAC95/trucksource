@@ -15,7 +15,7 @@ test("welcome page shows the brand wordmark + entry points", async ({
     page.getByRole("link", { name: /browse all parts/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: /browse by brand/i }),
+    page.getByRole("heading", { name: /pick your truck's make/i }),
   ).toBeVisible();
 });
 
